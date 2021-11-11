@@ -2619,6 +2619,7 @@ View.prototype = {
 		this.cutsceneStartViews[buttonPos].parent.hide();
 	}
 	,FeedDropDownRegion: function(regionNames,regionAmount) {
+		if(regionAmount >= 5) regionAmount = 4;
 		if(this.dropDownRegion.dropdown.get_dataSource().get_size() != regionAmount) {
 			this.dropDownRegion.dropdown.get_dataSource().clear();
 			var _g = 0;
