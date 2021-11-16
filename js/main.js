@@ -12,6 +12,7 @@ var BattleManager = function() {
 	this.playerActions = new haxe_ds_StringMap();
 	this.events = [];
 	this.random = new seedyrng_Random();
+	this.equipDropChance_Rare = 15;
 	this.equipDropChance = 30;
 	this.timePeriod = 0.6;
 	this.enemySheets = [];
@@ -42,6 +43,7 @@ var BattleManager = function() {
 	_g.h["LifeMax"] = 4;
 	var _g1 = new haxe_ds_StringMap();
 	_g1.h["Speed"] = 0.05;
+	_g1.h["Defense"] = 0.4;
 	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}});
 	var bm1 = bm.regionPrizes;
 	var _g = new haxe_ds_StringMap();
@@ -70,9 +72,9 @@ var BattleManager = function() {
 	_g.h["Speed"] = 1.1;
 	_g.h["LifeMax"] = 1.7;
 	var _g1 = new haxe_ds_StringMap();
-	_g1.h["Piercing"] = 1;
+	_g1.h["Piercing"] = 100;
 	var _g2 = new haxe_ds_StringMap();
-	_g2.h["Defense"] = 1;
+	_g2.h["Defense"] = 0.2;
 	_g2.h["Speed"] = 0.1;
 	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
 	var bm1 = bm.regionPrizes;
@@ -109,11 +111,14 @@ BattleManager.prototype = {
 	,balancing: null
 	,timePeriod: null
 	,equipDropChance: null
+	,equipDropChance_Rare: null
 	,random: null
 	,events: null
 	,playerActions: null
 	,regionRequirements: null
 	,regionPrizes: null
+	,itemBases: null
+	,modBases: null
 	,GetAttribute: function(actor,label) {
 		var i = actor.attributesCalculated.h[label];
 		if(i < 0) {
@@ -202,6 +207,7 @@ BattleManager.prototype = {
 		_g.h["SpeedCount"] = 0;
 		_g.h["Defense"] = 0;
 		_g.h["Magic Defense"] = 0;
+		_g.h["Piercing"] = 0;
 		var stats2 = _g;
 		this.wdata.enemy = { level : 1 + enemyLevel, attributesBase : stats2, equipmentSlots : null, equipment : [], xp : null, attributesCalculated : stats2, reference : new ActorReference(1,0)};
 		if(sheet != null) {
@@ -321,6 +327,7 @@ BattleManager.prototype = {
 		_g.h["Defense"] = 0;
 		_g.h["Magic Attack"] = 0;
 		_g.h["Magic Defense"] = 0;
+		_g.h["Piercing"] = 0;
 		this.wdata.hero.attributesBase = _g;
 		var valueXP = 0;
 		if(this.wdata.hero.xp != null) {
@@ -368,15 +375,17 @@ BattleManager.prototype = {
 			var i = _g++;
 			if(this.wdata.hero.equipmentSlots.indexOf(i) != -1) {
 				var e = this.wdata.hero.equipment[i];
-				var h = e.attributes.h;
-				var s_h = h;
-				var s_keys = Object.keys(h);
-				var s_length = s_keys.length;
-				var s_current = 0;
-				while(s_current < s_length) {
-					var s = s_keys[s_current++];
-					var v = e.attributes.h[s] * 0.7 | 0;
-					e.attributes.h[s] = v;
+				if(e != null) {
+					var h = e.attributes.h;
+					var s_h = h;
+					var s_keys = Object.keys(h);
+					var s_length = s_keys.length;
+					var s_current = 0;
+					while(s_current < s_length) {
+						var s = s_keys[s_current++];
+						var v = e.attributes.h[s] * 0.7 | 0;
+						e.attributes.h[s] = v;
+					}
 				}
 			} else {
 				this.wdata.hero.equipment[i] = null;
@@ -468,7 +477,15 @@ BattleManager.prototype = {
 					break;
 				}
 			}
-			var damage = attacker.attributesCalculated.h["Attack"] - defender.attributesCalculated.h["Defense"];
+			var defenseRate = 100;
+			if(attacker.attributesCalculated.h["Piercing"] > 0 == true) {
+				defenseRate -= attacker.attributesCalculated.h["Piercing"];
+			}
+			if(defenseRate < 0) {
+				defenseRate = 0;
+			}
+			var attack = attacker.attributesCalculated.h["Attack"];
+			var damage = attack - defender.attributesCalculated.h["Defense"] * defenseRate / 100 | 0;
 			if(damage < 0) {
 				damage = 0;
 			}
@@ -487,52 +504,94 @@ BattleManager.prototype = {
 				}
 				killedInArea[battleArea]++;
 				if(this.random.randomInt(0,100) < this.equipDropChance) {
-					var equipType = this.random.randomInt(0,1);
+					var baseItem = this.random.randomInt(0,this.itemBases.length - 1);
+					var itemB = this.itemBases[baseItem];
 					var e = null;
-					var dropQuality = enemy.level;
-					if(this.wdata.battleAreaRegion > 0) {
-						dropQuality = 1.2 * dropQuality | 0;
+					var stat = new haxe_ds_StringMap();
+					var statVar = new haxe_ds_StringMap();
+					var mul = new haxe_ds_StringMap();
+					var mulVar = new haxe_ds_StringMap();
+					var minLevel = (enemy.level + 1) / 2 - 3 | 0;
+					if(minLevel < 1) {
+						minLevel = 1;
 					}
-					if(equipType == 0) {
-						var attackBonus = this.random.randomInt(1,dropQuality / 2 + 2 | 0);
-						var _g = new haxe_ds_StringMap();
-						_g.h["Attack"] = attackBonus;
-						e = { type : 0, requiredAttributes : null, attributes : _g};
-						if(this.random.randomInt(0,100) < 15) {
-							var lifeBonus = this.random.randomInt(1,dropQuality + 2 | 0);
-							e.attributes.h["LifeMax"] = lifeBonus;
+					var maxLevel = enemy.level / 2 + 2 | 0;
+					var level = this.random.randomInt(minLevel,maxLevel);
+					var prefixPos = -1;
+					var prefixSeed = -1;
+					var suffixPos = -1;
+					var suffixSeed = -1;
+					var h = itemB.scalingStats.h;
+					var s_h = h;
+					var s_keys = Object.keys(h);
+					var s_length = s_keys.length;
+					var s_current = 0;
+					while(s_current < s_length) {
+						var key = s_keys[s_current++];
+						var s_key = key;
+						var s_value = s_h[key];
+						var vari = this.random.randomInt(80,100);
+						statVar.h[s_key] = vari;
+						var value = s_value * vari * level;
+						if(value < 100) {
+							value = 100;
 						}
-						if(this.random.randomInt(0,100) < 15) {
-							var bonus = this.random.randomInt(1,dropQuality / 8 + 2 | 0);
-							e.attributes.h["Speed"] = bonus;
-						}
-						if(this.random.randomInt(0,100) < 15) {
-							var bonus = this.random.randomInt(1,dropQuality / 8 + 2 | 0);
-							e.attributes.h["Defense"] = bonus;
+						var v = value / 100 | 0;
+						stat.h[s_key] = v;
+					}
+					if(itemB.statMultipliers != null) {
+						var h = itemB.statMultipliers.h;
+						var s_h = h;
+						var s_keys = Object.keys(h);
+						var s_length = s_keys.length;
+						var s_current = 0;
+						while(s_current < s_length) {
+							var key = s_keys[s_current++];
+							var s_key = key;
+							var s_value = s_h[key];
+							var vari = this.random.randomInt(0,100);
+							mulVar.h[s_key] = vari;
+							var min = s_value.min;
+							var max = s_value.max;
+							var range = max - min;
+							var v = min + range * vari / 100 | 0;
+							mul.h[s_key] = v;
 						}
 					}
-					if(equipType == 1) {
-						var armorType = this.random.randomInt(0,1);
-						var mainBonus = this.random.randomInt(1,dropQuality / 2 + 2 | 0);
-						var mainBonusType = "LifeMax";
-						if(armorType == 0) {
-							mainBonus *= 3;
+					if(this.random.randomInt(0,100) < this.equipDropChance_Rare) {
+						var modType = this.random.randomInt(0,2);
+						var prefixExist = modType == 0 || modType == 2;
+						var suffixExist = modType == 1 || modType == 2;
+						if(prefixExist) {
+							prefixPos = this.random.randomInt(0,this.modBases.length - 1);
+							prefixSeed = this.random.nextInt();
+							var tmp = this.modBases[prefixPos];
+							var this1 = new haxe__$Int64__$_$_$Int64(prefixSeed >> 31,prefixSeed);
+							this.AddMod(tmp,mul,this1);
 						}
-						if(armorType == 1) {
-							mainBonusType = "Defense";
-						}
-						var _g = new haxe_ds_StringMap();
-						_g.h[mainBonusType] = mainBonus;
-						e = { type : 1, requiredAttributes : null, attributes : _g};
-						if(this.random.randomInt(0,100) < 20) {
-							var bonus = this.random.randomInt(1,dropQuality / 4 + 2 | 0);
-							e.attributes.h["Attack"] = bonus;
-						}
-						if(this.random.randomInt(0,100) < 20) {
-							var bonus = this.random.randomInt(1,enemy.attributesCalculated.h["Attack"] / 8 + 2 | 0);
-							e.attributes.h["Speed"] = bonus;
+						if(suffixExist) {
+							suffixPos = this.random.randomInt(0,this.modBases.length - 1);
+							suffixSeed = this.random.nextInt();
+							var tmp = this.modBases[suffixPos];
+							var this1 = new haxe__$Int64__$_$_$Int64(suffixSeed >> 31,suffixSeed);
+							this.AddMod(tmp,mul,this1);
 						}
 					}
+					var h = mul.h;
+					var m_h = h;
+					var m_keys = Object.keys(h);
+					var m_length = m_keys.length;
+					var m_current = 0;
+					while(m_current < m_length) {
+						var key = m_keys[m_current++];
+						var m_key = key;
+						var m_value = m_h[key];
+						if(m_value % 5 != 0) {
+							var v = ((m_value + 4) / 5 | 0) * 5;
+							mul.h[m_key] = v;
+						}
+					}
+					e = { type : itemB.type, seen : false, requiredAttributes : null, attributes : stat, generationVariations : statVar, generationLevel : level, generationBaseItem : baseItem, attributeMultiplier : mul, generationVariationsMultiplier : mulVar, generationSuffixMod : suffixPos, generationPrefixMod : prefixPos, generationSuffixModSeed : suffixSeed, generationPrefixModSeed : prefixSeed};
 					this.wdata.hero.equipment.push(e);
 					var e = this.AddEvent(EventTypes.EquipDrop);
 					e.data = this.wdata.hero.equipment.length - 1;
@@ -582,6 +641,27 @@ BattleManager.prototype = {
 			}
 		}
 		return "";
+	}
+	,AddMod: function(modBase,statMul,seed) {
+		var mulAdd = modBase.statMultipliers;
+		this.random.set_seed(seed);
+		var h = mulAdd.h;
+		var m_h = h;
+		var m_keys = Object.keys(h);
+		var m_length = m_keys.length;
+		var m_current = 0;
+		while(m_current < m_length) {
+			var key = m_keys[m_current++];
+			var m_key = key;
+			var m_value = m_h[key];
+			var val = RandomExtender.Range(this.random,mulAdd.h[m_key]);
+			if(Object.prototype.hasOwnProperty.call(statMul.h,m_key)) {
+				var v = statMul.h[m_key] * val / 100 | 0;
+				statMul.h[m_key] = v;
+			} else {
+				statMul.h[m_key] = val;
+			}
+		}
 	}
 	,DiscardEquipment: function(pos) {
 		this.wdata.hero.equipment[pos] = null;
@@ -754,19 +834,8 @@ BattleManager.prototype = {
 		_g.h["Defense"] = 0;
 		_g.h["Magic Defense"] = 0;
 		_g.h["SpeedCount"] = 0;
+		_g.h["Piercing"] = 0;
 		AttributeLogic.Add(actor1,_g,actor.level,actor.attributesCalculated);
-		var _g = 0;
-		var _g1 = actor.equipmentSlots;
-		while(_g < _g1.length) {
-			var es = _g1[_g];
-			++_g;
-			var e = actor.equipment[es];
-			if(e != null) {
-				AttributeLogic.Add(actor.attributesCalculated,e.attributes,1,actor.attributesCalculated);
-			}
-		}
-		actor.attributesCalculated.h["Life"] = oldLife;
-		actor.attributesCalculated.h["SpeedCount"] = oldSpeedCount;
 		if(actor == this.wdata.hero) {
 			var _g = 0;
 			var _g1 = this.wdata.regionProgress.length;
@@ -792,6 +861,41 @@ BattleManager.prototype = {
 				}
 			}
 		}
+		var _g = 0;
+		var _g1 = actor.equipmentSlots;
+		while(_g < _g1.length) {
+			var es = _g1[_g];
+			++_g;
+			var e = actor.equipment[es];
+			if(e != null) {
+				AttributeLogic.Add(actor.attributesCalculated,e.attributes,1,actor.attributesCalculated);
+			}
+		}
+		var _g = 0;
+		var _g1 = actor.equipmentSlots;
+		while(_g < _g1.length) {
+			var es = _g1[_g];
+			++_g;
+			var e = actor.equipment[es];
+			if(e != null) {
+				if(e.attributeMultiplier != null) {
+					var h = e.attributeMultiplier.h;
+					var a_h = h;
+					var a_keys = Object.keys(h);
+					var a_length = a_keys.length;
+					var a_current = 0;
+					while(a_current < a_length) {
+						var key = a_keys[a_current++];
+						var a_key = key;
+						var a_value = a_h[key];
+						var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
+						actor.attributesCalculated.h[a_key] = v;
+					}
+				}
+			}
+		}
+		actor.attributesCalculated.h["Life"] = oldLife;
+		actor.attributesCalculated.h["SpeedCount"] = oldSpeedCount;
 	}
 	,AdvanceArea: function() {
 		this.ChangeBattleArea(this.wdata.battleArea + 1);
@@ -818,10 +922,16 @@ BattleManager.prototype = {
 				}
 				var r = this.CompareEquipmentStrength(e,e2);
 				if(r == 1 || r == 0) {
+					if(this.wdata.hero.equipmentSlots.indexOf(j) != -1) {
+						continue;
+					}
 					this.wdata.hero.equipment[j] = null;
 					continue;
 				}
 				if(r == 2) {
+					if(this.wdata.hero.equipmentSlots.indexOf(i) != -1) {
+						continue;
+					}
 					this.wdata.hero.equipment[i] = null;
 					break;
 				}
@@ -831,18 +941,20 @@ BattleManager.prototype = {
 	,CompareEquipmentStrength: function(e1,e2) {
 		var e1Superior = 0;
 		var e2Superior = 0;
-		var h = e1.attributes.h;
+		var mapAttr1 = e1.attributes;
+		var mapAttr2 = e2.attributes;
+		var h = mapAttr1.h;
 		var attrKey_h = h;
 		var attrKey_keys = Object.keys(h);
 		var attrKey_length = attrKey_keys.length;
 		var attrKey_current = 0;
 		while(attrKey_current < attrKey_length) {
 			var attrKey = attrKey_keys[attrKey_current++];
-			if(Object.prototype.hasOwnProperty.call(e2.attributes.h,attrKey)) {
-				if(e1.attributes.h[attrKey] > e2.attributes.h[attrKey]) {
+			if(Object.prototype.hasOwnProperty.call(mapAttr2.h,attrKey)) {
+				if(mapAttr1.h[attrKey] > mapAttr2.h[attrKey]) {
 					e1Superior = 1;
 				}
-				if(e1.attributes.h[attrKey] < e2.attributes.h[attrKey]) {
+				if(mapAttr1.h[attrKey] < mapAttr2.h[attrKey]) {
 					e2Superior = 1;
 				}
 			} else {
@@ -852,18 +964,18 @@ BattleManager.prototype = {
 				return -1;
 			}
 		}
-		var h = e2.attributes.h;
+		var h = mapAttr2.h;
 		var attrKey_h = h;
 		var attrKey_keys = Object.keys(h);
 		var attrKey_length = attrKey_keys.length;
 		var attrKey_current = 0;
 		while(attrKey_current < attrKey_length) {
 			var attrKey = attrKey_keys[attrKey_current++];
-			if(Object.prototype.hasOwnProperty.call(e1.attributes.h,attrKey)) {
-				if(e1.attributes.h[attrKey] > e2.attributes.h[attrKey]) {
+			if(Object.prototype.hasOwnProperty.call(mapAttr1.h,attrKey)) {
+				if(mapAttr1.h[attrKey] > mapAttr2.h[attrKey]) {
 					e1Superior = 1;
 				}
-				if(e1.attributes.h[attrKey] < e2.attributes.h[attrKey]) {
+				if(mapAttr1.h[attrKey] < mapAttr2.h[attrKey]) {
 					e2Superior = 1;
 				}
 			} else {
@@ -871,6 +983,68 @@ BattleManager.prototype = {
 			}
 			if(e1Superior == 1 && e2Superior == 1) {
 				return -1;
+			}
+		}
+		var mapAttr1 = e1.attributeMultiplier;
+		var mapAttr2 = e2.attributeMultiplier;
+		if(mapAttr1 != null || mapAttr2 != null) {
+			if(mapAttr2 == null) {
+				mapAttr2 = new haxe_ds_StringMap();
+			}
+			if(mapAttr1 == null) {
+				mapAttr1 = new haxe_ds_StringMap();
+			}
+			var h = mapAttr1.h;
+			var attrKey_h = h;
+			var attrKey_keys = Object.keys(h);
+			var attrKey_length = attrKey_keys.length;
+			var attrKey_current = 0;
+			while(attrKey_current < attrKey_length) {
+				var attrKey = attrKey_keys[attrKey_current++];
+				if(Object.prototype.hasOwnProperty.call(mapAttr2.h,attrKey)) {
+					if(mapAttr1.h[attrKey] > mapAttr2.h[attrKey]) {
+						e1Superior = 1;
+					}
+					if(mapAttr1.h[attrKey] < mapAttr2.h[attrKey]) {
+						e2Superior = 1;
+					}
+				} else {
+					if(mapAttr1.h[attrKey] > 100) {
+						e1Superior = 1;
+					}
+					if(mapAttr1.h[attrKey] < 100) {
+						e2Superior = 1;
+					}
+				}
+				if(e1Superior == 1 && e2Superior == 1) {
+					return -1;
+				}
+			}
+			var h = mapAttr2.h;
+			var attrKey_h = h;
+			var attrKey_keys = Object.keys(h);
+			var attrKey_length = attrKey_keys.length;
+			var attrKey_current = 0;
+			while(attrKey_current < attrKey_length) {
+				var attrKey = attrKey_keys[attrKey_current++];
+				if(Object.prototype.hasOwnProperty.call(mapAttr1.h,attrKey)) {
+					if(mapAttr1.h[attrKey] > mapAttr2.h[attrKey]) {
+						e1Superior = 1;
+					}
+					if(mapAttr1.h[attrKey] < mapAttr2.h[attrKey]) {
+						e2Superior = 1;
+					}
+				} else {
+					if(mapAttr2.h[attrKey] > 100) {
+						e2Superior = 1;
+					}
+					if(mapAttr2.h[attrKey] < 100) {
+						e1Superior = 1;
+					}
+				}
+				if(e1Superior == 1 && e2Superior == 1) {
+					return -1;
+				}
 			}
 		}
 		if(e1Superior == 1 && e2Superior == 0) {
@@ -1150,7 +1324,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild("0.7.2");
+            gameanalytics.GameAnalytics.configureBuild("0.8.3");
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -1298,7 +1472,7 @@ $hxClasses["Main"] = Main;
 Main.__name__ = "Main";
 Main.main = function() {
 	haxe_ui_Toolkit.init();
-	haxe_Log.trace("sss",{ fileName : "src/Main.hx", lineNumber : 41, className : "Main", methodName : "main"});
+	haxe_Log.trace("sss",{ fileName : "src/Main.hx", lineNumber : 42, className : "Main", methodName : "main"});
 	var key = "privacymemory";
 	var privacyAcceptance = js_Browser.getLocalStorage().getItem(key);
 	if(privacyAcceptance == null) {
@@ -1319,6 +1493,10 @@ Main.gamemain = function() {
 		haxe_ui_core_Screen.get_instance().removeComponent(Main.privacyView);
 	}
 	var bm = new BattleManager();
+	var proto = new PrototypeItemMaker();
+	proto.MakeItems();
+	bm.itemBases = proto.items;
+	bm.modBases = proto.mods;
 	var view = new View();
 	var enemyRegionNames = ["Lagrima Continent","Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island"];
 	var enemyNames_0 = "Enemy";
@@ -1418,12 +1596,19 @@ Main.gamemain = function() {
 		view.ButtonVisibility(buttonId,action.visible);
 		view.ButtonEnabled(buttonId,action.enabled);
 	};
+	var itemsInEquipmentWindowSeen = 0;
+	var equipmentWindowTypeAlert = [false,false];
+	view.FeedEquipmentTypes(["Weapons","Armor"]);
 	var saveFileImporterSetup = false;
 	update = function(timeStamp) {
 		var v = bm.wdata.maxArea;
 		global.h["maxarea"] = v;
 		var v = bm.wdata.hero.level;
 		global.h["herolevel"] = v;
+		if(view.IsTabSelected(view.equipTab.component)) {
+			itemsInEquipmentWindowSeen = bm.wdata.hero.equipment.length;
+		}
+		view.SetTabNotification(itemsInEquipmentWindowSeen != bm.wdata.hero.equipment.length,view.equipTab);
 		GameAnalyticsIntegration.InitializeCheck();
 		ActorToView(bm.wdata.hero,view.heroView);
 		ActorToView(bm.wdata.enemy,view.enemyView);
@@ -1435,7 +1620,7 @@ Main.gamemain = function() {
 		view.UpdateValues(view.areaLabel,bm.wdata.battleArea + 1,-1);
 		view.UpdateValues(view.enemyToAdvance,bm.wdata.killedInArea[bm.wdata.battleArea],bm.wdata.necessaryToKillInArea);
 		StoryControlLogic.Update(timeStamp,storyRuntime,view,scriptExecuter);
-		view.FeedDropDownRegion(enemyRegionNames,bm.wdata.battleAreaRegionMax);
+		view.FeedDropDownRegion(enemyRegionNames,bm.wdata.battleAreaRegionMax,bm.wdata.battleAreaRegion);
 		var imp = window.document.getElementById("import__");
 		if(imp != null && saveFileImporterSetup == false) {
 			if(imp != null) {
@@ -1451,40 +1636,76 @@ Main.gamemain = function() {
 				saveFileImporterSetup = true;
 			}
 		}
+		var typeToShow = view.GetEquipmentType();
 		view.EquipmentAmountToShow(bm.wdata.hero.equipment.length);
 		var equipmentViewPos = 0;
+		var _g = 0;
+		var _g1 = equipmentWindowTypeAlert.length;
+		while(_g < _g1) {
+			var i = _g++;
+			equipmentWindowTypeAlert[i] = false;
+		}
 		var _g = 0;
 		var _g1 = bm.wdata.hero.equipment.length;
 		while(_g < _g1) {
 			var i = _g++;
 			var e = bm.wdata.hero.equipment[i];
+			var hide = true;
 			if(e != null) {
-				var equipName = Main.GetEquipName(e);
-				view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i));
-				var vid = 0;
-				var h = e.attributes.h;
-				var v_h = h;
-				var v_keys = Object.keys(h);
-				var v_length = v_keys.length;
-				var v_current = 0;
-				while(v_current < v_length) {
-					var key1 = v_keys[v_current++];
-					var v_key = key1;
-					var v_value = v_h[key1];
-					view.FeedEquipmentValue(equipmentViewPos,vid,v_key,v_value);
-					++vid;
+				if(e.type == typeToShow) {
+					e.seen = view.IsTabSelected(view.equipTab.component) || e.seen;
+					var equipName = Main.GetEquipName(e,bm.itemBases,bm.modBases);
+					hide = false;
+					var rarity = 0;
+					if(e.generationPrefixMod >= 0 || e.generationSuffixMod >= 0) {
+						rarity = 1;
+					}
+					view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i),rarity);
+					var vid = 0;
+					var h = e.attributes.h;
+					var v_h = h;
+					var v_keys = Object.keys(h);
+					var v_length = v_keys.length;
+					var v_current = 0;
+					while(v_current < v_length) {
+						var key1 = v_keys[v_current++];
+						var v_key = key1;
+						var v_value = v_h[key1];
+						view.FeedEquipmentValue(equipmentViewPos,vid,v_key,v_value);
+						++vid;
+					}
+					if(e.attributeMultiplier != null) {
+						var h1 = e.attributeMultiplier.h;
+						var v_h1 = h1;
+						var v_keys1 = Object.keys(h1);
+						var v_length1 = v_keys1.length;
+						var v_current1 = 0;
+						while(v_current1 < v_length1) {
+							var key2 = v_keys1[v_current1++];
+							var v_key1 = key2;
+							var v_value1 = v_h1[key2];
+							view.FeedEquipmentValue(equipmentViewPos,vid,v_key1,v_value1,true);
+							++vid;
+						}
+					}
 				}
-			} else {
+				if(!e.seen) {
+					equipmentWindowTypeAlert[e.type] = true;
+				}
+			}
+			if(hide) {
 				view.HideEquipmentView(equipmentViewPos);
 			}
 			++equipmentViewPos;
 		}
+		View.TabBarAlert(view.equipmentTypeSelectionTabbar,equipmentWindowTypeAlert,view.equipmentTypeNames);
 		var levelUpSystem = bm.wdata.hero.level > 1;
 		view.UpdateVisibilityOfValueView(view.level,levelUpSystem);
 		view.UpdateVisibilityOfValueView(view.xpBar,true);
 		while(bm.events.length > eventShown) {
 			var e = bm.events[eventShown];
 			var data = e.data;
+			var battle = true;
 			var originText = "XX";
 			if(e.origin != null) {
 				if(e.origin.type == 1) {
@@ -1517,24 +1738,29 @@ Main.gamemain = function() {
 				}
 			}
 			if(e.type == EventTypes.ActorLevelUp) {
+				battle = false;
 				ev = "<b>You leveled up!</b>";
 				GameAnalyticsIntegration.SendProgressCompleteEvent("LevelUp " + bm.wdata.hero.level,"","");
 			}
 			if(e.type == EventTypes.PermanentStatUpgrade) {
+				battle = false;
 				ev = "<b>Your stats permanently increased!</b>";
 				GameAnalyticsIntegration.SendProgressCompleteEvent("Permanentupg","","");
 			}
 			if(e.type == EventTypes.statUpgrade) {
+				battle = false;
 				var dataS = e.dataString;
 				var data1 = e.data;
 				ev = "<b>" + dataS + " +" + data1 + "</b>";
 			}
 			if(e.type == EventTypes.AreaUnlock) {
+				battle = false;
 				ev = "<spawn style=\"color:#005555; font-weight: normal;\";>You found a new area!</span>";
 				GameAnalyticsIntegration.SendDesignEvent("AreaUnlock",e.data);
 				GameAnalyticsIntegration.SendProgressStartEvent("world0","stage" + bm.wdata.battleAreaRegion,"area" + e.data);
 			}
 			if(e.type == EventTypes.RegionUnlock) {
+				battle = false;
 				var regionName = enemyRegionNames[e.data];
 				ev = "<b>Found new location: " + regionName + "</b>";
 				GameAnalyticsIntegration.SendDesignEvent("RegionUnlock",e.data);
@@ -1545,13 +1771,16 @@ Main.gamemain = function() {
 				GameAnalyticsIntegration.SendProgressCompleteEvent("world0","stage0","area" + e.data);
 			}
 			if(e.type == EventTypes.EquipDrop) {
-				var equipName = Main.GetEquipName(bm.wdata.hero.equipment[e.data]);
+				var equipName = Main.GetEquipName(bm.wdata.hero.equipment[e.data],bm.itemBases,bm.modBases);
 				ev = "<b>Enemy dropped " + equipName + "</b>";
 			}
-			view.AddEventText(ev);
+			if(battle) {
+				view.AddEventTextWithLabel(ev,view.logTextBattle);
+			} else {
+				view.AddEventText(ev);
+			}
 			eventShown += 1;
 		}
-		view.UpdateDropDownRegionSelection(bm.wdata.battleAreaRegion);
 		var delta = timeStamp - time;
 		var storyHappened = storyRuntime.persistence.progressionData.h[storyRuntime.cutscenes[0].title].timesCompleted > 0;
 		var storyHappenedPure = storyHappened;
@@ -1574,6 +1803,7 @@ Main.gamemain = function() {
 		view.TabVisible(view.equipTab,action.visible);
 		var action = bm.wdata.playerActions.h["tabmemory"];
 		view.TabVisible(view.storyTab,storyHappenedPure);
+		view.TabVisible(view.developTab,bm.wdata.prestigeTimes >= 1 || bm.wdata.hero.level > 10);
 		var sleepAct = bm.wdata.playerActions.h["sleep"];
 		if(sleepAct.mode == 0) {
 			view.ButtonLabel("sleep","Nap");
@@ -1586,6 +1816,7 @@ Main.gamemain = function() {
 		} else {
 			view.ButtonLabel("prestige","Unlock at Level " + bm.GetLevelRequirementForPrestige());
 		}
+		view.Update();
 		delta *= 0.001;
 		while(delta > Main.maxDelta) {
 			delta -= Main.maxDelta;
@@ -1608,7 +1839,17 @@ Main.gamemain = function() {
 	};
 	update(0);
 };
-Main.GetEquipName = function(e) {
+Main.GetEquipName = function(e,itemBases,modBases) {
+	if(e.generationBaseItem >= 0) {
+		var name = itemBases[e.generationBaseItem].name;
+		if(e.generationPrefixMod >= 0) {
+			name = modBases[e.generationPrefixMod].prefix + " " + name;
+		}
+		if(e.generationSuffixMod >= 0) {
+			name = name + " " + modBases[e.generationSuffixMod].suffix;
+		}
+		return name;
+	}
 	var equipName = "Sword";
 	if(e.type == 1) {
 		equipName = "Armor";
@@ -1616,6 +1857,97 @@ Main.GetEquipName = function(e) {
 	return equipName;
 };
 Math.__name__ = "Math";
+var PrototypeItemMaker = function() {
+	this.mods = [];
+	this.items = [];
+};
+$hxClasses["PrototypeItemMaker"] = PrototypeItemMaker;
+PrototypeItemMaker.__name__ = "PrototypeItemMaker";
+PrototypeItemMaker.prototype = {
+	items: null
+	,mods: null
+	,R: function(min,max) {
+		return { min : min, max : max};
+	}
+	,MakeItems: function() {
+		var _g = new haxe_ds_StringMap();
+		_g.h["LifeMax"] = 5;
+		this.AddItem("Shirt",PrototypeItemMaker.itemType_Armor,_g);
+		var _g = new haxe_ds_StringMap();
+		_g.h["LifeMax"] = 3;
+		_g.h["Defense"] = 0.6;
+		this.AddItem("Vest",PrototypeItemMaker.itemType_Armor,_g);
+		var _g = new haxe_ds_StringMap();
+		_g.h["Defense"] = 1;
+		this.AddItem("Plate",PrototypeItemMaker.itemType_Armor,_g);
+		var _g = new haxe_ds_StringMap();
+		_g.h["Attack"] = 1;
+		this.AddItem("Broad Sword",PrototypeItemMaker.itemType_Weapon,_g);
+		var _g = new haxe_ds_StringMap();
+		_g.h["Attack"] = 1;
+		var _g1 = new haxe_ds_StringMap();
+		var value = this.R(115,115);
+		_g1.h["Attack"] = value;
+		var value = this.R(80,80);
+		_g1.h["Speed"] = value;
+		var value = this.R(20,20);
+		_g1.h["Piercing"] = value;
+		this.AddItem("Heavy Sword",PrototypeItemMaker.itemType_Weapon,_g,_g1);
+		var _g = new haxe_ds_StringMap();
+		_g.h["Attack"] = 1;
+		var _g1 = new haxe_ds_StringMap();
+		var value = this.R(150,150);
+		_g1.h["Attack"] = value;
+		var value = this.R(50,50);
+		_g1.h["Speed"] = value;
+		var value = this.R(50,50);
+		_g1.h["Piercing"] = value;
+		this.AddItem("Bastard Sword",PrototypeItemMaker.itemType_Weapon,_g,_g1);
+		var _g = new haxe_ds_StringMap();
+		_g.h["Attack"] = 1;
+		var _g1 = new haxe_ds_StringMap();
+		var value = this.R(70,70);
+		_g1.h["Attack"] = value;
+		var value = this.R(175,175);
+		_g1.h["Speed"] = value;
+		this.AddItem("Dagger",PrototypeItemMaker.itemType_Weapon,_g,_g1);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(105,110);
+		_g.h["Attack"] = value;
+		this.AddMod("of the Brute","Barbarian's",_g);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(120,150);
+		_g.h["Defense"] = value;
+		this.AddMod("of the Guardian","Golem's",_g);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(115,130);
+		_g.h["Speed"] = value;
+		this.AddMod("of the Thief","Zidane's",_g);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(130,150);
+		_g.h["LifeMax"] = value;
+		this.AddMod("of Nature","Aerith's",_g);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(115,125);
+		_g.h["Attack"] = value;
+		var value = this.R(70,90);
+		_g.h["Defense"] = value;
+		this.AddMod("of Rage","Beserker's",_g);
+	}
+	,AddMod: function(suffix,prefix,statMultipliers) {
+		this.mods.push({ prefix : prefix, suffix : suffix, statMultipliers : statMultipliers});
+	}
+	,AddItem: function(name,type,scalingStats,statMultipliers) {
+		this.items.push({ name : name, type : type, scalingStats : scalingStats, statMultipliers : statMultipliers});
+	}
+	,__class__: PrototypeItemMaker
+};
+var RandomExtender = function() { };
+$hxClasses["RandomExtender"] = RandomExtender;
+RandomExtender.__name__ = "RandomExtender";
+RandomExtender.Range = function(random,range) {
+	return random.randomInt(range.min,range.max);
+};
 var ResourceLogic = function() { };
 $hxClasses["ResourceLogic"] = ResourceLogic;
 ResourceLogic.__name__ = "ResourceLogic";
@@ -2331,10 +2663,10 @@ UInt.toFloat = function(this1) {
 	}
 };
 var View = function() {
-	this.storyDialogUtilityFlag = false;
-	this.storyDialogActive = false;
 	this.amountOfStoryMessagesShown = 0;
 	this.cutsceneStartViews = [];
+	this.storyDialogUtilityFlag = false;
+	this.storyDialogActive = false;
 	this.equipments = [];
 	this.buttonMap = new haxe_ds_StringMap();
 	this.enemy1 = "slime@orc@goblin@bat@eagle@rat@lizard@bug@skeleton@horse@wolf@dog".split("@");
@@ -2364,7 +2696,7 @@ var View = function() {
 	title.set_htmlText("Import Save: <input id='import__' type='file'></input>");
 	boxParentP.addComponent(title);
 	var title = new haxe_ui_components_Label();
-	title.set_htmlText("Alpha 0.07B. <a href='https://github.com/Pidroh/HaxeRPGUtilities/wiki' target='_blank'>__Road Map__</a>              A prototype for the progression mechanics in <a href='https://store.steampowered.com/app/1638970/Brave_Ball/'  target='_blank'>Brave Ball</a>.     <a href='https://discord.com/invite/AtGrxpM'  target='_blank'>   Discord Channel   </a>");
+	title.set_htmlText("Alpha 0.08C. <a href='https://github.com/Pidroh/HaxeRPGUtilities/wiki' target='_blank'>__Road Map__</a>              A prototype for the progression mechanics in <a href='https://store.steampowered.com/app/1638970/Brave_Ball/'  target='_blank'>Brave Ball</a>.     <a href='https://discord.com/invite/AtGrxpM'  target='_blank'>   Discord Channel   </a>");
 	title.set_percentWidth(100);
 	title.set_textAlign("right");
 	title.set_paddingRight(20);
@@ -2393,40 +2725,62 @@ var View = function() {
 	this.mainComponentB = battleParent;
 	battleParent.set_paddingLeft(40);
 	battleParent.set_paddingTop(10);
-	var box = new haxe_ui_containers_VBox();
-	battleParent.addComponent(box);
+	var verticalBox = new haxe_ui_containers_Box();
+	var hgl = new haxe_ui_layouts_HorizontalGridLayout();
+	hgl.set_rows(3);
+	verticalBox.set_layout(hgl);
+	verticalBox.set_percentHeight(100);
+	battleParent.addComponent(verticalBox);
 	this.buttonBox = this.CreateContainer(battleParent,true);
-	var scroll = this.CreateScrollable(battleParent);
+	var box = new haxe_ui_containers_Box();
+	box.set_width(250);
+	box.set_percentHeight(100);
+	battleParent.addComponent(box);
+	var scroll = this.CreateScrollable(box);
 	scroll.set_width(250);
-	scroll.set_percentHeight(100);
+	scroll.set_percentHeight(60);
 	var logContainer = this.CreateContainer(scroll,true);
+	var log = new haxe_ui_components_Label();
+	this.logTextBattle = log;
+	logContainer.addComponent(log);
+	log.set_width(190);
+	log.set_horizontalAlign("center");
+	logContainer.set_horizontalAlign("center");
+	var scroll = this.CreateScrollable(box);
+	scroll.set_width(250);
+	scroll.set_percentHeight(40);
+	var logContainer = this.CreateContainer(scroll,true);
+	scroll.set_verticalAlign("bottom");
 	var log = new haxe_ui_components_Label();
 	this.logText = log;
 	logContainer.addComponent(log);
-	this.logText.set_width(190);
-	this.logText.set_horizontalAlign("center");
+	log.set_width(190);
+	log.set_horizontalAlign("center");
 	logContainer.set_horizontalAlign("center");
-	this.areaContainer = this.CreateContainer(box,true);
-	var ddv = this.CreateDropDownView(this.areaContainer,"Location: ");
-	ddv.dropdown.set_onChange(function(event) {
-		var region = ddv.dropdown.get_selectedIndex();
-		_gthis.regionChangeAction(region);
-	});
-	this.dropDownRegion = ddv;
-	this.areaLabel = this.CreateValueView(this.areaContainer,false,"Area: ");
-	this.enemyToAdvance = this.CreateValueView(this.areaContainer,true,"Progress: ");
-	this.levelContainer = this.CreateContainer(box,true);
+	this.areaContainer = this.CreateContainer(verticalBox,false);
+	var container = new haxe_ui_containers_VBox();
+	this.areaContainer.addComponent(container);
+	this.regionLabel = this.CreateValueView(container,false,"Region: ");
+	this.areaLabel = this.CreateValueView(container,false,"Area: ");
+	this.enemyToAdvance = this.CreateValueView(container,true,"Progress: ");
+	var container = new haxe_ui_containers_ContinuousHBox();
+	this.areaContainer.addComponent(container);
+	this.regionButtonParent = container;
+	this.levelContainer = this.CreateContainer(verticalBox,true);
 	this.level = this.CreateValueView(this.levelContainer,false,"Level: ");
 	this.xpBar = this.CreateValueView(this.levelContainer,true,"XP: ");
 	this.speedView = this.CreateValueView(this.levelContainer,false,"Speed: ");
 	this.defView = this.CreateValueView(this.levelContainer,false,"Def: ");
 	this.mDefView = this.CreateValueView(this.levelContainer,false,"mDef: ");
-	this.battleView = this.CreateContainer(box,false);
+	this.battleView = this.CreateContainer(verticalBox,false);
 	this.battleView.set_width(400);
 	this.heroView = this.GetActorView("You",this.battleView);
 	this.enemyView = this.GetActorView("Enemy",this.battleView);
 	this.equipTabChild = new haxe_ui_containers_ContinuousHBox();
-	this.equipTabChild.set_width(600);
+	var tabBar = new haxe_ui_components_TabBar();
+	tabBar.set_percentWidth(100);
+	this.equipmentTypeSelectionTabbar = tabBar;
+	this.equipTabChild.addComponent(tabBar);
 	var buttonDiscardBad = new haxe_ui_components_Button();
 	buttonDiscardBad.set_text("Discard worse equipment");
 	buttonDiscardBad.set_onClick(function(event) {
@@ -2437,7 +2791,10 @@ var View = function() {
 	scroll.set_height(300);
 	scroll.set_text("Equipment");
 	scroll.addComponent(this.equipTabChild);
-	scroll.set_width(640);
+	scroll.set_paddingLeft(40);
+	scroll.set_paddingTop(10);
+	scroll.set_percentWidth(100);
+	scroll.set_percentHeight(100);
 	this.equipTab = new UIElementWrapper(scroll,this.tabMaster);
 	this.equipTab.desiredPosition = 1;
 	var storyTabComp = new haxe_ui_containers_ContinuousHBox();
@@ -2449,6 +2806,8 @@ var View = function() {
 	storyLabel.set_textAlign("center");
 	storyLabel.set_text("Revisit your memories");
 	storyTabComp.addComponent(storyLabel);
+	storyTabComp.set_paddingLeft(40);
+	storyTabComp.set_paddingTop(10);
 	this.storyTab = new UIElementWrapper(storyTabComp,this.tabMaster);
 	this.storyTab.desiredPosition = 2;
 	this.storyDialog = new StoryDialog();
@@ -2461,9 +2820,43 @@ var View = function() {
 	this.storyDialog.watchLaterButton.set_onClick(function(event) {
 		_gthis.storyMainAction(View.storyAction_WatchLater,0);
 	});
+	var devTab = new haxe_ui_containers_VBox();
+	devTab.set_paddingLeft(40);
+	var texter = function(text,bigfont) {
+		if(bigfont == null) {
+			bigfont = false;
+		}
+		var label = new haxe_ui_components_Label();
+		label.set_htmlText(text);
+		devTab.addComponent(label);
+		if(bigfont) {
+			label.set_styleString("font-size: 18");
+		}
+	};
+	texter("<h2 style=\"color: #2e6c80;\">Stay up to date</h2>");
+	texter("You can join us on Discord to stay up to date on news for the game!\r\n\t\t\t\t<br>Hate Discord? you can subscribe to our mailing list!");
+	texter("<h2 style=\"color: #2e6c80;\">Suggest new features</h2>");
+	texter("There is a channel on Discord to suggest new features and you can also add them as comments on the mailing list articles");
+	texter("<br><a href=\"https://discord.com/invite/AtGrxpM\" target=\"_blank\">DISCORD</a>",true);
+	texter("<a href=\"https://pidroh.substack.com/\" target=\"_blank\">MAILING LIST</a>",true);
+	devTab.set_text("News & Suggestions");
+	this.developTab = new UIElementWrapper(devTab,this.tabMaster);
+	this.developTab.tabVisible = false;
 };
 $hxClasses["View"] = View;
 View.__name__ = "View";
+View.TabBarAlert = function(tabBar,alert,names) {
+	var _g = 0;
+	var _g1 = alert.length;
+	while(_g < _g1) {
+		var i = _g++;
+		if(alert[i]) {
+			tabBar.getComponentAt(i).set_text(names[i] + " (!)");
+		} else {
+			tabBar.getComponentAt(i).set_text(names[i]);
+		}
+	}
+};
 View.prototype = {
 	heroView: null
 	,enemyView: null
@@ -2474,13 +2867,16 @@ View.prototype = {
 	,mDefView: null
 	,enemyToAdvance: null
 	,areaLabel: null
+	,regionLabel: null
 	,mainComponent: null
 	,mainComponentB: null
 	,equipTabChild: null
 	,storyTab: null
 	,equipTab: null
+	,developTab: null
 	,tabMaster: null
 	,logText: null
+	,logTextBattle: null
 	,areaNouns: null
 	,prefix: null
 	,enemy1: null
@@ -2488,18 +2884,23 @@ View.prototype = {
 	,storyMainAction: null
 	,regionChangeAction: null
 	,areaContainer: null
+	,regionButtonParent: null
 	,levelContainer: null
 	,battleView: null
 	,buttonBox: null
 	,buttonMap: null
 	,equipments: null
-	,cutsceneStartViews: null
-	,dropDownRegion: null
+	,equipmentTypeSelectionTabbar: null
+	,equipmentTypeNames: null
 	,saveDataDownload: null
-	,amountOfStoryMessagesShown: null
-	,storyDialog: null
 	,storyDialogActive: null
 	,storyDialogUtilityFlag: null
+	,cutsceneStartViews: null
+	,amountOfStoryMessagesShown: null
+	,storyDialog: null
+	,Update: function() {
+		this.equipTabChild.set_width(haxe_ui_core_Screen.get_instance().get_width() - 40 - 60);
+	}
 	,LatestMessageUpdate: function(message,speaker,imageFile,messagePos) {
 		if(messagePos >= this.amountOfStoryMessagesShown) {
 			this.amountOfStoryMessagesShown = messagePos + 1;
@@ -2618,20 +3019,48 @@ View.prototype = {
 	,StoryButtonHide: function(buttonPos) {
 		this.cutsceneStartViews[buttonPos].parent.hide();
 	}
-	,FeedDropDownRegion: function(regionNames,regionAmount) {
-		if(regionAmount >= 5) regionAmount = 4;
-		if(this.dropDownRegion.dropdown.get_dataSource().get_size() != regionAmount) {
-			this.dropDownRegion.dropdown.get_dataSource().clear();
-			var _g = 0;
-			var _g1 = regionAmount;
-			while(_g < _g1) {
-				var i = _g++;
-				this.dropDownRegion.dropdown.get_dataSource().add(regionNames[i]);
-			}
+	,GetEquipmentType: function() {
+		return this.equipmentTypeSelectionTabbar.get_selectedIndex();
+	}
+	,FeedEquipmentTypes: function(types) {
+		this.equipmentTypeNames = types;
+		var _g = 0;
+		while(_g < types.length) {
+			var type = types[_g];
+			++_g;
+			var b = new haxe_ui_components_Button();
+			b.set_text(type);
+			this.equipmentTypeSelectionTabbar.addComponent(b);
 		}
 	}
-	,UpdateDropDownRegionSelection: function(op) {
-		this.dropDownRegion.dropdown.set_selectedIndex(op);
+	,FeedDropDownRegion: function(regionNames,regionAmount,currentRegion) {
+		var _gthis = this;
+		this.regionLabel.centeredText.set_text(regionNames[currentRegion]);
+		var buttonAmount = regionAmount;
+		var _this = this.regionButtonParent;
+		var children = _this._children == null ? [] : _this._children;
+		if(children.length < buttonAmount) {
+			var b = new haxe_ui_components_Button();
+			var regionPos = children.length;
+			this.regionButtonParent.addComponent(b);
+			b.set_onClick(function(event) {
+				_gthis.regionChangeAction(regionPos);
+			});
+			b.set_width(100);
+		}
+		var _g = 0;
+		var _g1 = children.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var hide = i >= buttonAmount;
+			if(currentRegion == i) {
+				hide = true;
+			}
+			children[i].set_hidden(hide);
+			if(hide == false) {
+				children[i].set_text(regionNames[i]);
+			}
+		}
 	}
 	,FeedSave: function(saveDataContent) {
 		this.saveDataDownload.set_htmlText("<a href='data:text/plain;charset=utf-8,");
@@ -2645,13 +3074,15 @@ View.prototype = {
 		if(visible != currentStateVisible) {
 			if(visible) {
 				var _this = element.parent;
-				if((_this._children == null ? [] : _this._children).length <= element.desiredPosition) {
+				if((_this._children == null ? [] : _this._children).length <= element.desiredPosition || element.desiredPosition < 0) {
 					element.parent.addComponent(element.component);
 				} else {
 					element.parent.addComponentAt(element.component,element.desiredPosition);
 				}
 			} else {
-				this.tabMaster.removePage(element.desiredPosition);
+				if(element.desiredPosition >= 0) {
+					this.tabMaster.removePage(element.desiredPosition);
+				}
 				element.parent.removeComponent(element.component);
 			}
 		}
@@ -2683,12 +3114,15 @@ View.prototype = {
 		return container;
 	}
 	,AddEventText: function(text) {
-		if(this.logText.get_text() == null) {
-			this.logText.set_text(text);
-			this.logText.set_htmlText(text);
+		this.AddEventTextWithLabel(text,this.logText);
+	}
+	,AddEventTextWithLabel: function(text,logText) {
+		if(logText.get_text() == null) {
+			logText.set_text(text);
+			logText.set_htmlText(text);
 			return;
 		}
-		this.logText.set_htmlText(text + "\n\n" + this.logText.get_htmlText());
+		logText.set_htmlText(text + "\n\n" + logText.get_htmlText());
 	}
 	,EquipmentAmountToShow: function(amount) {
 		var _gthis = this;
@@ -2736,18 +3170,28 @@ View.prototype = {
 			this.equipmentMainAction(equipmentPos,actionId);
 		}
 	}
-	,FeedEquipmentBase: function(pos,name,equipped,numberOfValues) {
+	,FeedEquipmentBase: function(pos,name,equipped,rarity,numberOfValues) {
 		if(numberOfValues == null) {
 			numberOfValues = -1;
 		}
+		if(rarity == null) {
+			rarity = 0;
+		}
 		this.equipments[pos].parent.set_hidden(false);
 		this.equipments[pos].name.set_text(name);
+		var color = "#000000";
+		if(rarity == 1) {
+			color = "#002299";
+		}
+		this.equipments[pos].name.set_color(haxe_ui_util_Color.fromString(color));
 		if(equipped) {
 			this.equipments[pos].actionButtons[0].set_text("Unequip");
 			this.equipments[pos].parent.set_borderSize(2);
+			this.equipments[pos].parent.set_backgroundColor(haxe_ui_util_Color.fromString("#FAEBD7"));
 		} else {
 			this.equipments[pos].actionButtons[0].set_text("Equip");
 			this.equipments[pos].parent.set_borderSize(1);
+			this.equipments[pos].parent.set_backgroundColor(haxe_ui_util_Color.fromString("white"));
 		}
 		this.equipments[pos].actionButtons[1].set_hidden(equipped == true);
 		while(this.equipments[pos].values.length < numberOfValues) {
@@ -2758,12 +3202,15 @@ View.prototype = {
 	,HideEquipmentView: function(pos) {
 		this.equipments[pos].parent.set_hidden(true);
 	}
-	,FeedEquipmentValue: function(pos,valuePos,valueName,value) {
+	,FeedEquipmentValue: function(pos,valuePos,valueName,value,percent) {
+		if(percent == null) {
+			percent = false;
+		}
 		while(this.equipments[pos].values.length <= valuePos) {
 			var vv = this.CreateValueView(this.equipments[pos].parent,false,"Attr");
 			this.equipments[pos].values.push(vv);
 		}
-		this.UpdateValues(this.equipments[pos].values[valuePos],value,-1,valueName);
+		this.UpdateValues(this.equipments[pos].values[valuePos],value,-1,valueName,percent);
 	}
 	,AddButton: function(id,label,onClick,warningMessage,position,secondArea) {
 		if(secondArea == null) {
@@ -2820,13 +3267,18 @@ View.prototype = {
 	,UpdateVisibilityOfValueView: function(valueView,visibility) {
 		valueView.parent.set_hidden(!visibility);
 	}
-	,UpdateValues: function(res,current,max,label) {
+	,UpdateValues: function(res,current,max,label,percent) {
+		if(percent == null) {
+			percent = false;
+		}
 		if(label != null) {
 			res.labelText.set_text(label);
 		}
 		if(max > 0) {
 			res.bar.set_pos(current * 100 / max);
 			res.centeredText.set_text(current + " / " + max);
+		} else if(percent) {
+			res.centeredText.set_text(current + "%");
 		} else {
 			res.centeredText.set_text(current + "");
 		}
@@ -44908,6 +45360,8 @@ DateTools.DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Frida
 DateTools.MONTH_SHORT_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 DateTools.MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 Main.maxDelta = 0.5;
+PrototypeItemMaker.itemType_Weapon = 0;
+PrototypeItemMaker.itemType_Armor = 1;
 View.storyAction_Start = 0;
 View.storyAction_Continue = 1;
 View.storyAction_AdvanceMessage = 2;
@@ -44915,6 +45369,7 @@ View.storyAction_SkipStory = 3;
 View.storyAction_WatchLater = 4;
 View.storyAction_WatchLaterClose = 5;
 View.equipmentAction_DiscardBad = 2;
+View.equipmentAction_ChangeTypeToView = 3;
 haxe_ui_core_ComponentEvents.INTERACTIVE_EVENTS = ["mousemove","mouseover","mouseout","mousedown","mouseup","mousewheel","click","doubleclick","keydown","keyup"];
 haxe_ui_core_ComponentBounds.__meta__ = { fields : { percentWidth : { clonable : null, bindable : null}, percentHeight : { clonable : null, bindable : null}, width : { bindable : null}, height : { bindable : null}}};
 haxe_ui_backend_ComponentImpl.elementToComponent = new haxe_ds_ObjectMap();
