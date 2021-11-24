@@ -6,7 +6,23 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var ArrayHelper = function() { };
+$hxClasses["ArrayHelper"] = ArrayHelper;
+ArrayHelper.__name__ = "ArrayHelper";
+ArrayHelper.InsertOnEmpty = function(ele,array) {
+	if(array.indexOf(null) != -1) {
+		var id = array.indexOf(null);
+		array[id] = ele;
+		return id;
+	}
+	array.push(ele);
+	return array.length - 1;
+};
 var BattleManager = function() {
+	this.equipmentToDiscard = [];
+	this.volatileAttributeAux = [];
+	this.volatileAttributeList = ["MP","Life","MPRechargeCount","SpeedCount"];
+	this.skillSlotUnlocklevel = [2,7,22,35];
 	this.regionPrizes = [{ statBonus : null, xpPrize : true}];
 	this.regionRequirements = [0];
 	this.playerActions = new haxe_ds_StringMap();
@@ -91,7 +107,7 @@ var BattleManager = function() {
 	_g.h["Speed"] = 20;
 	_g.h["SpeedCount"] = 0;
 	var stats = _g;
-	var w = { worldVersion : 602, hero : { level : 1, attributesBase : null, equipmentSlots : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0)}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
+	var w = { worldVersion : 904, hero : { level : 1, attributesBase : null, equipmentSlots : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0)}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
 	this.wdata = w;
 	this.ReinitGameValues();
 	this.ChangeBattleArea(0);
@@ -119,12 +135,375 @@ BattleManager.prototype = {
 	,regionPrizes: null
 	,itemBases: null
 	,modBases: null
+	,skillBases: null
+	,skillSlotUnlocklevel: null
+	,volatileAttributeList: null
+	,volatileAttributeAux: null
+	,equipmentToDiscard: null
 	,GetAttribute: function(actor,label) {
 		var i = actor.attributesCalculated.h[label];
 		if(i < 0) {
 			i = 0;
 		}
 		return i;
+	}
+	,UseMP: function(actor,mpCost,event) {
+		if(event == null) {
+			event = true;
+		}
+		var mp = actor.attributesCalculated.h["MP"];
+		mp -= mpCost;
+		if(mp <= 0) {
+			mp = 0;
+			actor.attributesCalculated.h["MPRechargeCount"] = 0;
+			if(event) {
+				var ev = this.AddEvent(EventTypes.MPRunOut);
+				ev.origin = this.wdata.hero.reference;
+			}
+		}
+		actor.attributesCalculated.h["MP"] = mp;
+	}
+	,UseSkill: function(skill,actor) {
+		var id = skill.id;
+		var skillBase = this.GetSkillBase(id);
+		var mpCost = skillBase.mpCost;
+		this.UseMP(actor,mpCost);
+		var ev = this.AddEvent(EventTypes.SkillUse);
+		ev.origin = this.wdata.hero.reference;
+		ev.dataString = skill.id;
+		var _g = 0;
+		var _g1 = skillBase.effects;
+		while(_g < _g1.length) {
+			var ef = _g1[_g];
+			++_g;
+			var targets = [];
+			if(ef.target == Target.SELF) {
+				targets.push(actor);
+			}
+			if(ef.target == Target.ENEMY) {
+				if(this.wdata.hero == actor) {
+					targets.push(this.wdata.enemy);
+				} else {
+					targets.push(this.wdata.hero);
+				}
+			}
+			ef.effectExecution(this,skill.level,actor,targets);
+		}
+	}
+	,Heal: function(target,lifeMaxPercentage,rawBonus) {
+		if(rawBonus == null) {
+			rawBonus = 0;
+		}
+		if(lifeMaxPercentage == null) {
+			lifeMaxPercentage = 0;
+		}
+		var lifem = target.attributesCalculated.h["LifeMax"];
+		var life = target.attributesCalculated.h["Life"];
+		life += rawBonus + (lifeMaxPercentage * lifem / 100 | 0);
+		if(life > lifem) {
+			life = lifem;
+		}
+		target.attributesCalculated.h["Life"] = life;
+	}
+	,AttackExecute: function(attacker,defender,attackRate,attackBonus,defenseRate) {
+		if(defenseRate == null) {
+			defenseRate = 100;
+		}
+		if(attackBonus == null) {
+			attackBonus = 0;
+		}
+		if(attackRate == null) {
+			attackRate = 100;
+		}
+		var gEvent = this.AddEvent(EventTypes.ActorAttack);
+		var magicAttack = false;
+		var enchant = attacker.attributesCalculated.h["enchant-fire"];
+		if(enchant > 0) {
+			magicAttack = true;
+			attackBonus += enchant;
+		}
+		if(magicAttack == false) {
+			if(attacker.attributesCalculated.h["Piercing"] > 0 == true) {
+				defenseRate -= attacker.attributesCalculated.h["Piercing"];
+			}
+		}
+		if(defenseRate < 0) {
+			defenseRate = 0;
+		}
+		var attack = 0;
+		var defense = 0;
+		if(magicAttack) {
+			attack = attacker.attributesCalculated.h["MagicAttack"];
+			defense = defender.attributesCalculated.h["MagicDefense"];
+		} else {
+			attack = attacker.attributesCalculated.h["Attack"];
+			defense = defender.attributesCalculated.h["Defense"];
+		}
+		attack = attackRate * attack / 100 + attackBonus;
+		var damage = attack - defense * defenseRate / 100 | 0;
+		if(damage < 0) {
+			damage = 0;
+		}
+		var _g = defender.attributesCalculated;
+		var v = _g.h["Life"] - damage;
+		_g.h["Life"] = v;
+		if(defender.attributesCalculated.h["Life"] < 0) {
+			defender.attributesCalculated.h["Life"] = 0;
+		}
+		gEvent.origin = attacker.reference;
+		gEvent.target = defender.reference;
+		gEvent.data = damage;
+		var hero = this.wdata.hero;
+		var enemy = this.wdata.enemy;
+		var killedInArea = this.wdata.killedInArea;
+		var battleArea = this.wdata.battleArea;
+		var areaComplete = killedInArea[battleArea] >= this.wdata.necessaryToKillInArea;
+		if(enemy.attributesCalculated.h["Life"] <= 0) {
+			if(killedInArea[battleArea] == null) {
+				killedInArea[battleArea] = 0;
+			}
+			killedInArea[battleArea]++;
+			this.DropItemOrSkillSet(this.equipDropChance,1,enemy.level,enemy.reference);
+			var e = this.AddEvent(EventTypes.ActorDead);
+			e.origin = enemy.reference;
+			var xpGain = enemy.level;
+			this.AwardXP(enemy.level);
+			if(killedInArea[battleArea] >= this.wdata.necessaryToKillInArea) {
+				this.AddEvent(EventTypes.AreaComplete).data = this.wdata.battleArea;
+				if(this.wdata.maxArea == this.wdata.battleArea) {
+					if(this.regionPrizes[this.wdata.battleAreaRegion].xpPrize == true) {
+						var areaForBonus = this.wdata.battleArea;
+						ResourceLogic.recalculateScalingResource(areaForBonus,this.areaBonus);
+						var xpPlus = this.areaBonus.calculatedMax;
+						this.AwardXP(xpPlus);
+					}
+					if(this.regionPrizes[this.wdata.battleAreaRegion].statBonus != null) {
+						var h = this.regionPrizes[this.wdata.battleAreaRegion].statBonus.h;
+						var su_h = h;
+						var su_keys = Object.keys(h);
+						var su_length = su_keys.length;
+						var su_current = 0;
+						while(su_current < su_length) {
+							var key = su_keys[su_current++];
+							var su_key = key;
+							var su_value = su_h[key];
+							var e = this.AddEvent(EventTypes.statUpgrade);
+							e.dataString = su_key;
+							e.data = su_value;
+						}
+						this.AddEvent(EventTypes.PermanentStatUpgrade);
+					}
+					this.wdata.maxArea++;
+					this.AddEvent(EventTypes.AreaUnlock).data = this.wdata.maxArea;
+					killedInArea[this.wdata.maxArea] = 0;
+				}
+			}
+		}
+		if(hero.attributesCalculated.h["Life"] <= 0) {
+			this.wdata.recovering = true;
+			this.wdata.enemy = null;
+			var e = this.AddEvent(EventTypes.ActorDead);
+			e.origin = hero.reference;
+			this.wdata.playerTimesKilled++;
+		}
+	}
+	,ForceSkillSetDrop: function(enemyLevel,dropperReference,ss,event) {
+		if(event == null) {
+			event = true;
+		}
+		var itemB = { type : 2, statMultipliers : null, scalingStats : null, name : null};
+		if(this.wdata.skillSets == null) {
+			this.wdata.skillSets = [];
+		}
+		var skillSetPos = ArrayHelper.InsertOnEmpty(ss,this.wdata.skillSets);
+		this.DropItem(itemB,-1,skillSetPos,enemyLevel,dropperReference,event);
+	}
+	,DropItemOrSkillSet: function(itemDropProbability,skillSetDropProbability,enemyLevel,dropperReference) {
+		if(skillSetDropProbability == null) {
+			skillSetDropProbability = 2;
+		}
+		var baseItem = -1;
+		var itemB = null;
+		if(this.random.randomInt(0,1000) < skillSetDropProbability * 10) {
+			var numberOfSkills = this.random.randomInt(2,3);
+			var skillPosArray = [];
+			var _g = 0;
+			var _g1 = numberOfSkills;
+			while(_g < _g1) {
+				var s = _g++;
+				var skill = this.random.randomInt(0,this.skillBases.length - 1 - s);
+				while(skillPosArray.indexOf(skill) != -1) ++skill;
+				skillPosArray[s] = skill;
+			}
+			var ss = { skills : []};
+			var _g = 0;
+			while(_g < skillPosArray.length) {
+				var sp = skillPosArray[_g];
+				++_g;
+				ss.skills.push({ id : this.skillBases[sp].id, level : 1});
+			}
+			this.ForceSkillSetDrop(enemyLevel,dropperReference,ss);
+			return;
+		}
+		if(this.random.randomInt(0,100) < itemDropProbability) {
+			baseItem = this.random.randomInt(0,this.itemBases.length - 1);
+			itemB = this.itemBases[baseItem];
+			this.DropItem(itemB,baseItem,-1,enemyLevel,dropperReference);
+		}
+	}
+	,DropItem: function(itemB,baseItem,skillSetPos,enemyLevel,dropperReference,event) {
+		if(event == null) {
+			event = true;
+		}
+		var e = null;
+		var stat = new haxe_ds_StringMap();
+		var statVar = new haxe_ds_StringMap();
+		var mul = new haxe_ds_StringMap();
+		var mulVar = new haxe_ds_StringMap();
+		var minLevel = (enemyLevel + 1) / 2 - 3 | 0;
+		if(minLevel < 1) {
+			minLevel = 1;
+		}
+		var maxLevel = enemyLevel / 2 + 2 | 0;
+		var level = this.random.randomInt(minLevel,maxLevel);
+		var prefixPos = -1;
+		var prefixSeed = -1;
+		var suffixPos = -1;
+		var suffixSeed = -1;
+		if(itemB.scalingStats != null) {
+			var h = itemB.scalingStats.h;
+			var s_h = h;
+			var s_keys = Object.keys(h);
+			var s_length = s_keys.length;
+			var s_current = 0;
+			while(s_current < s_length) {
+				var key = s_keys[s_current++];
+				var s_key = key;
+				var s_value = s_h[key];
+				var vari = this.random.randomInt(80,100);
+				statVar.h[s_key] = vari;
+				var value = s_value * vari * level;
+				if(value < 100) {
+					value = 100;
+				}
+				var v = value / 100 | 0;
+				stat.h[s_key] = v;
+			}
+		}
+		if(itemB.statMultipliers != null) {
+			var h = itemB.statMultipliers.h;
+			var s_h = h;
+			var s_keys = Object.keys(h);
+			var s_length = s_keys.length;
+			var s_current = 0;
+			while(s_current < s_length) {
+				var key = s_keys[s_current++];
+				var s_key = key;
+				var s_value = s_h[key];
+				var vari = this.random.randomInt(0,100);
+				mulVar.h[s_key] = vari;
+				var min = s_value.min;
+				var max = s_value.max;
+				var range = max - min;
+				var v = min + range * vari / 100 | 0;
+				mul.h[s_key] = v;
+			}
+		}
+		if(this.random.randomInt(0,100) < this.equipDropChance_Rare) {
+			var modType = this.random.randomInt(0,2);
+			var prefixExist = modType == 0 || modType == 2;
+			var suffixExist = modType == 1 || modType == 2;
+			if(prefixExist) {
+				prefixPos = this.random.randomInt(0,this.modBases.length - 1);
+				prefixSeed = this.random.nextInt();
+				var tmp = this.modBases[prefixPos];
+				var this1 = new haxe__$Int64__$_$_$Int64(prefixSeed >> 31,prefixSeed);
+				this.AddMod(tmp,mul,this1);
+			}
+			if(suffixExist) {
+				suffixPos = this.random.randomInt(0,this.modBases.length - 1);
+				suffixSeed = this.random.nextInt();
+				var tmp = this.modBases[suffixPos];
+				var this1 = new haxe__$Int64__$_$_$Int64(suffixSeed >> 31,suffixSeed);
+				this.AddMod(tmp,mul,this1);
+			}
+		}
+		var h = mul.h;
+		var m_h = h;
+		var m_keys = Object.keys(h);
+		var m_length = m_keys.length;
+		var m_current = 0;
+		while(m_current < m_length) {
+			var key = m_keys[m_current++];
+			var m_key = key;
+			var m_value = m_h[key];
+			if(m_value % 5 != 0) {
+				var v = ((m_value + 4) / 5 | 0) * 5;
+				mul.h[m_key] = v;
+			}
+		}
+		var outsideSystem = null;
+		if(skillSetPos >= 0) {
+			outsideSystem = new haxe_ds_StringMap();
+			outsideSystem.h["skillset"] = skillSetPos;
+		}
+		e = { type : itemB.type, seen : false, requiredAttributes : null, attributes : stat, generationVariations : statVar, generationLevel : level, generationBaseItem : baseItem, attributeMultiplier : mul, generationVariationsMultiplier : mulVar, generationSuffixMod : suffixPos, generationPrefixMod : prefixPos, generationSuffixModSeed : suffixSeed, generationPrefixModSeed : prefixSeed, outsideSystems : outsideSystem};
+		var addedIndex = -1;
+		var _g = 0;
+		var _g1 = this.wdata.hero.equipment.length;
+		while(_g < _g1) {
+			var i = _g++;
+			if(this.wdata.hero.equipment[i] == null) {
+				this.wdata.hero.equipment[i] = e;
+				addedIndex = i;
+				break;
+			}
+		}
+		if(addedIndex < 0) {
+			this.wdata.hero.equipment.push(e);
+			addedIndex = this.wdata.hero.equipment.length - 1;
+		}
+		if(event) {
+			var e = this.AddEvent(EventTypes.EquipDrop);
+			e.data = addedIndex;
+			e.origin = dropperReference;
+		}
+	}
+	,AddBuff: function(buff,actor) {
+		var addBuff = true;
+		var _g = 0;
+		var _g1 = actor.buffs.length;
+		while(_g < _g1) {
+			var bi = _g++;
+			var b = actor.buffs[bi];
+			if(b.uniqueId == buff.uniqueId) {
+				addBuff = false;
+				if(b.strength < buff.strength) {
+					actor.buffs[bi] = buff;
+					break;
+				}
+				if(b.strength == buff.strength && b.duration < buff.duration) {
+					actor.buffs[bi] = buff;
+					break;
+				}
+			}
+		}
+		if(addBuff) {
+			actor.buffs.push(buff);
+		}
+		this.RecalculateAttributes(actor);
+	}
+	,GetSkillBase: function(id) {
+		var _g = 0;
+		var _g1 = this.skillBases;
+		while(_g < _g1.length) {
+			var s = _g1[_g];
+			++_g;
+			if(s.id == id) {
+				return s;
+			}
+		}
+		return null;
 	}
 	,ChangeBattleArea: function(area) {
 		if(this.wdata.killedInArea[this.wdata.battleArea] >= this.wdata.necessaryToKillInArea) {
@@ -161,7 +540,7 @@ BattleManager.prototype = {
 		return this.wdata.prestigeTimes * this.GetMaxLevelBonusOnPrestige() + 20;
 	}
 	,AwardXP: function(xpPlus) {
-		if(this.wdata.hero.level <= this.CalculateHeroMaxLevel()) {
+		if(this.wdata.hero.level < this.CalculateHeroMaxLevel()) {
 			xpPlus += xpPlus * this.wdata.prestigeTimes * this.GetXPBonusOnPrestige() | 0;
 			this.wdata.hero.xp.value += xpPlus;
 			var e = this.AddEvent(EventTypes.GetXP);
@@ -206,10 +585,10 @@ BattleManager.prototype = {
 		_g.h["Speed"] = 20;
 		_g.h["SpeedCount"] = 0;
 		_g.h["Defense"] = 0;
-		_g.h["Magic Defense"] = 0;
+		_g.h["MagicDefense"] = 0;
 		_g.h["Piercing"] = 0;
 		var stats2 = _g;
-		this.wdata.enemy = { level : 1 + enemyLevel, attributesBase : stats2, equipmentSlots : null, equipment : [], xp : null, attributesCalculated : stats2, reference : new ActorReference(1,0)};
+		this.wdata.enemy = { level : 1 + enemyLevel, attributesBase : stats2, equipmentSlots : null, equipment : [], xp : null, attributesCalculated : stats2, reference : new ActorReference(1,0), buffs : [], usableSkills : []};
 		if(sheet != null) {
 			var mul = sheet.speciesMultiplier;
 			if(mul != null) {
@@ -289,6 +668,17 @@ BattleManager.prototype = {
 		if(this.wdata.prestigeTimes >= 0 == false) {
 			this.wdata.prestigeTimes = 0;
 		}
+		if(this.wdata.hero.buffs != null == false) {
+			this.wdata.hero.buffs = [];
+		}
+		if(this.wdata.hero.usableSkills != null == false) {
+			this.wdata.hero.usableSkills = [];
+		}
+		if(this.wdata.enemy != null) {
+			if(this.wdata.enemy.buffs != null == false) {
+				this.wdata.enemy.buffs = [];
+			}
+		}
 		var addAction = function(id,action,callback) {
 			var w = _gthis.wdata;
 			if(Object.prototype.hasOwnProperty.call(_gthis.wdata.playerActions.h,id) == false) {
@@ -318,6 +708,41 @@ BattleManager.prototype = {
 		addAction("prestige",createAction(),function(a) {
 			_gthis.PrestigeExecute();
 		});
+		var buttonId = 0;
+		addAction("battleaction_" + 0,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[0];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 1;
+		addAction("battleaction_" + 1,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[1];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 2;
+		addAction("battleaction_" + 2,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[2];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 3;
+		addAction("battleaction_" + 3,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[3];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 4;
+		addAction("battleaction_" + 4,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[4];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 5;
+		addAction("battleaction_" + 5,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[5];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
+		var buttonId = 6;
+		addAction("battleaction_" + 6,createAction(),function(struct) {
+			var skill = _gthis.wdata.hero.usableSkills[6];
+			_gthis.UseSkill(skill,_gthis.wdata.hero);
+		});
 		var _g = new haxe_ds_StringMap();
 		_g.h["Life"] = 20;
 		_g.h["LifeMax"] = 20;
@@ -325,9 +750,15 @@ BattleManager.prototype = {
 		_g.h["SpeedCount"] = 0;
 		_g.h["Attack"] = 1;
 		_g.h["Defense"] = 0;
-		_g.h["Magic Attack"] = 0;
-		_g.h["Magic Defense"] = 0;
+		_g.h["MagicAttack"] = 1;
+		_g.h["MagicDefense"] = 0;
 		_g.h["Piercing"] = 0;
+		_g.h["Regen"] = 0;
+		_g.h["enchant-fire"] = 0;
+		_g.h["MP"] = 0;
+		_g.h["MPMax"] = 100;
+		_g.h["MPRecharge"] = 100;
+		_g.h["MPRechargeCount"] = 10000;
 		this.wdata.hero.attributesBase = _g;
 		var valueXP = 0;
 		if(this.wdata.hero.xp != null) {
@@ -427,22 +858,55 @@ BattleManager.prototype = {
 		}
 		if(this.PlayerFightMode() == false || enemy == null) {
 			attackHappen = false;
-			var life = this.wdata.hero.attributesCalculated.h["Life"];
-			var lifeMax = this.wdata.hero.attributesCalculated.h["LifeMax"];
-			life += 2;
+			var chargeMultiplier = 3;
+			var max = 99999;
+			var restMultiplier = 1;
+			var valueK = "Life";
+			var valueMaxK = "LifeMax";
+			var value = this.wdata.hero.attributesCalculated.h[valueK];
+			if(valueMaxK != null) {
+				max = this.wdata.hero.attributesCalculated.h[valueMaxK];
+			}
+			value += 2 * restMultiplier;
 			if(this.wdata.sleeping) {
-				life += this.wdata.hero.attributesCalculated.h["LifeMax"] * 0.3 | 0;
+				value += max * 0.3 | 0;
 			}
-			if(life > lifeMax) {
-				life = lifeMax;
+			if(value > max) {
+				value = max;
 			}
-			this.wdata.hero.attributesCalculated.h["Life"] = life;
+			this.wdata.hero.attributesCalculated.h[valueK] = value;
+		}
+		var _g = 0;
+		while(_g < 2) {
+			var i = _g++;
+			var actor = this.wdata.hero;
+			if(i == 1) {
+				actor = this.wdata.enemy;
+			}
+			if(actor == null) {
+				continue;
+			}
+			var regen = actor.attributesCalculated.h["Regen"];
+			if(regen > 0) {
+				var recovery = regen * actor.attributesCalculated.h["LifeMax"] / 100;
+				if(recovery < 1) {
+					recovery = 1;
+				}
+				var _g1 = actor.attributesCalculated;
+				var v = _g1.h["Life"] + (recovery | 0);
+				_g1.h["Life"] = v;
+			}
+			if(actor.attributesCalculated.h["Life"] > actor.attributesCalculated.h["LifeMax"]) {
+				var v1 = actor.attributesCalculated.h["LifeMax"];
+				actor.attributesCalculated.h["Life"] = v1;
+			}
 		}
 		if(attackHappen) {
-			var gEvent = this.AddEvent(EventTypes.ActorAttack);
-			var attacker = hero;
-			var defender = enemy;
+			var attacker = null;
+			var defender = null;
 			var decided = false;
+			attacker = hero;
+			defender = enemy;
 			var _g = 0;
 			while(_g < 100) {
 				var i = _g++;
@@ -477,167 +941,25 @@ BattleManager.prototype = {
 					break;
 				}
 			}
-			var defenseRate = 100;
-			if(attacker.attributesCalculated.h["Piercing"] > 0 == true) {
-				defenseRate -= attacker.attributesCalculated.h["Piercing"];
-			}
-			if(defenseRate < 0) {
-				defenseRate = 0;
-			}
-			var attack = attacker.attributesCalculated.h["Attack"];
-			var damage = attack - defender.attributesCalculated.h["Defense"] * defenseRate / 100 | 0;
-			if(damage < 0) {
-				damage = 0;
-			}
-			var _g = defender.attributesCalculated;
-			var v = _g.h["Life"] - damage;
-			_g.h["Life"] = v;
-			if(defender.attributesCalculated.h["Life"] < 0) {
-				defender.attributesCalculated.h["Life"] = 0;
-			}
-			gEvent.origin = attacker.reference;
-			gEvent.target = defender.reference;
-			gEvent.data = damage;
-			if(enemy.attributesCalculated.h["Life"] <= 0) {
-				if(killedInArea[battleArea] == null) {
-					killedInArea[battleArea] = 0;
-				}
-				killedInArea[battleArea]++;
-				if(this.random.randomInt(0,100) < this.equipDropChance) {
-					var baseItem = this.random.randomInt(0,this.itemBases.length - 1);
-					var itemB = this.itemBases[baseItem];
-					var e = null;
-					var stat = new haxe_ds_StringMap();
-					var statVar = new haxe_ds_StringMap();
-					var mul = new haxe_ds_StringMap();
-					var mulVar = new haxe_ds_StringMap();
-					var minLevel = (enemy.level + 1) / 2 - 3 | 0;
-					if(minLevel < 1) {
-						minLevel = 1;
-					}
-					var maxLevel = enemy.level / 2 + 2 | 0;
-					var level = this.random.randomInt(minLevel,maxLevel);
-					var prefixPos = -1;
-					var prefixSeed = -1;
-					var suffixPos = -1;
-					var suffixSeed = -1;
-					var h = itemB.scalingStats.h;
-					var s_h = h;
-					var s_keys = Object.keys(h);
-					var s_length = s_keys.length;
-					var s_current = 0;
-					while(s_current < s_length) {
-						var key = s_keys[s_current++];
-						var s_key = key;
-						var s_value = s_h[key];
-						var vari = this.random.randomInt(80,100);
-						statVar.h[s_key] = vari;
-						var value = s_value * vari * level;
-						if(value < 100) {
-							value = 100;
-						}
-						var v = value / 100 | 0;
-						stat.h[s_key] = v;
-					}
-					if(itemB.statMultipliers != null) {
-						var h = itemB.statMultipliers.h;
-						var s_h = h;
-						var s_keys = Object.keys(h);
-						var s_length = s_keys.length;
-						var s_current = 0;
-						while(s_current < s_length) {
-							var key = s_keys[s_current++];
-							var s_key = key;
-							var s_value = s_h[key];
-							var vari = this.random.randomInt(0,100);
-							mulVar.h[s_key] = vari;
-							var min = s_value.min;
-							var max = s_value.max;
-							var range = max - min;
-							var v = min + range * vari / 100 | 0;
-							mul.h[s_key] = v;
-						}
-					}
-					if(this.random.randomInt(0,100) < this.equipDropChance_Rare) {
-						var modType = this.random.randomInt(0,2);
-						var prefixExist = modType == 0 || modType == 2;
-						var suffixExist = modType == 1 || modType == 2;
-						if(prefixExist) {
-							prefixPos = this.random.randomInt(0,this.modBases.length - 1);
-							prefixSeed = this.random.nextInt();
-							var tmp = this.modBases[prefixPos];
-							var this1 = new haxe__$Int64__$_$_$Int64(prefixSeed >> 31,prefixSeed);
-							this.AddMod(tmp,mul,this1);
-						}
-						if(suffixExist) {
-							suffixPos = this.random.randomInt(0,this.modBases.length - 1);
-							suffixSeed = this.random.nextInt();
-							var tmp = this.modBases[suffixPos];
-							var this1 = new haxe__$Int64__$_$_$Int64(suffixSeed >> 31,suffixSeed);
-							this.AddMod(tmp,mul,this1);
-						}
-					}
-					var h = mul.h;
-					var m_h = h;
-					var m_keys = Object.keys(h);
-					var m_length = m_keys.length;
-					var m_current = 0;
-					while(m_current < m_length) {
-						var key = m_keys[m_current++];
-						var m_key = key;
-						var m_value = m_h[key];
-						if(m_value % 5 != 0) {
-							var v = ((m_value + 4) / 5 | 0) * 5;
-							mul.h[m_key] = v;
-						}
-					}
-					e = { type : itemB.type, seen : false, requiredAttributes : null, attributes : stat, generationVariations : statVar, generationLevel : level, generationBaseItem : baseItem, attributeMultiplier : mul, generationVariationsMultiplier : mulVar, generationSuffixMod : suffixPos, generationPrefixMod : prefixPos, generationSuffixModSeed : suffixSeed, generationPrefixModSeed : prefixSeed};
-					this.wdata.hero.equipment.push(e);
-					var e = this.AddEvent(EventTypes.EquipDrop);
-					e.data = this.wdata.hero.equipment.length - 1;
-					e.origin = enemy.reference;
-				}
-				var e = this.AddEvent(EventTypes.ActorDead);
-				e.origin = enemy.reference;
-				var xpGain = enemy.level;
-				this.AwardXP(enemy.level);
-				if(killedInArea[battleArea] >= this.wdata.necessaryToKillInArea) {
-					this.AddEvent(EventTypes.AreaComplete).data = this.wdata.battleArea;
-					if(this.wdata.maxArea == this.wdata.battleArea) {
-						if(this.regionPrizes[this.wdata.battleAreaRegion].xpPrize == true) {
-							var areaForBonus = this.wdata.battleArea;
-							ResourceLogic.recalculateScalingResource(areaForBonus,this.areaBonus);
-							var xpPlus = this.areaBonus.calculatedMax;
-							this.AwardXP(xpPlus);
-						}
-						if(this.regionPrizes[this.wdata.battleAreaRegion].statBonus != null) {
-							var h = this.regionPrizes[this.wdata.battleAreaRegion].statBonus.h;
-							var su_h = h;
-							var su_keys = Object.keys(h);
-							var su_length = su_keys.length;
-							var su_current = 0;
-							while(su_current < su_length) {
-								var key = su_keys[su_current++];
-								var su_key = key;
-								var su_value = su_h[key];
-								var e = this.AddEvent(EventTypes.statUpgrade);
-								e.dataString = su_key;
-								e.data = su_value;
-							}
-							this.AddEvent(EventTypes.PermanentStatUpgrade);
-						}
-						this.wdata.maxArea++;
-						this.AddEvent(EventTypes.AreaUnlock).data = this.wdata.maxArea;
-						killedInArea[this.wdata.maxArea] = 0;
+			this.AttackExecute(attacker,defender);
+			var attackerBuffChanged = false;
+			var _g = 0;
+			var _g1 = attacker.buffs.length;
+			while(_g < _g1) {
+				var b = _g++;
+				var bu = attacker.buffs[b];
+				if(attacker.buffs[b] != null) {
+					bu.duration -= 1;
+					if(bu.duration <= 0) {
+						attacker.buffs[b] = null;
+						attackerBuffChanged = true;
 					}
 				}
 			}
-			if(hero.attributesCalculated.h["Life"] <= 0) {
-				this.wdata.recovering = true;
-				this.wdata.enemy = null;
-				var e = this.AddEvent(EventTypes.ActorDead);
-				e.origin = hero.reference;
-				this.wdata.playerTimesKilled++;
+			while(HxOverrides.remove(attacker.buffs,null)) {
+			}
+			if(attackerBuffChanged) {
+				this.RecalculateAttributes(attacker);
 			}
 		}
 		return "";
@@ -663,8 +985,13 @@ BattleManager.prototype = {
 			}
 		}
 	}
-	,DiscardEquipment: function(pos) {
+	,DiscardSingleEquipment: function(pos) {
+		var e = this.wdata.hero.equipment[pos];
 		this.wdata.hero.equipment[pos] = null;
+		this.equipmentToDiscard.push(e);
+	}
+	,DiscardEquipment: function(pos) {
+		this.DiscardSingleEquipment(pos);
 		this.RecalculateAttributes(this.wdata.hero);
 	}
 	,ToggleEquipped: function(pos) {
@@ -674,6 +1001,7 @@ BattleManager.prototype = {
 		} else {
 			this.wdata.hero.equipmentSlots[slot] = pos;
 		}
+		this.UseMP(this.wdata.hero,9999,false);
 		this.RecalculateAttributes(this.wdata.hero);
 	}
 	,IsEquipped: function(pos) {
@@ -713,6 +1041,17 @@ BattleManager.prototype = {
 	}
 	,update: function(delta) {
 		this.wdata.timeCount += delta;
+		var _g = 0;
+		var _g1 = this.equipmentToDiscard;
+		while(_g < _g1.length) {
+			var e = _g1[_g];
+			++_g;
+			if(e.outsideSystems != null) {
+				var skillsetpos = e.outsideSystems.h["skillset"];
+				this.wdata.skillSets[skillsetpos] = null;
+			}
+		}
+		this.equipmentToDiscard.length = 0;
 		if(this.wdata.regionProgress == null) {
 			this.wdata.regionProgress = [];
 		}
@@ -749,7 +1088,7 @@ BattleManager.prototype = {
 		this.canAdvance = this.wdata.battleArea < this.wdata.maxArea;
 		this.canRetreat = this.wdata.battleArea > 0;
 		this.canLevelUp = this.wdata.hero.xp.value >= this.wdata.hero.xp.calculatedMax;
-		var hasEquipment = this.wdata.hero.equipment.length > 0;
+		var hasEquipment = this.wdata.hero.equipment.length > 1;
 		var lu = this.wdata.playerActions.h["tabequipment"];
 		lu.enabled = hasEquipment;
 		lu.visible = lu.enabled || lu.visible;
@@ -757,8 +1096,46 @@ BattleManager.prototype = {
 		lu.enabled = this.canLevelUp;
 		lu.visible = this.canLevelUp || lu.visible;
 		var lu = this.wdata.playerActions.h["prestige"];
-		lu.enabled = this.wdata.hero.level > this.GetLevelRequirementForPrestige();
+		lu.enabled = this.wdata.hero.level >= this.GetLevelRequirementForPrestige();
 		lu.visible = lu.enabled || lu.visible;
+		var _g = 0;
+		while(_g < 7) {
+			var i = _g++;
+			var buttonId = i;
+			var lu = this.wdata.playerActions.h["battleaction_" + i];
+			var skillUsable = false;
+			var skillVisible = false;
+			var skillButtonMode = 0;
+			if(this.wdata.hero.level < this.skillSlotUnlocklevel[i]) {
+				skillButtonMode = 1;
+			}
+			if(this.wdata.hero.usableSkills[i] != null) {
+				if(this.wdata.hero.level >= this.skillSlotUnlocklevel[i]) {
+					if(this.wdata.hero.attributesCalculated.h["MPRechargeCount"] >= 10000) {
+						skillUsable = true;
+					}
+				}
+				if(i == 0 || this.wdata.hero.level >= this.skillSlotUnlocklevel[i - 1]) {
+					skillVisible = true;
+				}
+				if(skillUsable && skillVisible && (this.wdata.enemy == null || this.wdata.enemy.attributesCalculated.h["Life"] == 0)) {
+					var sb = this.GetSkillBase(this.wdata.hero.usableSkills[i].id);
+					var _g1 = 0;
+					var _g2 = sb.effects;
+					while(_g1 < _g2.length) {
+						var e = _g2[_g1];
+						++_g1;
+						if(e.target == Target.ENEMY) {
+							skillUsable = false;
+							break;
+						}
+					}
+				}
+			}
+			lu.enabled = skillUsable;
+			lu.visible = skillVisible;
+			lu.mode = skillButtonMode;
+		}
 		var lu = this.wdata.playerActions.h["advance"];
 		lu.visible = this.canAdvance || lu.visible;
 		lu.enabled = this.canAdvance;
@@ -781,6 +1158,15 @@ BattleManager.prototype = {
 			var v = this.wdata.hero.attributesCalculated.h["LifeMax"];
 			this.wdata.hero.attributesCalculated.h["Life"] = v;
 			this.wdata.recovering = false;
+		}
+		var mrc = this.wdata.hero.attributesCalculated.h["MPRechargeCount"];
+		if(mrc < 10000) {
+			mrc += this.wdata.hero.attributesCalculated.h["MPRecharge"] * delta * 5 | 0;
+			this.wdata.hero.attributesCalculated.h["MPRechargeCount"] = mrc;
+			if(mrc >= 10000) {
+				var v = this.wdata.hero.attributesCalculated.h["MPMax"];
+				this.wdata.hero.attributesCalculated.h["MP"] = v;
+			}
 		}
 		if(this.wdata.timeCount >= this.timePeriod) {
 			this.wdata.timeCount = 0;
@@ -815,16 +1201,26 @@ BattleManager.prototype = {
 		ResourceLogic.recalculateScalingResource(hero.level,hero.xp);
 		var v = hero.attributesCalculated.h["LifeMax"];
 		hero.attributesCalculated.h["Life"] = v;
+		var v = hero.attributesCalculated.h["MPMax"];
+		hero.attributesCalculated.h["MP"] = v;
+		hero.attributesCalculated.h["MPRechargeCount"] = 10000;
 	}
 	,RecalculateAttributes: function(actor) {
-		var oldLife = actor.attributesCalculated.h["Life"];
-		var oldSpeedCount = actor.attributesCalculated.h["SpeedCount"];
-		if(oldSpeedCount < 0) {
-			oldSpeedCount = 0;
+		var _g = 0;
+		var _g1 = this.volatileAttributeList.length;
+		while(_g < _g1) {
+			var i = _g++;
+			this.volatileAttributeAux[i] = actor.attributesCalculated.h[this.volatileAttributeList[i]];
+			if(this.volatileAttributeAux[i] >= 0 == false) {
+				this.volatileAttributeAux[i] = 0;
+			}
 		}
-		if(oldSpeedCount == null) {
-			oldSpeedCount = 0;
+		var skillSetPos = this.wdata.hero.equipmentSlots[2];
+		if(skillSetPos >= 0) {
+			var skillSet = this.wdata.skillSets[this.wdata.hero.equipment[skillSetPos].outsideSystems.h["skillset"]];
+			this.wdata.hero.usableSkills = skillSet.skills;
 		}
+		actor.attributesCalculated.h = Object.create(null);
 		var actor1 = actor.attributesBase;
 		var _g = new haxe_ds_StringMap();
 		_g.h["Attack"] = 1;
@@ -832,9 +1228,11 @@ BattleManager.prototype = {
 		_g.h["Life"] = 5;
 		_g.h["Speed"] = 0;
 		_g.h["Defense"] = 0;
-		_g.h["Magic Defense"] = 0;
+		_g.h["MagicAttack"] = 1;
+		_g.h["MagicDefense"] = 0;
 		_g.h["SpeedCount"] = 0;
 		_g.h["Piercing"] = 0;
+		_g.h["MPMax"] = 2;
 		AttributeLogic.Add(actor1,_g,actor.level,actor.attributesCalculated);
 		if(actor == this.wdata.hero) {
 			var _g = 0;
@@ -872,6 +1270,15 @@ BattleManager.prototype = {
 			}
 		}
 		var _g = 0;
+		var _g1 = actor.buffs;
+		while(_g < _g1.length) {
+			var b = _g1[_g];
+			++_g;
+			if(b.addStats != null) {
+				AttributeLogic.Add(actor.attributesCalculated,b.addStats,1,actor.attributesCalculated);
+			}
+		}
+		var _g = 0;
 		var _g1 = actor.equipmentSlots;
 		while(_g < _g1.length) {
 			var es = _g1[_g];
@@ -894,8 +1301,33 @@ BattleManager.prototype = {
 				}
 			}
 		}
-		actor.attributesCalculated.h["Life"] = oldLife;
-		actor.attributesCalculated.h["SpeedCount"] = oldSpeedCount;
+		var _g = 0;
+		var _g1 = actor.buffs;
+		while(_g < _g1.length) {
+			var b = _g1[_g];
+			++_g;
+			if(b.mulStats != null) {
+				var h = b.mulStats.h;
+				var a_h = h;
+				var a_keys = Object.keys(h);
+				var a_length = a_keys.length;
+				var a_current = 0;
+				while(a_current < a_length) {
+					var key = a_keys[a_current++];
+					var a_key = key;
+					var a_value = a_h[key];
+					var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
+					actor.attributesCalculated.h[a_key] = v;
+				}
+			}
+		}
+		var _g = 0;
+		var _g1 = this.volatileAttributeList.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var v = this.volatileAttributeAux[i];
+			actor.attributesCalculated.h[this.volatileAttributeList[i]] = v;
+		}
 	}
 	,AdvanceArea: function() {
 		this.ChangeBattleArea(this.wdata.battleArea + 1);
@@ -907,6 +1339,9 @@ BattleManager.prototype = {
 			var i = _g++;
 			var e = this.wdata.hero.equipment[i];
 			if(e == null) {
+				continue;
+			}
+			if(e.type == 2) {
 				continue;
 			}
 			var _g2 = i + 1;
@@ -925,14 +1360,14 @@ BattleManager.prototype = {
 					if(this.wdata.hero.equipmentSlots.indexOf(j) != -1) {
 						continue;
 					}
-					this.wdata.hero.equipment[j] = null;
+					this.DiscardSingleEquipment(j);
 					continue;
 				}
 				if(r == 2) {
 					if(this.wdata.hero.equipmentSlots.indexOf(i) != -1) {
 						continue;
 					}
-					this.wdata.hero.equipment[i] = null;
+					this.DiscardSingleEquipment(i);
 					break;
 				}
 			}
@@ -1324,7 +1759,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild("0.8.3");
+            gameanalytics.GameAnalytics.configureBuild("0.9d");
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -1472,7 +1907,7 @@ $hxClasses["Main"] = Main;
 Main.__name__ = "Main";
 Main.main = function() {
 	haxe_ui_Toolkit.init();
-	haxe_Log.trace("sss",{ fileName : "src/Main.hx", lineNumber : 42, className : "Main", methodName : "main"});
+	haxe_Log.trace("sss",{ fileName : "src/Main.hx", lineNumber : 43, className : "Main", methodName : "main"});
 	var key = "privacymemory";
 	var privacyAcceptance = js_Browser.getLocalStorage().getItem(key);
 	if(privacyAcceptance == null) {
@@ -1497,6 +1932,9 @@ Main.gamemain = function() {
 	proto.MakeItems();
 	bm.itemBases = proto.items;
 	bm.modBases = proto.mods;
+	var proto = new PrototypeSkillMaker();
+	proto.init();
+	bm.skillBases = proto.skills;
 	var view = new View();
 	var enemyRegionNames = ["Lagrima Continent","Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island"];
 	var enemyNames_0 = "Enemy";
@@ -1530,6 +1968,13 @@ Main.gamemain = function() {
 	});
 	CreateButtonFromAction("sleep","Sleep");
 	CreateButtonFromAction("repeat","Restart");
+	CreateButtonFromAction("battleaction_" + 0,"Action " + 0);
+	CreateButtonFromAction("battleaction_" + 1,"Action " + 1);
+	CreateButtonFromAction("battleaction_" + 2,"Action " + 2);
+	CreateButtonFromAction("battleaction_" + 3,"Action " + 3);
+	CreateButtonFromAction("battleaction_" + 4,"Action " + 4);
+	CreateButtonFromAction("battleaction_" + 5,"Action " + 5);
+	CreateButtonFromAction("battleaction_" + 6,"Action " + 6);
 	var prestigeWarn = "Your experience awards will increase by " + (bm.GetXPBonusOnPrestige() * 100 | 0) + "%. Your max level will increase by " + bm.GetMaxLevelBonusOnPrestige() + ". You will keep all permanent stats bonuses. \n\nYou will go back to Level 1. Your progress in all regions will be reset. All that is not equipped will be lost. All that is equipped will lose strength.";
 	CreateButtonFromAction("prestige","Soul Crush",prestigeWarn);
 	view.equipmentMainAction = function(pos,action) {
@@ -1551,6 +1996,8 @@ Main.gamemain = function() {
 	haxe_ui_core_Screen.get_instance().addComponent(main);
 	var time = 0;
 	var saveCount = 0.3;
+	bm.ForceSkillSetDrop(-1,null,{ skills : [{ id : "Slash", level : 1},{ id : "Cure", level : 1},{ id : "Protect", level : 3}]},false);
+	bm.wdata.hero.equipmentSlots[2] = 0;
 	var storyPersistence = { progressionData : new haxe_ds_StringMap(), worldVersion : bm.wdata.worldVersion, currentStoryId : null};
 	var jsonData = ls.getItem(key);
 	var persistenceMaster = SaveAssistant.GetPersistenceMaster(jsonData);
@@ -1584,9 +2031,46 @@ Main.gamemain = function() {
 	var global = new haxe_ds_StringMap();
 	scriptExecuter.variables.h["global"] = global;
 	var update = null;
+	var buffToIcon_h = Object.create(null);
+	buffToIcon_h["regen"] = "&#127807;";
+	buffToIcon_h["enchant-fire"] = "&#128293;";
+	buffToIcon_h["protect"] = "&#128737;";
+	buffToIcon_h["haste"] = "&#128094;";
 	var ActorToView = function(actor,actorView) {
 		if(actor != null) {
+			var name = actorView.defaultName;
+			var _g = 0;
+			var _g1 = actor.buffs;
+			while(_g < _g1.length) {
+				var b = _g1[_g];
+				++_g;
+				if(b != null && b.uniqueId != null) {
+					if(Object.prototype.hasOwnProperty.call(buffToIcon_h,b.uniqueId)) {
+						name += " " + buffToIcon_h[b.uniqueId];
+					} else {
+						name += " &#x2191;";
+					}
+				}
+			}
+			if(name != actorView.name.get_text()) {
+				actorView.name.set_text(name);
+			}
 			view.UpdateValues(actorView.life,bm.GetAttribute(actor,"Life"),bm.GetAttribute(actor,"LifeMax"));
+			var mp = bm.GetAttribute(actor,"MP");
+			var mpmax = bm.GetAttribute(actor,"MPMax");
+			if(bm.wdata.hero.level > 1) {
+				var rc = bm.GetAttribute(actor,"MPRechargeCount");
+				if(rc < 10000) {
+					mp = rc;
+					mpmax = 10000;
+					actorView.mp.labelText.set_text("Charge");
+				} else {
+					actorView.mp.labelText.set_text("MP");
+				}
+				view.UpdateValues(actorView.mp,mp,mpmax);
+			} else {
+				view.UpdateValues(actorView.mp,mp,mpmax,"??",false,"???");
+			}
 			view.UpdateValues(actorView.attack,bm.GetAttribute(actor,"Attack"),-1);
 		}
 		view.UpdateVisibility(actorView,actor != null);
@@ -1598,7 +2082,7 @@ Main.gamemain = function() {
 	};
 	var itemsInEquipmentWindowSeen = 0;
 	var equipmentWindowTypeAlert = [false,false];
-	view.FeedEquipmentTypes(["Weapons","Armor"]);
+	view.FeedEquipmentTypes(["Weapons","Armor","Skill Set"]);
 	var saveFileImporterSetup = false;
 	update = function(timeStamp) {
 		var v = bm.wdata.maxArea;
@@ -1637,6 +2121,7 @@ Main.gamemain = function() {
 			}
 		}
 		var typeToShow = view.GetEquipmentType();
+		view.buttonDiscardBad.set_hidden(typeToShow == 2);
 		view.EquipmentAmountToShow(bm.wdata.hero.equipment.length);
 		var equipmentViewPos = 0;
 		var _g = 0;
@@ -1654,13 +2139,13 @@ Main.gamemain = function() {
 			if(e != null) {
 				if(e.type == typeToShow) {
 					e.seen = view.IsTabSelected(view.equipTab.component) || e.seen;
-					var equipName = Main.GetEquipName(e,bm.itemBases,bm.modBases);
+					var equipName = Main.GetEquipName(e,bm);
 					hide = false;
 					var rarity = 0;
 					if(e.generationPrefixMod >= 0 || e.generationSuffixMod >= 0) {
 						rarity = 1;
 					}
-					view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i),rarity);
+					view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i),rarity,-1,e.type == 2);
 					var vid = 0;
 					var h = e.attributes.h;
 					var v_h = h;
@@ -1688,6 +2173,25 @@ Main.gamemain = function() {
 							++vid;
 						}
 					}
+					if(e.outsideSystems != null) {
+						var ss = e.outsideSystems.h["skillset"];
+						var ssd = bm.wdata.skillSets[ss];
+						var _g2 = 0;
+						var _g3 = ssd.skills.length;
+						while(_g2 < _g3) {
+							var s = _g2++;
+							var actionId = "battleaction_" + s;
+							var action = bm.wdata.playerActions.h[actionId];
+							if(action.mode == 0) {
+								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,ssd.skills[s].id);
+							}
+							if(action.mode == 1) {
+								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,"???");
+							}
+							++vid;
+						}
+					}
+					view.FinishFeedingEquipmentValue(equipmentViewPos,vid);
 				}
 				if(!e.seen) {
 					equipmentWindowTypeAlert[e.type] = true;
@@ -1705,6 +2209,7 @@ Main.gamemain = function() {
 		while(bm.events.length > eventShown) {
 			var e = bm.events[eventShown];
 			var data = e.data;
+			var dataString = e.dataString;
 			var battle = true;
 			var originText = "XX";
 			if(e.origin != null) {
@@ -1736,6 +2241,12 @@ Main.gamemain = function() {
 						GameAnalyticsIntegration.SendProgressFailEvent("world0","stage" + bm.wdata.battleAreaRegion,"area" + bm.wdata.battleArea);
 					}
 				}
+			}
+			if(e.type == EventTypes.MPRunOut) {
+				ev = "" + originText + " ran out of MP";
+			}
+			if(e.type == EventTypes.SkillUse) {
+				ev = "" + originText + " used " + dataString;
 			}
 			if(e.type == EventTypes.ActorLevelUp) {
 				battle = false;
@@ -1771,7 +2282,7 @@ Main.gamemain = function() {
 				GameAnalyticsIntegration.SendProgressCompleteEvent("world0","stage0","area" + e.data);
 			}
 			if(e.type == EventTypes.EquipDrop) {
-				var equipName = Main.GetEquipName(bm.wdata.hero.equipment[e.data],bm.itemBases,bm.modBases);
+				var equipName = Main.GetEquipName(bm.wdata.hero.equipment[e.data],bm);
 				ev = "<b>Enemy dropped " + equipName + "</b>";
 			}
 			if(battle) {
@@ -1799,6 +2310,22 @@ Main.gamemain = function() {
 		buttonToAction("repeat","repeat");
 		buttonToAction("prestige","prestige");
 		view.ButtonVisibility("prestige",storyRuntime.persistence.progressionData.h[storyRuntime.cutscenes[2].title].timesCompleted > 0);
+		var _g = 0;
+		while(_g < 7) {
+			var i = _g++;
+			var id = "battleaction_" + i;
+			buttonToAction(id,id);
+			var skills = bm.wdata.hero.usableSkills;
+			if(skills[i] != null) {
+				var action = bm.wdata.playerActions.h[id];
+				if(action.mode == 0) {
+					view.ButtonLabel(id,bm.GetSkillBase(skills[i].id).id);
+				}
+				if(action.mode == 1) {
+					view.ButtonLabel(id,"Unlock at Level " + bm.skillSlotUnlocklevel[i]);
+				}
+			}
+		}
 		var action = bm.wdata.playerActions.h["tabequipment"];
 		view.TabVisible(view.equipTab,action.visible);
 		var action = bm.wdata.playerActions.h["tabmemory"];
@@ -1839,7 +2366,10 @@ Main.gamemain = function() {
 	};
 	update(0);
 };
-Main.GetEquipName = function(e,itemBases,modBases) {
+Main.GetEquipName = function(e,bm) {
+	var itemBases = bm.itemBases;
+	var modBases = bm.modBases;
+	var skillSets = bm.wdata.skillSets;
 	if(e.generationBaseItem >= 0) {
 		var name = itemBases[e.generationBaseItem].name;
 		if(e.generationPrefixMod >= 0) {
@@ -1849,6 +2379,37 @@ Main.GetEquipName = function(e,itemBases,modBases) {
 			name = name + " " + modBases[e.generationSuffixMod].suffix;
 		}
 		return name;
+	}
+	if(e.outsideSystems != null) {
+		if(Object.prototype.hasOwnProperty.call(e.outsideSystems.h,"skillset")) {
+			var skillSet = e.outsideSystems.h["skillset"];
+			var ss = skillSets[skillSet];
+			var main = ss.skills[0];
+			var sbMain = bm.GetSkillBase(main.id);
+			var profession = "Corrupter";
+			if(sbMain != null) {
+				profession = bm.GetSkillBase(main.id).profession;
+			}
+			var word1 = null;
+			var word2 = null;
+			if(ss.skills.length > 1) {
+				var skillBase1 = bm.GetSkillBase(ss.skills[1].id);
+				word1 = bm.GetSkillBase(ss.skills[0].id).word;
+				if(skillBase1 != null) {
+					profession = bm.GetSkillBase(ss.skills[1].id).profession;
+				}
+			}
+			if(ss.skills.length > 2) {
+				word2 = bm.GetSkillBase(ss.skills[2].id).word;
+			}
+			if(word2 != null) {
+				return "" + word1 + " " + profession + " of " + word2;
+			}
+			if(word1 != null) {
+				return "" + word1 + " " + profession;
+			}
+			return profession;
+		}
 	}
 	var equipName = "Sword";
 	if(e.type == 1) {
@@ -1948,6 +2509,60 @@ RandomExtender.__name__ = "RandomExtender";
 RandomExtender.Range = function(random,range) {
 	return random.randomInt(range.min,range.max);
 };
+var PrototypeSkillMaker = function() {
+	this.skills = [];
+};
+$hxClasses["PrototypeSkillMaker"] = PrototypeSkillMaker;
+PrototypeSkillMaker.__name__ = "PrototypeSkillMaker";
+PrototypeSkillMaker.prototype = {
+	skills: null
+	,AddSkill: function(id,mpCost) {
+	}
+	,init: function() {
+		this.skills.push({ id : "Regen", profession : "Priest", word : "Nature", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
+			var strength = level * 4;
+			var _g = new haxe_ds_StringMap();
+			_g.h["Regen"] = strength;
+			bm.AddBuff({ uniqueId : "regen", addStats : _g, mulStats : null, strength : strength, duration : 8},actor);
+		}}], mpCost : 20});
+		this.skills.push({ id : "Light Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			var strength = level * 5;
+			bm.AttackExecute(actor,array[0],50,5 + level,100);
+		}}], mpCost : 5});
+		this.skills.push({ id : "Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			var strength = level * 10;
+			bm.AttackExecute(actor,array[0],90 + strength,10,100);
+		}}], mpCost : 15});
+		this.skills.push({ id : "Heavy Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			var strength = level * 30;
+			bm.AttackExecute(actor,array[0],100 + strength,15,100);
+		}}], mpCost : 40});
+		this.skills.push({ id : "Cure", profession : "Mage", word : "White", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
+			var bonus = 5 + level * 10;
+			var strength = level * bonus;
+			bm.Heal(array[0],10,bonus);
+		}}], mpCost : 15});
+		this.skills.push({ id : "Haste", profession : "Wizard", word : "Time", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
+			var bonus = 20;
+			var multiplier = 90 + level * 10;
+			var _g = new haxe_ds_StringMap();
+			_g.h["Speed"] = bonus;
+			var _g1 = new haxe_ds_StringMap();
+			_g1.h["Speed"] = multiplier;
+			bm.AddBuff({ uniqueId : "haste", addStats : _g, mulStats : _g1, strength : level, duration : 8},actor);
+		}}], mpCost : 45});
+		this.skills.push({ id : "Protect", profession : "Defender", word : "Defense", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
+			var bonus = level * 5;
+			var multiplier = 110;
+			var _g = new haxe_ds_StringMap();
+			_g.h["Defense"] = bonus;
+			var _g1 = new haxe_ds_StringMap();
+			_g1.h["Defense"] = multiplier;
+			bm.AddBuff({ uniqueId : "protect", addStats : _g, mulStats : _g1, strength : level, duration : 8},actor);
+		}}], mpCost : 25});
+	}
+	,__class__: PrototypeSkillMaker
+};
 var ResourceLogic = function() { };
 $hxClasses["ResourceLogic"] = ResourceLogic;
 ResourceLogic.__name__ = "ResourceLogic";
@@ -1995,7 +2610,7 @@ AttributeLogic.AddOld = function(attributes,attributeAddition,quantityOfAddition
 	}
 };
 AttributeLogic.Add = function(attributes,attributeAddition,quantityOfAddition,result) {
-	var h = attributeAddition.h;
+	var h = attributes.h;
 	var _g_h = h;
 	var _g_keys = Object.keys(h);
 	var _g_length = _g_keys.length;
@@ -2006,7 +2621,11 @@ AttributeLogic.Add = function(attributes,attributeAddition,quantityOfAddition,re
 		var _g1_value = _g_h[key];
 		var key1 = _g1_key;
 		var value = _g1_value;
-		var v = attributes.h[key1] + (value * quantityOfAddition | 0);
+		var addedValue = attributeAddition.h[key1];
+		if(addedValue >= 0 == false && addedValue < 0 == false) {
+			addedValue = 0;
+		}
+		var v = value + (addedValue * quantityOfAddition | 0);
 		result.h[key1] = v;
 	}
 };
@@ -2024,8 +2643,10 @@ var EventTypes = $hxEnums["EventTypes"] = { __ename__:true,__constructs__:null
 	,GetXP: {_hx_name:"GetXP",_hx_index:10,__enum__:"EventTypes",toString:$estr}
 	,PermanentStatUpgrade: {_hx_name:"PermanentStatUpgrade",_hx_index:11,__enum__:"EventTypes",toString:$estr}
 	,statUpgrade: {_hx_name:"statUpgrade",_hx_index:12,__enum__:"EventTypes",toString:$estr}
+	,SkillUse: {_hx_name:"SkillUse",_hx_index:13,__enum__:"EventTypes",toString:$estr}
+	,MPRunOut: {_hx_name:"MPRunOut",_hx_index:14,__enum__:"EventTypes",toString:$estr}
 };
-EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade];
+EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade,EventTypes.SkillUse,EventTypes.MPRunOut];
 var ActorReference = function(type,pos) {
 	this.type = type;
 	this.pos = pos;
@@ -2051,6 +2672,12 @@ GameEvent.prototype = {
 	,dataString: null
 	,__class__: GameEvent
 };
+var Target = $hxEnums["Target"] = { __ename__:true,__constructs__:null
+	,SELF: {_hx_name:"SELF",_hx_index:0,__enum__:"Target",toString:$estr}
+	,ENEMY: {_hx_name:"ENEMY",_hx_index:1,__enum__:"Target",toString:$estr}
+	,ALL: {_hx_name:"ALL",_hx_index:2,__enum__:"Target",toString:$estr}
+};
+Target.__constructs__ = [Target.SELF,Target.ENEMY,Target.ALL];
 var Reflect = function() { };
 $hxClasses["Reflect"] = Reflect;
 Reflect.__name__ = "Reflect";
@@ -2696,7 +3323,7 @@ var View = function() {
 	title.set_htmlText("Import Save: <input id='import__' type='file'></input>");
 	boxParentP.addComponent(title);
 	var title = new haxe_ui_components_Label();
-	title.set_htmlText("Alpha 0.08C. <a href='https://github.com/Pidroh/HaxeRPGUtilities/wiki' target='_blank'>__Road Map__</a>              A prototype for the progression mechanics in <a href='https://store.steampowered.com/app/1638970/Brave_Ball/'  target='_blank'>Brave Ball</a>.     <a href='https://discord.com/invite/AtGrxpM'  target='_blank'>   Discord Channel   </a>");
+	title.set_htmlText("Alpha 0.09D. <a href='https://github.com/Pidroh/HaxeRPGUtilities/wiki' target='_blank'>__Road Map__</a>              A prototype for the progression mechanics in <a href='https://store.steampowered.com/app/1638970/Brave_Ball/'  target='_blank'>Brave Ball</a>.     <a href='https://discord.com/invite/AtGrxpM'  target='_blank'>   Discord Channel   </a>");
 	title.set_percentWidth(100);
 	title.set_textAlign("right");
 	title.set_paddingRight(20);
@@ -2738,21 +3365,21 @@ var View = function() {
 	battleParent.addComponent(box);
 	var scroll = this.CreateScrollable(box);
 	scroll.set_width(250);
-	scroll.set_percentHeight(60);
+	scroll.set_percentHeight(40);
 	var logContainer = this.CreateContainer(scroll,true);
 	var log = new haxe_ui_components_Label();
-	this.logTextBattle = log;
+	this.logText = log;
 	logContainer.addComponent(log);
 	log.set_width(190);
 	log.set_horizontalAlign("center");
 	logContainer.set_horizontalAlign("center");
 	var scroll = this.CreateScrollable(box);
 	scroll.set_width(250);
-	scroll.set_percentHeight(40);
+	scroll.set_percentHeight(60);
 	var logContainer = this.CreateContainer(scroll,true);
 	scroll.set_verticalAlign("bottom");
 	var log = new haxe_ui_components_Label();
-	this.logText = log;
+	this.logTextBattle = log;
 	logContainer.addComponent(log);
 	log.set_width(190);
 	log.set_horizontalAlign("center");
@@ -2776,17 +3403,18 @@ var View = function() {
 	this.battleView.set_width(400);
 	this.heroView = this.GetActorView("You",this.battleView);
 	this.enemyView = this.GetActorView("Enemy",this.battleView);
+	var battleButtonView = this.CreateContainer(verticalBox,false);
 	this.equipTabChild = new haxe_ui_containers_ContinuousHBox();
 	var tabBar = new haxe_ui_components_TabBar();
 	tabBar.set_percentWidth(100);
 	this.equipmentTypeSelectionTabbar = tabBar;
 	this.equipTabChild.addComponent(tabBar);
-	var buttonDiscardBad = new haxe_ui_components_Button();
-	buttonDiscardBad.set_text("Discard worse equipment");
-	buttonDiscardBad.set_onClick(function(event) {
+	this.buttonDiscardBad = new haxe_ui_components_Button();
+	this.buttonDiscardBad.set_text("Discard worse equipment");
+	this.buttonDiscardBad.set_onClick(function(event) {
 		_gthis.equipmentMainAction(-1,View.equipmentAction_DiscardBad);
 	});
-	this.equipTabChild.addComponent(buttonDiscardBad);
+	this.equipTabChild.addComponent(this.buttonDiscardBad);
 	var scroll = this.CreateScrollable(null);
 	scroll.set_height(300);
 	scroll.set_text("Equipment");
@@ -2887,6 +3515,7 @@ View.prototype = {
 	,regionButtonParent: null
 	,levelContainer: null
 	,battleView: null
+	,buttonDiscardBad: null
 	,buttonBox: null
 	,buttonMap: null
 	,equipments: null
@@ -3170,7 +3799,10 @@ View.prototype = {
 			this.equipmentMainAction(equipmentPos,actionId);
 		}
 	}
-	,FeedEquipmentBase: function(pos,name,equipped,rarity,numberOfValues) {
+	,FeedEquipmentBase: function(pos,name,equipped,rarity,numberOfValues,unequipable) {
+		if(unequipable == null) {
+			unequipable = false;
+		}
 		if(numberOfValues == null) {
 			numberOfValues = -1;
 		}
@@ -3186,9 +3818,11 @@ View.prototype = {
 		this.equipments[pos].name.set_color(haxe_ui_util_Color.fromString(color));
 		if(equipped) {
 			this.equipments[pos].actionButtons[0].set_text("Unequip");
+			this.equipments[pos].actionButtons[0].set_hidden(unequipable);
 			this.equipments[pos].parent.set_borderSize(2);
 			this.equipments[pos].parent.set_backgroundColor(haxe_ui_util_Color.fromString("#FAEBD7"));
 		} else {
+			this.equipments[pos].actionButtons[0].set_hidden(false);
 			this.equipments[pos].actionButtons[0].set_text("Equip");
 			this.equipments[pos].parent.set_borderSize(1);
 			this.equipments[pos].parent.set_backgroundColor(haxe_ui_util_Color.fromString("white"));
@@ -3202,7 +3836,15 @@ View.prototype = {
 	,HideEquipmentView: function(pos) {
 		this.equipments[pos].parent.set_hidden(true);
 	}
-	,FeedEquipmentValue: function(pos,valuePos,valueName,value,percent) {
+	,FinishFeedingEquipmentValue: function(pos,vid) {
+		var _g = vid;
+		var _g1 = this.equipments[pos].values.length;
+		while(_g < _g1) {
+			var i = _g++;
+			this.equipments[pos].values[i].parent.set_hidden(true);
+		}
+	}
+	,FeedEquipmentValue: function(pos,valuePos,valueName,value,percent,valueString) {
 		if(percent == null) {
 			percent = false;
 		}
@@ -3210,7 +3852,8 @@ View.prototype = {
 			var vv = this.CreateValueView(this.equipments[pos].parent,false,"Attr");
 			this.equipments[pos].values.push(vv);
 		}
-		this.UpdateValues(this.equipments[pos].values[valuePos],value,-1,valueName,percent);
+		this.UpdateValues(this.equipments[pos].values[valuePos],value,-1,valueName,percent,valueString);
+		this.equipments[pos].values[valuePos].parent.set_hidden(false);
 	}
 	,AddButton: function(id,label,onClick,warningMessage,position,secondArea) {
 		if(secondArea == null) {
@@ -3267,20 +3910,25 @@ View.prototype = {
 	,UpdateVisibilityOfValueView: function(valueView,visibility) {
 		valueView.parent.set_hidden(!visibility);
 	}
-	,UpdateValues: function(res,current,max,label,percent) {
+	,UpdateValues: function(res,current,max,label,percent,valueAsString) {
 		if(percent == null) {
 			percent = false;
 		}
 		if(label != null) {
 			res.labelText.set_text(label);
 		}
-		if(max > 0) {
-			res.bar.set_pos(current * 100 / max);
-			res.centeredText.set_text(current + " / " + max);
-		} else if(percent) {
-			res.centeredText.set_text(current + "%");
+		res.parent.set_hidden(current >= 0 == false);
+		if(valueAsString == null) {
+			if(max > 0) {
+				res.bar.set_pos(current * 100 / max);
+				res.centeredText.set_text(current + " / " + max);
+			} else if(percent) {
+				res.centeredText.set_text(current + "%");
+			} else {
+				res.centeredText.set_text(current + "");
+			}
 		} else {
-			res.centeredText.set_text(current + "");
+			res.centeredText.set_text(valueAsString);
 		}
 	}
 	,IsTabSelected: function(tab) {
@@ -3291,11 +3939,13 @@ View.prototype = {
 		box.set_width(180);
 		parent.addComponent(box);
 		var label = new haxe_ui_components_Label();
-		var lifeView = null;
 		box.addComponent(label);
 		label.set_text(name);
-		lifeView = this.CreateValueView(box,true,"Life: ");
-		return { name : label, life : lifeView, attack : this.CreateValueView(box,false,"Attack: "), parent : box};
+		label.set_height(20);
+		label.set_verticalAlign("center");
+		var lifeView = null;
+		lifeView = this.CreateValueView(box,true,"Life: ","#88AA88");
+		return { name : label, life : lifeView, attack : this.CreateValueView(box,false,"Attack: "), parent : box, mp : this.CreateValueView(box,true,"MP: ","#8888AA"), defaultName : name};
 	}
 	,CreateDropDownView: function(parent,label) {
 		var boxh = new haxe_ui_containers_Box();
@@ -3321,7 +3971,10 @@ View.prototype = {
 		boxh.addComponent(dd);
 		return { parent : boxh, dropdown : dd, labelText : nameLabel};
 	}
-	,CreateValueView: function(parent,withBar,label) {
+	,CreateValueView: function(parent,withBar,label,barColor) {
+		if(barColor == null) {
+			barColor = "#999999";
+		}
 		var boxh = new haxe_ui_containers_Box();
 		boxh.set_width(180);
 		parent.addComponent(boxh);
@@ -3342,7 +3995,7 @@ View.prototype = {
 			progress.set_horizontalAlign("right");
 		}
 		if(withBar) {
-			progress.getComponentAt(0).set_backgroundColor(haxe_ui_util_Color.fromString("#999999"));
+			progress.getComponentAt(0).set_backgroundColor(haxe_ui_util_Color.fromString(barColor));
 			progress.set_pos(100);
 		} else {
 			progress.set_borderSize(0);
