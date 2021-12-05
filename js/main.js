@@ -27,6 +27,7 @@ var BattleManager = function() {
 	this.regionRequirements = [0];
 	this.playerActions = new haxe_ds_StringMap();
 	this.events = [];
+	this.fixedRandom = new seedyrng_Random();
 	this.random = new seedyrng_Random();
 	this.equipDropChance_Rare = 15;
 	this.equipDropChance = 30;
@@ -99,7 +100,77 @@ var BattleManager = function() {
 	_g.h["Speed"] = 1;
 	_g.h["LifeMax"] = 3;
 	bm1.push({ xpPrize : false, statBonus : _g});
-	bm.regionRequirements = [0,5,10,15,20];
+	var bm1 = bm.enemySheets;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 10;
+	_g.h["Speed"] = 3.5;
+	_g.h["LifeMax"] = 0.1;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Defense"] = 0.2;
+	_g1.h["Speed"] = 0.1;
+	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}});
+	var bm1 = bm.regionPrizes;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 3;
+	_g.h["Speed"] = 2;
+	bm1.push({ xpPrize : false, statBonus : _g});
+	var bm1 = bm.enemySheets;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 0.5;
+	_g.h["Speed"] = 2.9;
+	_g.h["LifeMax"] = 2;
+	_g.h["Defense"] = 0.3;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Antibuff"] = 1;
+	var _g2 = new haxe_ds_StringMap();
+	_g2.h["Defense"] = 0.2;
+	_g2.h["Speed"] = 0.1;
+	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
+	var bm1 = bm.regionPrizes;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Speed"] = 2;
+	_g.h["LifeMax"] = 3;
+	bm1.push({ xpPrize : false, statBonus : _g});
+	var bm1 = bm.enemySheets;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1;
+	_g.h["Speed"] = 0.8;
+	_g.h["LifeMax"] = 2;
+	_g.h["Defense"] = 0.4;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Attack"] = 800;
+	_g1.h["Defense"] = 800;
+	var _g2 = new haxe_ds_StringMap();
+	_g2.h["Defense"] = 0.2;
+	_g2.h["Speed"] = 0.1;
+	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : null, initialBuff : { uniqueId : "Power Up", mulStats : _g1, duration : 3, addStats : null, strength : 100}, speciesLevelStats : { attributesBase : _g2}});
+	var bm1 = bm.regionPrizes;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 2;
+	_g.h["LifeMax"] = 3;
+	bm1.push({ xpPrize : false, statBonus : _g});
+	var bm1 = bm.enemySheets;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1.8;
+	_g.h["Speed"] = 1.4;
+	_g.h["LifeMax"] = 2;
+	_g.h["Defense"] = 0.5;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["DebuffProtection"] = 100;
+	var _g2 = new haxe_ds_StringMap();
+	_g2.h["Defense"] = 0.2;
+	_g2.h["Speed"] = 0.1;
+	bm1.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
+	var bm1 = bm.regionPrizes;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1;
+	_g.h["Defense"] = 1;
+	_g.h["LifeMax"] = 3;
+	bm1.push({ xpPrize : false, statBonus : _g});
+	bm.regionRequirements = [0,5,9,14,18,22,30,42,50];
+	if(bm.regionPrizes.length > bm.regionRequirements.length) {
+		haxe_Log.trace("PROBLEM: Tell developer to add more region requirements!!!",{ fileName : "src/logic/BattleManager.hx", lineNumber : 745, className : "BattleManager", methodName : "new"});
+	}
 	var _g = new haxe_ds_StringMap();
 	_g.h["Attack"] = 1;
 	_g.h["Life"] = 20;
@@ -129,6 +200,7 @@ BattleManager.prototype = {
 	,equipDropChance: null
 	,equipDropChance_Rare: null
 	,random: null
+	,fixedRandom: null
 	,events: null
 	,playerActions: null
 	,regionRequirements: null
@@ -140,6 +212,7 @@ BattleManager.prototype = {
 	,volatileAttributeList: null
 	,volatileAttributeAux: null
 	,equipmentToDiscard: null
+	,scheduledSkill: null
 	,GetAttribute: function(actor,label) {
 		var i = actor.attributesCalculated.h[label];
 		if(i < 0) {
@@ -163,18 +236,34 @@ BattleManager.prototype = {
 		}
 		actor.attributesCalculated.h["MP"] = mp;
 	}
-	,UseSkill: function(skill,actor) {
+	,UseSkill: function(skill,actor,activeStep) {
+		if(activeStep == null) {
+			activeStep = false;
+		}
 		var id = skill.id;
 		var skillBase = this.GetSkillBase(id);
-		var mpCost = skillBase.mpCost;
-		this.UseMP(actor,mpCost);
-		var ev = this.AddEvent(EventTypes.SkillUse);
-		ev.origin = this.wdata.hero.reference;
-		ev.dataString = skill.id;
+		if(skillBase.turnRecharge > 0) {
+			if(actor.turnRecharge == null) {
+				actor.turnRecharge = [];
+			}
+			actor.turnRecharge[actor.usableSkills.indexOf(skill)] = skillBase.turnRecharge;
+		}
+		if(activeStep == false && skillBase.activeEffect != null) {
+			this.scheduledSkill = skill;
+			return;
+		}
+		if(actor == this.wdata.hero) {
+			this.wdata.timeCount = 0;
+		}
+		var executedEffects = 0;
+		var efs = skillBase.effects;
+		if(activeStep) {
+			efs = skillBase.activeEffect;
+		}
+		var skillUsed = false;
 		var _g = 0;
-		var _g1 = skillBase.effects;
-		while(_g < _g1.length) {
-			var ef = _g1[_g];
+		while(_g < efs.length) {
+			var ef = efs[_g];
 			++_g;
 			var targets = [];
 			if(ef.target == Target.SELF) {
@@ -182,10 +271,22 @@ BattleManager.prototype = {
 			}
 			if(ef.target == Target.ENEMY) {
 				if(this.wdata.hero == actor) {
+					if(this.wdata.enemy.attributesCalculated.h["LifeMax"] == 0) {
+						this.CreateAreaEnemy();
+					}
 					targets.push(this.wdata.enemy);
 				} else {
 					targets.push(this.wdata.hero);
 				}
+			}
+			++executedEffects;
+			if(skillUsed == false) {
+				skillUsed = true;
+				var mpCost = skillBase.mpCost;
+				this.UseMP(actor,mpCost);
+				var ev = this.AddEvent(EventTypes.SkillUse);
+				ev.origin = this.wdata.hero.reference;
+				ev.dataString = skill.id;
 			}
 			ef.effectExecution(this,skill.level,actor,targets);
 		}
@@ -205,6 +306,25 @@ BattleManager.prototype = {
 		}
 		target.attributesCalculated.h["Life"] = life;
 	}
+	,RemoveBuffs: function(defender,keepDebuffs) {
+		if(keepDebuffs == null) {
+			keepDebuffs = true;
+		}
+		if(keepDebuffs == false) {
+			defender.buffs.length = 0;
+		} else {
+			var i = 0;
+			while(i < defender.buffs.length) {
+				if(defender.buffs[i].debuff == true) {
+					++i;
+					continue;
+				}
+				HxOverrides.remove(defender.buffs,defender.buffs[i]);
+			}
+		}
+		this.RecalculateAttributes(defender);
+		this.AddEvent(EventTypes.BuffRemoval).origin = defender.reference;
+	}
 	,AttackExecute: function(attacker,defender,attackRate,attackBonus,defenseRate) {
 		if(defenseRate == null) {
 			defenseRate = 100;
@@ -221,6 +341,9 @@ BattleManager.prototype = {
 		if(enchant > 0) {
 			magicAttack = true;
 			attackBonus += enchant;
+		}
+		if(attacker.attributesCalculated.h["Antibuff"] > 0) {
+			this.RemoveBuffs(defender);
 		}
 		if(magicAttack == false) {
 			if(attacker.attributesCalculated.h["Piercing"] > 0 == true) {
@@ -263,7 +386,9 @@ BattleManager.prototype = {
 				killedInArea[battleArea] = 0;
 			}
 			killedInArea[battleArea]++;
-			this.DropItemOrSkillSet(this.equipDropChance,1,enemy.level,enemy.reference);
+			if(this.wdata.battleAreaRegion == 0) {
+				this.DropItemOrSkillSet(this.equipDropChance,1,enemy.level,enemy.reference);
+			}
 			var e = this.AddEvent(EventTypes.ActorDead);
 			e.origin = enemy.reference;
 			var xpGain = enemy.level;
@@ -311,7 +436,19 @@ BattleManager.prototype = {
 		if(event == null) {
 			event = true;
 		}
-		var itemB = { type : 2, statMultipliers : null, scalingStats : null, name : null};
+		var scalingStats = new haxe_ds_StringMap();
+		switch(this.random.randomInt(0,2)) {
+		case 0:
+			scalingStats.h["Attack"] = 0.3;
+			break;
+		case 1:
+			scalingStats.h["Defense"] = 0.3;
+			break;
+		case 2:
+			scalingStats.h["Speed"] = 0.1;
+			break;
+		}
+		var itemB = { type : 2, statMultipliers : null, scalingStats : scalingStats, name : null};
 		if(this.wdata.skillSets == null) {
 			this.wdata.skillSets = [];
 		}
@@ -325,8 +462,23 @@ BattleManager.prototype = {
 		var baseItem = -1;
 		var itemB = null;
 		if(this.random.randomInt(0,1000) < skillSetDropProbability * 10) {
-			var numberOfSkills = this.random.randomInt(2,3);
 			var skillPosArray = [];
+			var baseLevel = 1;
+			var maxLevel = 1;
+			var maxNSkills = 2;
+			if(this.wdata.enemy.level > 5) {
+				maxNSkills = 3;
+			}
+			if(this.wdata.enemy.level > 10) {
+				maxLevel = 2;
+			}
+			if(this.wdata.enemy.level > 25) {
+				maxNSkills = 4;
+			}
+			if(this.wdata.enemy.level > 35) {
+				maxLevel = 4;
+			}
+			var numberOfSkills = this.random.randomInt(1,maxNSkills);
 			var _g = 0;
 			var _g1 = numberOfSkills;
 			while(_g < _g1) {
@@ -337,10 +489,19 @@ BattleManager.prototype = {
 			}
 			var ss = { skills : []};
 			var _g = 0;
-			while(_g < skillPosArray.length) {
-				var sp = skillPosArray[_g];
-				++_g;
-				ss.skills.push({ id : this.skillBases[sp].id, level : 1});
+			var _g1 = skillPosArray.length;
+			while(_g < _g1) {
+				var j = _g++;
+				var level = baseLevel;
+				level = this.random.randomInt(baseLevel,maxLevel);
+				if(j >= 2) {
+					level = maxLevel + 1;
+				}
+				if(j >= 3) {
+					level = maxLevel + 2;
+				}
+				var sp = skillPosArray[j];
+				ss.skills.push({ id : this.skillBases[sp].id, level : level});
 			}
 			this.ForceSkillSetDrop(enemyLevel,dropperReference,ss);
 			return;
@@ -447,7 +608,7 @@ BattleManager.prototype = {
 			outsideSystem = new haxe_ds_StringMap();
 			outsideSystem.h["skillset"] = skillSetPos;
 		}
-		e = { type : itemB.type, seen : false, requiredAttributes : null, attributes : stat, generationVariations : statVar, generationLevel : level, generationBaseItem : baseItem, attributeMultiplier : mul, generationVariationsMultiplier : mulVar, generationSuffixMod : suffixPos, generationPrefixMod : prefixPos, generationSuffixModSeed : suffixSeed, generationPrefixModSeed : prefixSeed, outsideSystems : outsideSystem};
+		e = { type : itemB.type, seen : 0, requiredAttributes : null, attributes : stat, generationVariations : statVar, generationLevel : level, generationBaseItem : baseItem, attributeMultiplier : mul, generationVariationsMultiplier : mulVar, generationSuffixMod : suffixPos, generationPrefixMod : prefixPos, generationSuffixModSeed : suffixSeed, generationPrefixModSeed : prefixSeed, outsideSystems : outsideSystem};
 		var addedIndex = -1;
 		var _g = 0;
 		var _g1 = this.wdata.hero.equipment.length;
@@ -471,6 +632,15 @@ BattleManager.prototype = {
 	}
 	,AddBuff: function(buff,actor) {
 		var addBuff = true;
+		if(buff.debuff == true) {
+			var debpro = actor.attributesCalculated.h["DebuffProtection"];
+			if(debpro > 0) {
+				if(this.random.randomInt(1,100) < debpro) {
+					this.AddEvent(EventTypes.DebuffBlock).origin = actor.reference;
+					return;
+				}
+			}
+		}
 		var _g = 0;
 		var _g1 = actor.buffs.length;
 		while(_g < _g1) {
@@ -516,7 +686,18 @@ BattleManager.prototype = {
 		}
 		var initialEnemyToKill = this.balancing.timeForFirstAreaProgress / this.balancing.timeToKillFirstEnemy | 0;
 		if(area > 0) {
-			this.wdata.necessaryToKillInArea = initialEnemyToKill * area;
+			this.wdata.necessaryToKillInArea = initialEnemyToKill + ((area - 1) * initialEnemyToKill * 0.3 | 0);
+			if(this.wdata.necessaryToKillInArea > initialEnemyToKill * 14) {
+				this.wdata.necessaryToKillInArea = initialEnemyToKill * 14;
+			}
+			var fRand = this.fixedRandom;
+			var x = area + 1;
+			var this1 = new haxe__$Int64__$_$_$Int64(x >> 31,x);
+			fRand.set_seed(this1);
+			if(area > 4) {
+				var mul = fRand.random() * 1.5 + 0.5;
+				this.wdata.necessaryToKillInArea = this.wdata.necessaryToKillInArea * mul | 0;
+			}
 			if(this.wdata.battleAreaRegion > 0) {
 				this.wdata.necessaryToKillInArea = 3;
 			}
@@ -618,14 +799,19 @@ BattleManager.prototype = {
 					var p_key = key;
 					var p_value = p_h[key];
 					var add = p_value;
-					var _g = p_key;
-					var _g1 = this.wdata.enemy.attributesBase;
-					var v = _g1.h[_g] + add;
-					_g1.h[_g] = v;
-					var _g2 = p_key;
-					var _g3 = this.wdata.enemy.attributesCalculated;
-					var v1 = _g3.h[_g2] + add;
-					_g3.h[_g2] = v1;
+					if(Object.prototype.hasOwnProperty.call(this.wdata.enemy.attributesBase.h,p_key) == false) {
+						this.wdata.enemy.attributesBase.h[p_key] = add;
+						this.wdata.enemy.attributesCalculated.h[p_key] = add;
+					} else {
+						var _g = p_key;
+						var _g1 = this.wdata.enemy.attributesBase;
+						var v = _g1.h[_g] + add;
+						_g1.h[_g] = v;
+						var _g2 = p_key;
+						var _g3 = this.wdata.enemy.attributesCalculated;
+						var v1 = _g3.h[_g2] + add;
+						_g3.h[_g2] = v1;
+					}
 				}
 			}
 			if(sheet.speciesLevelStats != null) {
@@ -644,12 +830,18 @@ BattleManager.prototype = {
 					this.wdata.enemy.attributesCalculated.h[p_key] = value;
 				}
 			}
+			if(sheet.initialBuff != null) {
+				this.AddBuff(sheet.initialBuff,this.wdata.enemy);
+			}
 		}
 		var v = this.wdata.enemy.attributesCalculated.h["LifeMax"];
 		this.wdata.enemy.attributesCalculated.h["Life"] = v;
 	}
 	,ReinitGameValues: function() {
 		var _gthis = this;
+		if(this.wdata.hero.equipment != null) {
+			while(this.wdata.hero.equipment.indexOf(null) != -1) this.DiscardSingleEquipment(this.wdata.hero.equipment.indexOf(null));
+		}
 		if(this.wdata.regionProgress == null) {
 			this.wdata.regionProgress = [];
 		}
@@ -767,10 +959,10 @@ BattleManager.prototype = {
 		var timeLevelUpGrind = this.balancing.timeForFirstLevelUpGrind;
 		var initialEnemyXP = 2;
 		var initialXPToLevelUp = this.balancing.timeForFirstLevelUpGrind * initialEnemyXP / this.balancing.timeToKillFirstEnemy | 0;
-		this.wdata.hero.xp = ResourceLogic.getExponentialResource(1.5,1,initialXPToLevelUp);
+		this.wdata.hero.xp = ResourceLogic.getExponentialResource(1.2,1,initialXPToLevelUp);
 		this.wdata.hero.xp.value = valueXP;
 		ResourceLogic.recalculateScalingResource(this.wdata.hero.level,this.wdata.hero.xp);
-		this.areaBonus = ResourceLogic.getExponentialResource(1.5,1,initialXPToLevelUp * this.balancing.areaBonusXPPercentOfFirstLevelUp / 100 | 0);
+		this.areaBonus = ResourceLogic.getExponentialResource(1.2,1,initialXPToLevelUp * this.balancing.areaBonusXPPercentOfFirstLevelUp / 100 | 0);
 		if(this.wdata.hero.equipment == null) {
 			this.wdata.hero.equipment = [];
 		}
@@ -780,6 +972,7 @@ BattleManager.prototype = {
 		this.RecalculateAttributes(this.wdata.hero);
 	}
 	,PrestigeExecute: function() {
+		this.wdata.enemy = null;
 		this.wdata.hero.level = 1;
 		this.wdata.hero.xp.value = 0;
 		var hero = this.wdata.hero;
@@ -814,7 +1007,7 @@ BattleManager.prototype = {
 					var s_current = 0;
 					while(s_current < s_length) {
 						var s = s_keys[s_current++];
-						var v = e.attributes.h[s] * 0.7 | 0;
+						var v = e.attributes.h[s] * 0.2 | 0;
 						e.attributes.h[s] = v;
 					}
 				}
@@ -851,9 +1044,7 @@ BattleManager.prototype = {
 			}
 			if(enemy.attributesCalculated.h["Life"] <= 0) {
 				attackHappen = false;
-				var v = enemy.attributesCalculated.h["LifeMax"];
-				enemy.attributesCalculated.h["Life"] = v;
-				enemy.attributesCalculated.h["SpeedCount"] = 0;
+				this.CreateAreaEnemy();
 			}
 		}
 		if(this.PlayerFightMode() == false || enemy == null) {
@@ -867,7 +1058,7 @@ BattleManager.prototype = {
 			if(valueMaxK != null) {
 				max = this.wdata.hero.attributesCalculated.h[valueMaxK];
 			}
-			value += 2 * restMultiplier;
+			value += max * 0.05 | 0;
 			if(this.wdata.sleeping) {
 				value += max * 0.3 | 0;
 			}
@@ -941,7 +1132,22 @@ BattleManager.prototype = {
 					break;
 				}
 			}
-			this.AttackExecute(attacker,defender);
+			if(attacker == this.wdata.hero && this.scheduledSkill != null) {
+				this.UseSkill(this.scheduledSkill,attacker,true);
+				this.scheduledSkill = null;
+			} else {
+				this.AttackExecute(attacker,defender);
+			}
+			if(attacker.turnRecharge != null) {
+				var _g = 0;
+				var _g1 = attacker.turnRecharge.length;
+				while(_g < _g1) {
+					var i = _g++;
+					if(attacker.turnRecharge[i] > 0) {
+						attacker.turnRecharge[i]--;
+					}
+				}
+			}
 			var attackerBuffChanged = false;
 			var _g = 0;
 			var _g1 = attacker.buffs.length;
@@ -961,12 +1167,15 @@ BattleManager.prototype = {
 			if(attackerBuffChanged) {
 				this.RecalculateAttributes(attacker);
 			}
+		} else if(this.wdata.hero.turnRecharge != null) {
+			this.wdata.hero.turnRecharge.length = 0;
 		}
 		return "";
 	}
 	,AddMod: function(modBase,statMul,seed) {
 		var mulAdd = modBase.statMultipliers;
-		this.random.set_seed(seed);
+		var rand = this.fixedRandom;
+		rand.set_seed(seed);
 		var h = mulAdd.h;
 		var m_h = h;
 		var m_keys = Object.keys(h);
@@ -976,7 +1185,7 @@ BattleManager.prototype = {
 			var key = m_keys[m_current++];
 			var m_key = key;
 			var m_value = m_h[key];
-			var val = RandomExtender.Range(this.random,mulAdd.h[m_key]);
+			var val = RandomExtender.Range(rand,mulAdd.h[m_key]);
 			if(Object.prototype.hasOwnProperty.call(statMul.h,m_key)) {
 				var v = statMul.h[m_key] * val / 100 | 0;
 				statMul.h[m_key] = v;
@@ -987,8 +1196,18 @@ BattleManager.prototype = {
 	}
 	,DiscardSingleEquipment: function(pos) {
 		var e = this.wdata.hero.equipment[pos];
-		this.wdata.hero.equipment[pos] = null;
-		this.equipmentToDiscard.push(e);
+		HxOverrides.remove(this.wdata.hero.equipment,e);
+		var _g = 0;
+		var _g1 = this.wdata.hero.equipmentSlots.length;
+		while(_g < _g1) {
+			var i = _g++;
+			if(this.wdata.hero.equipmentSlots[i] >= pos) {
+				this.wdata.hero.equipmentSlots[i]--;
+			}
+		}
+		if(e != null) {
+			this.equipmentToDiscard.push(e);
+		}
 	}
 	,DiscardEquipment: function(pos) {
 		this.DiscardSingleEquipment(pos);
@@ -1118,18 +1337,35 @@ BattleManager.prototype = {
 				if(i == 0 || this.wdata.hero.level >= this.skillSlotUnlocklevel[i - 1]) {
 					skillVisible = true;
 				}
-				if(skillUsable && skillVisible && (this.wdata.enemy == null || this.wdata.enemy.attributesCalculated.h["Life"] == 0)) {
-					var sb = this.GetSkillBase(this.wdata.hero.usableSkills[i].id);
+				var sb = this.GetSkillBase(this.wdata.hero.usableSkills[i].id);
+				if(sb.turnRecharge > 0) {
+					if(this.wdata.hero.turnRecharge == null) {
+						this.wdata.hero.turnRecharge = [];
+					}
+					if(this.wdata.hero.turnRecharge[i] > 0) {
+						skillUsable = false;
+					}
+				}
+				if(skillUsable && skillVisible && this.wdata.enemy == null) {
+					var efs = sb.effects;
+					if(efs == null) {
+						efs = sb.activeEffect;
+					}
 					var _g1 = 0;
-					var _g2 = sb.effects;
-					while(_g1 < _g2.length) {
-						var e = _g2[_g1];
+					while(_g1 < efs.length) {
+						var e = efs[_g1];
 						++_g1;
 						if(e.target == Target.ENEMY) {
 							skillUsable = false;
 							break;
 						}
 					}
+				}
+			}
+			if(this.scheduledSkill != null) {
+				skillUsable = false;
+				if(this.scheduledSkill == this.wdata.hero.usableSkills[i]) {
+					skillButtonMode = 2;
 				}
 			}
 			lu.enabled = skillUsable;
@@ -1215,25 +1451,46 @@ BattleManager.prototype = {
 				this.volatileAttributeAux[i] = 0;
 			}
 		}
-		var skillSetPos = this.wdata.hero.equipmentSlots[2];
-		if(skillSetPos >= 0) {
-			var skillSet = this.wdata.skillSets[this.wdata.hero.equipment[skillSetPos].outsideSystems.h["skillset"]];
-			this.wdata.hero.usableSkills = skillSet.skills;
+		if(actor == this.wdata.hero) {
+			var skillSetPos = this.wdata.hero.equipmentSlots[2];
+			if(skillSetPos >= 0) {
+				var skillSet = this.wdata.skillSets[this.wdata.hero.equipment[skillSetPos].outsideSystems.h["skillset"]];
+				this.wdata.hero.usableSkills = skillSet.skills;
+			}
+		}
+		if(actor.attributesBase == actor.attributesCalculated) {
+			actor.attributesCalculated = new haxe_ds_StringMap();
 		}
 		actor.attributesCalculated.h = Object.create(null);
-		var actor1 = actor.attributesBase;
-		var _g = new haxe_ds_StringMap();
-		_g.h["Attack"] = 1;
-		_g.h["LifeMax"] = 5;
-		_g.h["Life"] = 5;
-		_g.h["Speed"] = 0;
-		_g.h["Defense"] = 0;
-		_g.h["MagicAttack"] = 1;
-		_g.h["MagicDefense"] = 0;
-		_g.h["SpeedCount"] = 0;
-		_g.h["Piercing"] = 0;
-		_g.h["MPMax"] = 2;
-		AttributeLogic.Add(actor1,_g,actor.level,actor.attributesCalculated);
+		if(actor == this.wdata.hero) {
+			var actor1 = actor.attributesBase;
+			var _g = new haxe_ds_StringMap();
+			_g.h["Attack"] = 1;
+			_g.h["LifeMax"] = 5;
+			_g.h["Life"] = 5;
+			_g.h["Speed"] = 0;
+			_g.h["Defense"] = 0;
+			_g.h["MagicAttack"] = 1;
+			_g.h["MagicDefense"] = 0;
+			_g.h["SpeedCount"] = 0;
+			_g.h["Piercing"] = 0;
+			_g.h["MPMax"] = 2;
+			AttributeLogic.Add(actor1,_g,actor.level,actor.attributesCalculated);
+		} else {
+			var h = actor.attributesBase.h;
+			var _g2_h = h;
+			var _g2_keys = Object.keys(h);
+			var _g2_length = _g2_keys.length;
+			var _g2_current = 0;
+			while(_g2_current < _g2_length) {
+				var key = _g2_keys[_g2_current++];
+				var _g3_key = key;
+				var _g3_value = _g2_h[key];
+				var key1 = _g3_key;
+				var value = _g3_value;
+				actor.attributesCalculated.h[key1] = value;
+			}
+		}
 		if(actor == this.wdata.hero) {
 			var _g = 0;
 			var _g1 = this.wdata.regionProgress.length;
@@ -1259,14 +1516,16 @@ BattleManager.prototype = {
 				}
 			}
 		}
-		var _g = 0;
-		var _g1 = actor.equipmentSlots;
-		while(_g < _g1.length) {
-			var es = _g1[_g];
-			++_g;
-			var e = actor.equipment[es];
-			if(e != null) {
-				AttributeLogic.Add(actor.attributesCalculated,e.attributes,1,actor.attributesCalculated);
+		if(actor.equipmentSlots != null) {
+			var _g = 0;
+			var _g1 = actor.equipmentSlots;
+			while(_g < _g1.length) {
+				var es = _g1[_g];
+				++_g;
+				var e = actor.equipment[es];
+				if(e != null) {
+					AttributeLogic.Add(actor.attributesCalculated,e.attributes,1,actor.attributesCalculated);
+				}
 			}
 		}
 		var _g = 0;
@@ -1278,25 +1537,27 @@ BattleManager.prototype = {
 				AttributeLogic.Add(actor.attributesCalculated,b.addStats,1,actor.attributesCalculated);
 			}
 		}
-		var _g = 0;
-		var _g1 = actor.equipmentSlots;
-		while(_g < _g1.length) {
-			var es = _g1[_g];
-			++_g;
-			var e = actor.equipment[es];
-			if(e != null) {
-				if(e.attributeMultiplier != null) {
-					var h = e.attributeMultiplier.h;
-					var a_h = h;
-					var a_keys = Object.keys(h);
-					var a_length = a_keys.length;
-					var a_current = 0;
-					while(a_current < a_length) {
-						var key = a_keys[a_current++];
-						var a_key = key;
-						var a_value = a_h[key];
-						var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
-						actor.attributesCalculated.h[a_key] = v;
+		if(actor.equipmentSlots != null) {
+			var _g = 0;
+			var _g1 = actor.equipmentSlots;
+			while(_g < _g1.length) {
+				var es = _g1[_g];
+				++_g;
+				var e = actor.equipment[es];
+				if(e != null) {
+					if(e.attributeMultiplier != null) {
+						var h = e.attributeMultiplier.h;
+						var a_h = h;
+						var a_keys = Object.keys(h);
+						var a_length = a_keys.length;
+						var a_current = 0;
+						while(a_current < a_length) {
+							var key = a_keys[a_current++];
+							var a_key = key;
+							var a_value = a_h[key];
+							var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
+							actor.attributesCalculated.h[a_key] = v;
+						}
 					}
 				}
 			}
@@ -1333,31 +1594,44 @@ BattleManager.prototype = {
 		this.ChangeBattleArea(this.wdata.battleArea + 1);
 	}
 	,DiscardWorseEquipment: function() {
-		var _g = 0;
-		var _g1 = this.wdata.hero.equipment.length;
-		while(_g < _g1) {
-			var i = _g++;
+		var i = 0;
+		var times = 0;
+		while(i < this.wdata.hero.equipment.length) {
+			++times;
+			if(times > 500) {
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "src/logic/BattleManager.hx", lineNumber : 1547, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				break;
+			}
 			var e = this.wdata.hero.equipment[i];
 			if(e == null) {
+				++i;
 				continue;
 			}
 			if(e.type == 2) {
+				++i;
 				continue;
 			}
-			var _g2 = i + 1;
-			var _g3 = this.wdata.hero.equipment.length;
-			while(_g2 < _g3) {
-				var j = _g2++;
+			var j = i + 1;
+			var times2 = 0;
+			while(j < this.wdata.hero.equipment.length) {
+				++times2;
+				if(times2 > 500) {
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "src/logic/BattleManager.hx", lineNumber : 1564, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					break;
+				}
 				var e2 = this.wdata.hero.equipment[j];
 				if(e2 == null) {
+					++j;
 					continue;
 				}
 				if(e.type != e2.type) {
+					++j;
 					continue;
 				}
 				var r = this.CompareEquipmentStrength(e,e2);
 				if(r == 1 || r == 0) {
 					if(this.wdata.hero.equipmentSlots.indexOf(j) != -1) {
+						++j;
 						continue;
 					}
 					this.DiscardSingleEquipment(j);
@@ -1365,12 +1639,16 @@ BattleManager.prototype = {
 				}
 				if(r == 2) {
 					if(this.wdata.hero.equipmentSlots.indexOf(i) != -1) {
+						++j;
 						continue;
 					}
 					this.DiscardSingleEquipment(i);
+					--i;
 					break;
 				}
+				++j;
 			}
+			++i;
 		}
 	}
 	,CompareEquipmentStrength: function(e1,e2) {
@@ -1759,7 +2037,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild("0.9d");
+            gameanalytics.GameAnalytics.configureBuild("0.10dev");
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -1907,7 +2185,7 @@ $hxClasses["Main"] = Main;
 Main.__name__ = "Main";
 Main.main = function() {
 	haxe_ui_Toolkit.init();
-	haxe_Log.trace("sss",{ fileName : "src/Main.hx", lineNumber : 43, className : "Main", methodName : "main"});
+	haxe_Log.trace("sss",{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 46, className : "Main", methodName : "main"});
 	var key = "privacymemory";
 	var privacyAcceptance = js_Browser.getLocalStorage().getItem(key);
 	if(privacyAcceptance == null) {
@@ -1927,6 +2205,7 @@ Main.gamemain = function() {
 	if(Main.privacyView != null) {
 		haxe_ui_core_Screen.get_instance().removeComponent(Main.privacyView);
 	}
+	Main.runTest();
 	var bm = new BattleManager();
 	var proto = new PrototypeItemMaker();
 	proto.MakeItems();
@@ -1936,12 +2215,16 @@ Main.gamemain = function() {
 	proto.init();
 	bm.skillBases = proto.skills;
 	var view = new View();
-	var enemyRegionNames = ["Lagrima Continent","Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island"];
+	var enemyRegionNames = ["Lagrima Continent","Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island","Tartarus","Witchhunter Base","Highsalem","Witchhunter Guild"];
 	var enemyNames_0 = "Enemy";
 	var enemyNames_1 = "Wolf";
 	var enemyNames_2 = "Tonberry";
 	var enemyNames_3 = "Land Turtle";
 	var enemyNames_4 = "Cactuar";
+	var enemyNames_5 = "Reaper";
+	if(enemyRegionNames.length < bm.regionRequirements.length) {
+		haxe_Log.trace("PLEASE: Go to Discord and tell the developer to 'Add more region names!', there is a bug! " + enemyRegionNames.length + " " + bm.regionRequirements.length,{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 112, className : "Main", methodName : "gamemain"});
+	}
 	var eventShown = 0;
 	var main = new haxe_ui_containers_Box();
 	main.set_percentWidth(100);
@@ -1950,9 +2233,25 @@ Main.gamemain = function() {
 	var keyOld = "save data2";
 	var key = "save data master";
 	var keyBackup = "save backup";
-	var CreateButtonFromAction = function(actionId,buttonLabel,warning) {
+	var keyMappings_h = Object.create(null);
+	window.document.addEventListener("keydown",function(e) {
+		var ke = js_Boot.__cast(e , KeyboardEvent);
+		if(Object.prototype.hasOwnProperty.call(keyMappings_h,ke.key)) {
+			keyMappings_h[ke.key]();
+		}
+	});
+	var CreateButtonFromAction = function(actionId,buttonLabel,warning,key) {
 		var action = bm.playerActions.h[actionId];
 		var actionData = bm.wdata.playerActions.h[actionId];
+		if(key != null) {
+			var v = function() {
+				if(actionData.enabled) {
+					action.actualAction(actionData);
+					view.AnimateButtonPress(buttonLabel);
+				}
+			};
+			keyMappings_h[key] = v;
+		}
 		view.AddButton(actionId,buttonLabel,function(e) {
 			action.actualAction(actionData);
 		},warning);
@@ -1967,14 +2266,14 @@ Main.gamemain = function() {
 		bm.LevelUp();
 	});
 	CreateButtonFromAction("sleep","Sleep");
-	CreateButtonFromAction("repeat","Restart");
-	CreateButtonFromAction("battleaction_" + 0,"Action " + 0);
-	CreateButtonFromAction("battleaction_" + 1,"Action " + 1);
-	CreateButtonFromAction("battleaction_" + 2,"Action " + 2);
-	CreateButtonFromAction("battleaction_" + 3,"Action " + 3);
-	CreateButtonFromAction("battleaction_" + 4,"Action " + 4);
-	CreateButtonFromAction("battleaction_" + 5,"Action " + 5);
-	CreateButtonFromAction("battleaction_" + 6,"Action " + 6);
+	CreateButtonFromAction("repeat","Restart Area");
+	CreateButtonFromAction("battleaction_" + 0,"Action " + 0,null,"" + 1);
+	CreateButtonFromAction("battleaction_" + 1,"Action " + 1,null,"" + 2);
+	CreateButtonFromAction("battleaction_" + 2,"Action " + 2,null,"" + 3);
+	CreateButtonFromAction("battleaction_" + 3,"Action " + 3,null,"" + 4);
+	CreateButtonFromAction("battleaction_" + 4,"Action " + 4,null,"" + 5);
+	CreateButtonFromAction("battleaction_" + 5,"Action " + 5,null,"" + 6);
+	CreateButtonFromAction("battleaction_" + 6,"Action " + 6,null,"" + 7);
 	var prestigeWarn = "Your experience awards will increase by " + (bm.GetXPBonusOnPrestige() * 100 | 0) + "%. Your max level will increase by " + bm.GetMaxLevelBonusOnPrestige() + ". You will keep all permanent stats bonuses. \n\nYou will go back to Level 1. Your progress in all regions will be reset. All that is not equipped will be lost. All that is equipped will lose strength.";
 	CreateButtonFromAction("prestige","Soul Crush",prestigeWarn);
 	view.equipmentMainAction = function(pos,action) {
@@ -2034,11 +2333,15 @@ Main.gamemain = function() {
 	var buffToIcon_h = Object.create(null);
 	buffToIcon_h["regen"] = "&#127807;";
 	buffToIcon_h["enchant-fire"] = "&#128293;";
-	buffToIcon_h["protect"] = "&#128737;";
+	buffToIcon_h["protect"] = "&#9960;";
 	buffToIcon_h["haste"] = "&#128094;";
 	var ActorToView = function(actor,actorView) {
 		if(actor != null) {
 			var name = actorView.defaultName;
+			if(name != actorView.name.get_text()) {
+				actorView.name.set_text(name);
+			}
+			var buffText = "";
 			var _g = 0;
 			var _g1 = actor.buffs;
 			while(_g < _g1.length) {
@@ -2046,15 +2349,21 @@ Main.gamemain = function() {
 				++_g;
 				if(b != null && b.uniqueId != null) {
 					if(Object.prototype.hasOwnProperty.call(buffToIcon_h,b.uniqueId)) {
-						name += " " + buffToIcon_h[b.uniqueId];
+						buffText += " " + buffToIcon_h[b.uniqueId];
+					} else if(b.debuff == true) {
+						buffText += " &#129095;";
 					} else {
-						name += " &#x2191;";
+						buffText += " &#129093;";
 					}
 				}
 			}
-			if(name != actorView.name.get_text()) {
-				actorView.name.set_text(name);
+			if(bm.wdata.sleeping) {
+				buffText += " zZz";
 			}
+			if(bm.wdata.recovering) {
+				buffText += " &#x2620;";
+			}
+			actorView.buffText.set_text(buffText);
 			view.UpdateValues(actorView.life,bm.GetAttribute(actor,"Life"),bm.GetAttribute(actor,"LifeMax"));
 			var mp = bm.GetAttribute(actor,"MP");
 			var mpmax = bm.GetAttribute(actor,"MPMax");
@@ -2071,7 +2380,7 @@ Main.gamemain = function() {
 			} else {
 				view.UpdateValues(actorView.mp,mp,mpmax,"??",false,"???");
 			}
-			view.UpdateValues(actorView.attack,bm.GetAttribute(actor,"Attack"),-1);
+			actorView.attack.parent.set_hidden(true);
 		}
 		view.UpdateVisibility(actorView,actor != null);
 	};
@@ -2080,7 +2389,6 @@ Main.gamemain = function() {
 		view.ButtonVisibility(buttonId,action.visible);
 		view.ButtonEnabled(buttonId,action.enabled);
 	};
-	var itemsInEquipmentWindowSeen = 0;
 	var equipmentWindowTypeAlert = [false,false];
 	view.FeedEquipmentTypes(["Weapons","Armor","Skill Set"]);
 	var saveFileImporterSetup = false;
@@ -2089,22 +2397,25 @@ Main.gamemain = function() {
 		global.h["maxarea"] = v;
 		var v = bm.wdata.hero.level;
 		global.h["herolevel"] = v;
-		if(view.IsTabSelected(view.equipTab.component)) {
-			itemsInEquipmentWindowSeen = bm.wdata.hero.equipment.length;
-		}
-		view.SetTabNotification(itemsInEquipmentWindowSeen != bm.wdata.hero.equipment.length,view.equipTab);
 		GameAnalyticsIntegration.InitializeCheck();
 		ActorToView(bm.wdata.hero,view.heroView);
 		ActorToView(bm.wdata.enemy,view.enemyView);
+		var actor = bm.wdata.hero;
 		view.UpdateValues(view.level,bm.wdata.hero.level,-1);
 		view.UpdateValues(view.xpBar,bm.wdata.hero.xp.value,bm.wdata.hero.xp.calculatedMax);
 		view.UpdateValues(view.speedView,bm.wdata.hero.attributesCalculated.h["Speed"],-1);
+		view.UpdateValues(view.attackView,bm.wdata.hero.attributesCalculated.h["Attack"],-1);
+		view.UpdateValues(view.lifeView,bm.GetAttribute(actor,"Life"),bm.GetAttribute(actor,"LifeMax"));
 		view.UpdateValues(view.defView,bm.wdata.hero.attributesCalculated.h["Defense"],-1);
 		view.UpdateValues(view.mDefView,bm.wdata.hero.attributesCalculated.h["Magic Defense"],-1);
 		view.UpdateValues(view.areaLabel,bm.wdata.battleArea + 1,-1);
 		view.UpdateValues(view.enemyToAdvance,bm.wdata.killedInArea[bm.wdata.battleArea],bm.wdata.necessaryToKillInArea);
 		StoryControlLogic.Update(timeStamp,storyRuntime,view,scriptExecuter);
-		view.FeedDropDownRegion(enemyRegionNames,bm.wdata.battleAreaRegionMax,bm.wdata.battleAreaRegion);
+		var showLocked = 0;
+		if(bm.wdata.battleAreaRegionMax < enemyRegionNames.length) {
+			showLocked = 1;
+		}
+		view.FeedDropDownRegion(enemyRegionNames,bm.wdata.battleAreaRegionMax,bm.wdata.battleAreaRegion,showLocked,"Unreached");
 		var imp = window.document.getElementById("import__");
 		if(imp != null && saveFileImporterSetup == false) {
 			if(imp != null) {
@@ -2124,6 +2435,7 @@ Main.gamemain = function() {
 		view.buttonDiscardBad.set_hidden(typeToShow == 2);
 		view.EquipmentAmountToShow(bm.wdata.hero.equipment.length);
 		var equipmentViewPos = 0;
+		var anyNewEquip = false;
 		var _g = 0;
 		var _g1 = equipmentWindowTypeAlert.length;
 		while(_g < _g1) {
@@ -2138,15 +2450,46 @@ Main.gamemain = function() {
 			var hide = true;
 			if(e != null) {
 				if(e.type == typeToShow) {
-					e.seen = view.IsTabSelected(view.equipTab.component) || e.seen;
+					if(e.seen >= 0 == false) {
+						e.seen = 2;
+					}
+					if(e.seen == 0) {
+						if(view.IsTabSelected(view.equipTab.component)) {
+							e.seen = 1;
+						}
+					}
 					var equipName = Main.GetEquipName(e,bm);
 					hide = false;
 					var rarity = 0;
 					if(e.generationPrefixMod >= 0 || e.generationSuffixMod >= 0) {
 						rarity = 1;
 					}
-					view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i),rarity,-1,e.type == 2);
+					view.FeedEquipmentBase(equipmentViewPos,equipName,bm.IsEquipped(i),rarity,-1,e.type == 2,e.seen == 1);
 					var vid = 0;
+					if(e.outsideSystems != null) {
+						var ss = e.outsideSystems.h["skillset"];
+						var ssd = bm.wdata.skillSets[ss];
+						var _g2 = 0;
+						var _g3 = ssd.skills.length;
+						while(_g2 < _g3) {
+							var s = _g2++;
+							var actionId = "battleaction_" + s;
+							var action = bm.wdata.playerActions.h[actionId];
+							if(action.mode == 0) {
+								var skillName = ssd.skills[s].id;
+								if(ssd.skills[s].level > 1) {
+									var code = 80 + ssd.skills[s].level;
+									skillName += " " + String.fromCodePoint(code);
+								}
+								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,skillName);
+							}
+							if(action.mode == 1) {
+								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,"???");
+							}
+							++vid;
+						}
+						view.FeedEquipmentSeparation(equipmentViewPos,vid - 1);
+					}
 					var h = e.attributes.h;
 					var v_h = h;
 					var v_keys = Object.keys(h);
@@ -2156,7 +2499,7 @@ Main.gamemain = function() {
 						var key1 = v_keys[v_current++];
 						var v_key = key1;
 						var v_value = v_h[key1];
-						view.FeedEquipmentValue(equipmentViewPos,vid,v_key,v_value);
+						view.FeedEquipmentValue(equipmentViewPos,vid,v_key,v_value,false,null);
 						++vid;
 					}
 					if(e.attributeMultiplier != null) {
@@ -2173,28 +2516,13 @@ Main.gamemain = function() {
 							++vid;
 						}
 					}
-					if(e.outsideSystems != null) {
-						var ss = e.outsideSystems.h["skillset"];
-						var ssd = bm.wdata.skillSets[ss];
-						var _g2 = 0;
-						var _g3 = ssd.skills.length;
-						while(_g2 < _g3) {
-							var s = _g2++;
-							var actionId = "battleaction_" + s;
-							var action = bm.wdata.playerActions.h[actionId];
-							if(action.mode == 0) {
-								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,ssd.skills[s].id);
-							}
-							if(action.mode == 1) {
-								view.FeedEquipmentValue(equipmentViewPos,vid,"Skill",-1,false,"???");
-							}
-							++vid;
-						}
-					}
 					view.FinishFeedingEquipmentValue(equipmentViewPos,vid);
+				} else if(e.seen == 1) {
+					e.seen = 2;
 				}
-				if(!e.seen) {
+				if(e.seen == 0) {
 					equipmentWindowTypeAlert[e.type] = true;
+					anyNewEquip = true;
 				}
 			}
 			if(hide) {
@@ -2203,6 +2531,7 @@ Main.gamemain = function() {
 			++equipmentViewPos;
 		}
 		View.TabBarAlert(view.equipmentTypeSelectionTabbar,equipmentWindowTypeAlert,view.equipmentTypeNames);
+		view.SetTabNotification(anyNewEquip,view.equipTab);
 		var levelUpSystem = bm.wdata.hero.level > 1;
 		view.UpdateVisibilityOfValueView(view.level,levelUpSystem);
 		view.UpdateVisibilityOfValueView(view.xpBar,true);
@@ -2241,6 +2570,12 @@ Main.gamemain = function() {
 						GameAnalyticsIntegration.SendProgressFailEvent("world0","stage" + bm.wdata.battleAreaRegion,"area" + bm.wdata.battleArea);
 					}
 				}
+			}
+			if(e.type == EventTypes.BuffRemoval) {
+				ev = "" + originText + " lost  all positive status!";
+			}
+			if(e.type == EventTypes.DebuffBlock) {
+				ev = "" + originText + " blocked the negative status!";
 			}
 			if(e.type == EventTypes.MPRunOut) {
 				ev = "" + originText + " ran out of MP";
@@ -2298,6 +2633,7 @@ Main.gamemain = function() {
 		if(bm.wdata.regionProgress != null && bm.wdata.regionProgress[0] != null) {
 			storyHappened = storyHappened || bm.wdata.regionProgress[0].maxArea > 1;
 		}
+		view.battleView.parentComponent.set_hidden(!storyHappened);
 		view.levelContainer.set_hidden(!storyHappened);
 		view.battleView.set_hidden(!storyHappened);
 		view.areaContainer.set_hidden(!storyHappened);
@@ -2318,8 +2654,19 @@ Main.gamemain = function() {
 			var skills = bm.wdata.hero.usableSkills;
 			if(skills[i] != null) {
 				var action = bm.wdata.playerActions.h[id];
-				if(action.mode == 0) {
-					view.ButtonLabel(id,bm.GetSkillBase(skills[i].id).id);
+				if(action.mode == 0 || action.mode == 2) {
+					var sb = bm.GetSkillBase(skills[i].id);
+					var skillName = sb.id;
+					if(skills[i].level > 1) {
+						var code = 80 + skills[i].level;
+						skillName += " " + String.fromCodePoint(code);
+					}
+					view.ButtonLabel(id,skillName + " - " + sb.mpCost + "MP");
+				}
+				if(action.mode == 2 && action.enabled == false) {
+					view.ButtonAttackColor(id);
+				} else if(action.enabled) {
+					view.ButtonNormalColor(id);
 				}
 				if(action.mode == 1) {
 					view.ButtonLabel(id,"Unlock at Level " + bm.skillSlotUnlocklevel[i]);
@@ -2365,6 +2712,42 @@ Main.gamemain = function() {
 		return true;
 	};
 	update(0);
+};
+Main.runTest = function() {
+	haxe_Log.trace("Discard worse equip tests",{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 680, className : "Main", methodName : "runTest"});
+	var bm = new BattleManager();
+	bm.DefaultConfiguration();
+	var bm1 = bm.wdata.hero.equipment;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 2;
+	bm1.push({ seen : 0, type : 0, requiredAttributes : null, attributes : _g});
+	var oldEquipN = bm.wdata.hero.equipment.length;
+	bm.DiscardWorseEquipment();
+	var equipN = bm.wdata.hero.equipment.length;
+	var numberOfNullEquipment = oldEquipN - equipN;
+	if(numberOfNullEquipment != 0) {
+		haxe_Log.trace("ERROR: discard worse equipment problem: " + numberOfNullEquipment + " VS 0 (aa)",{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 697, className : "Main", methodName : "runTest"});
+	}
+	var bm1 = bm.wdata.hero.equipment;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 2;
+	bm1.push({ seen : 0, type : 0, requiredAttributes : null, attributes : _g});
+	var bm1 = bm.wdata.hero.equipment;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1;
+	bm1.push({ seen : 0, type : 0, requiredAttributes : null, attributes : _g});
+	var bm1 = bm.wdata.hero.equipment;
+	var _g = new haxe_ds_StringMap();
+	_g.h["Life"] = 3;
+	bm1.push({ seen : 0, type : 0, requiredAttributes : null, attributes : _g});
+	oldEquipN = bm.wdata.hero.equipment.length;
+	bm.DiscardWorseEquipment();
+	equipN = bm.wdata.hero.equipment.length;
+	numberOfNullEquipment = oldEquipN - equipN;
+	if(numberOfNullEquipment != 2) {
+		haxe_Log.trace("ERROR: discard worse equipment problem: " + numberOfNullEquipment + " VS 2 (a)",{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 725, className : "Main", methodName : "runTest"});
+		haxe_Log.trace("" + oldEquipN + " " + equipN,{ fileName : "c:\\Users\\user\\gamedev\\_haxe\\HaxeRPGUtilities\\src\\Main.hx", lineNumber : 726, className : "Main", methodName : "runTest"});
+	}
 };
 Main.GetEquipName = function(e,bm) {
 	var itemBases = bm.itemBases;
@@ -2520,23 +2903,26 @@ PrototypeSkillMaker.prototype = {
 	}
 	,init: function() {
 		this.skills.push({ id : "Regen", profession : "Priest", word : "Nature", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
-			var strength = level * 4;
+			var strength = level * 3;
 			var _g = new haxe_ds_StringMap();
 			_g.h["Regen"] = strength;
-			bm.AddBuff({ uniqueId : "regen", addStats : _g, mulStats : null, strength : strength, duration : 8},actor);
+			bm.AddBuff({ uniqueId : "regen", addStats : _g, mulStats : null, strength : strength, duration : 8},array[0]);
 		}}], mpCost : 20});
 		this.skills.push({ id : "Light Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
 			var strength = level * 5;
 			bm.AttackExecute(actor,array[0],50,5 + level,100);
-		}}], mpCost : 5});
+		}}], turnRecharge : 1, mpCost : 5});
 		this.skills.push({ id : "Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
 			var strength = level * 10;
-			bm.AttackExecute(actor,array[0],90 + strength,10,100);
-		}}], mpCost : 15});
+			bm.AttackExecute(actor,array[0],90 + strength,strength,100);
+		}}], turnRecharge : 1, mpCost : 15});
 		this.skills.push({ id : "Heavy Slash", profession : "Warrior", word : "Red", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			bm.AttackExecute(actor,array[0],100 + level * 30,level * 15,100);
+		}}], turnRecharge : 1, mpCost : 40});
+		this.skills.push({ id : "DeSpell", profession : "Unbuffer", word : "Witchhunt", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
 			var strength = level * 30;
-			bm.AttackExecute(actor,array[0],100 + strength,15,100);
-		}}], mpCost : 40});
+			bm.RemoveBuffs(array[0]);
+		}}], mpCost : 10});
 		this.skills.push({ id : "Cure", profession : "Mage", word : "White", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
 			var bonus = 5 + level * 10;
 			var strength = level * bonus;
@@ -2549,7 +2935,7 @@ PrototypeSkillMaker.prototype = {
 			_g.h["Speed"] = bonus;
 			var _g1 = new haxe_ds_StringMap();
 			_g1.h["Speed"] = multiplier;
-			bm.AddBuff({ uniqueId : "haste", addStats : _g, mulStats : _g1, strength : level, duration : 8},actor);
+			bm.AddBuff({ uniqueId : "haste", addStats : _g, mulStats : _g1, strength : level, duration : 8},array[0]);
 		}}], mpCost : 45});
 		this.skills.push({ id : "Protect", profession : "Defender", word : "Defense", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
 			var bonus = level * 5;
@@ -2558,8 +2944,31 @@ PrototypeSkillMaker.prototype = {
 			_g.h["Defense"] = bonus;
 			var _g1 = new haxe_ds_StringMap();
 			_g1.h["Defense"] = multiplier;
-			bm.AddBuff({ uniqueId : "protect", addStats : _g, mulStats : _g1, strength : level, duration : 8},actor);
+			bm.AddBuff({ uniqueId : "protect", addStats : _g, mulStats : _g1, strength : level, duration : 8},array[0]);
 		}}], mpCost : 25});
+		this.skills.push({ id : "Sharpen", profession : "Smith", word : "Sharpness", effects : [{ target : Target.SELF, effectExecution : function(bm,level,actor,array) {
+			var bonus = 100;
+			var multiplier = 100 + 5 * level;
+			var _g = new haxe_ds_StringMap();
+			_g.h["Piercing"] = bonus;
+			var _g1 = new haxe_ds_StringMap();
+			_g1.h["Attack"] = multiplier;
+			bm.AddBuff({ uniqueId : "pierce", addStats : _g, mulStats : _g1, strength : level, duration : 9},array[0]);
+		}}], mpCost : 20});
+		this.skills.push({ id : "Armor Break", profession : "Breaker", word : "Destruction", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			var _g = new haxe_ds_StringMap();
+			_g.h["Defense"] = -level * 10;
+			var _g1 = new haxe_ds_StringMap();
+			_g1.h["Defense"] = 50;
+			bm.AddBuff({ uniqueId : "Armor Break", addStats : _g, mulStats : _g1, strength : level, duration : 5, debuff : true},array[0]);
+		}}], mpCost : 10});
+		this.skills.push({ id : "Attack Break", profession : "Breaker", word : "Destruction", effects : [{ target : Target.ENEMY, effectExecution : function(bm,level,actor,array) {
+			var _g = new haxe_ds_StringMap();
+			_g.h["Attack"] = -level * 10;
+			var _g1 = new haxe_ds_StringMap();
+			_g1.h["Attack"] = 50;
+			bm.AddBuff({ uniqueId : "Attack Break", addStats : _g, mulStats : _g1, strength : level, duration : 5, debuff : true},array[0]);
+		}}], mpCost : 10});
 	}
 	,__class__: PrototypeSkillMaker
 };
@@ -2645,8 +3054,10 @@ var EventTypes = $hxEnums["EventTypes"] = { __ename__:true,__constructs__:null
 	,statUpgrade: {_hx_name:"statUpgrade",_hx_index:12,__enum__:"EventTypes",toString:$estr}
 	,SkillUse: {_hx_name:"SkillUse",_hx_index:13,__enum__:"EventTypes",toString:$estr}
 	,MPRunOut: {_hx_name:"MPRunOut",_hx_index:14,__enum__:"EventTypes",toString:$estr}
+	,BuffRemoval: {_hx_name:"BuffRemoval",_hx_index:15,__enum__:"EventTypes",toString:$estr}
+	,DebuffBlock: {_hx_name:"DebuffBlock",_hx_index:16,__enum__:"EventTypes",toString:$estr}
 };
-EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade,EventTypes.SkillUse,EventTypes.MPRunOut];
+EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade,EventTypes.SkillUse,EventTypes.MPRunOut,EventTypes.BuffRemoval,EventTypes.DebuffBlock];
 var ActorReference = function(type,pos) {
 	this.type = type;
 	this.pos = pos;
@@ -2928,6 +3339,8 @@ StoryControlLogic.Update = function(update,runtime,view,executer) {
 	view.ButtonEnabled("cutscenestart",runtime.cutsceneStartable != null);
 	if(runtime.cutsceneStartable != null) {
 		view.ButtonLabel("cutscenestart",runtime.cutsceneStartable.actionLabel + "\n<i>(Story)</i>");
+	} else {
+		view.ButtonLabel("cutscenestart","");
 	}
 	view.SetTabNotification(amountVisible > amountVisibleRecognized,view.storyTab);
 	var cutscene = runtime.cutscene;
@@ -3348,7 +3761,7 @@ var View = function() {
 	var battleParent = new haxe_ui_containers_HBox();
 	battleParent.set_percentHeight(100);
 	this.tabMaster.addComponent(battleParent);
-	battleParent.set_text("Battle");
+	battleParent.set_text("Main");
 	this.mainComponentB = battleParent;
 	battleParent.set_paddingLeft(40);
 	battleParent.set_paddingTop(10);
@@ -3369,6 +3782,8 @@ var View = function() {
 	var logContainer = this.CreateContainer(scroll,true);
 	var log = new haxe_ui_components_Label();
 	this.logText = log;
+	this.logText.set_text("You exist");
+	this.logText.set_htmlText(this.logText.get_text());
 	logContainer.addComponent(log);
 	log.set_width(190);
 	log.set_horizontalAlign("center");
@@ -3380,30 +3795,33 @@ var View = function() {
 	scroll.set_verticalAlign("bottom");
 	var log = new haxe_ui_components_Label();
 	this.logTextBattle = log;
+	this.logTextBattle.set_text("You are healthy");
+	this.logTextBattle.set_htmlText("You are healthy");
 	logContainer.addComponent(log);
 	log.set_width(190);
 	log.set_horizontalAlign("center");
 	logContainer.set_horizontalAlign("center");
-	this.areaContainer = this.CreateContainer(verticalBox,false);
-	var container = new haxe_ui_containers_VBox();
-	this.areaContainer.addComponent(container);
-	this.regionLabel = this.CreateValueView(container,false,"Region: ");
-	this.areaLabel = this.CreateValueView(container,false,"Area: ");
-	this.enemyToAdvance = this.CreateValueView(container,true,"Progress: ");
-	var container = new haxe_ui_containers_ContinuousHBox();
-	this.areaContainer.addComponent(container);
-	this.regionButtonParent = container;
+	this.areaContainer = this.CreateContainer(verticalBox,true);
 	this.levelContainer = this.CreateContainer(verticalBox,true);
 	this.level = this.CreateValueView(this.levelContainer,false,"Level: ");
 	this.xpBar = this.CreateValueView(this.levelContainer,true,"XP: ");
-	this.speedView = this.CreateValueView(this.levelContainer,false,"Speed: ");
-	this.defView = this.CreateValueView(this.levelContainer,false,"Def: ");
-	this.mDefView = this.CreateValueView(this.levelContainer,false,"mDef: ");
+	var container = new haxe_ui_containers_ContinuousHBox();
+	container.set_percentWidth(100);
+	this.areaContainer.addComponent(container);
+	this.regionButtonParent = container;
+	var container = this.CreateContainer(this.areaContainer,false);
+	this.areaLabel = this.CreateValueView(container,false,"Area: ");
+	var b = new haxe_ui_containers_Box();
+	b.set_width(30);
+	container.addComponent(b);
+	this.enemyToAdvance = this.CreateValueView(container,true,"Progress: ");
 	this.battleView = this.CreateContainer(verticalBox,false);
-	this.battleView.set_width(400);
+	this.battleView.set_width(440);
 	this.heroView = this.GetActorView("You",this.battleView);
+	var box = new haxe_ui_containers_Box();
+	box.set_width(40);
+	this.battleView.addComponent(box);
 	this.enemyView = this.GetActorView("Enemy",this.battleView);
-	var battleButtonView = this.CreateContainer(verticalBox,false);
 	this.equipTabChild = new haxe_ui_containers_ContinuousHBox();
 	var tabBar = new haxe_ui_components_TabBar();
 	tabBar.set_percentWidth(100);
@@ -3415,16 +3833,26 @@ var View = function() {
 		_gthis.equipmentMainAction(-1,View.equipmentAction_DiscardBad);
 	});
 	this.equipTabChild.addComponent(this.buttonDiscardBad);
-	var scroll = this.CreateScrollable(null);
+	var gridBox = new haxe_ui_containers_HBox();
+	gridBox.set_text("Equipment");
+	this.equipTab = new UIElementWrapper(gridBox,this.tabMaster);
+	this.equipTab.desiredPosition = 1;
+	gridBox.set_percentHeight(100);
+	gridBox.set_percentWidth(100);
+	var statContainer = this.CreateContainer(gridBox,true);
+	this.lifeView = this.CreateValueView(statContainer,true,"Life: ");
+	this.attackView = this.CreateValueView(statContainer,false,"Attack: ");
+	this.speedView = this.CreateValueView(statContainer,false,"Speed: ");
+	this.defView = this.CreateValueView(statContainer,false,"Def: ");
+	this.mDefView = this.CreateValueView(statContainer,false,"mDef: ");
+	var scroll = this.CreateScrollable(gridBox);
 	scroll.set_height(300);
 	scroll.set_text("Equipment");
 	scroll.addComponent(this.equipTabChild);
-	scroll.set_paddingLeft(40);
-	scroll.set_paddingTop(10);
+	gridBox.set_paddingLeft(40);
+	gridBox.set_paddingTop(10);
 	scroll.set_percentWidth(100);
 	scroll.set_percentHeight(100);
-	this.equipTab = new UIElementWrapper(scroll,this.tabMaster);
-	this.equipTab.desiredPosition = 1;
 	var storyTabComp = new haxe_ui_containers_ContinuousHBox();
 	storyTabComp.set_width(600);
 	storyTabComp.set_height(300);
@@ -3491,11 +3919,12 @@ View.prototype = {
 	,level: null
 	,xpBar: null
 	,speedView: null
+	,attackView: null
+	,lifeView: null
 	,defView: null
 	,mDefView: null
 	,enemyToAdvance: null
 	,areaLabel: null
-	,regionLabel: null
 	,mainComponent: null
 	,mainComponentB: null
 	,equipTabChild: null
@@ -3528,9 +3957,12 @@ View.prototype = {
 	,amountOfStoryMessagesShown: null
 	,storyDialog: null
 	,Update: function() {
-		this.equipTabChild.set_width(haxe_ui_core_Screen.get_instance().get_width() - 40 - 60);
+		this.equipTabChild.set_width(haxe_ui_core_Screen.get_instance().get_width() - 40 - 60 - 200);
 	}
 	,LatestMessageUpdate: function(message,speaker,imageFile,messagePos) {
+		if(speaker == null) {
+			speaker = "";
+		}
 		if(messagePos >= this.amountOfStoryMessagesShown) {
 			this.amountOfStoryMessagesShown = messagePos + 1;
 			while(this.storyDialog.messages.length <= messagePos) {
@@ -3662,10 +4094,12 @@ View.prototype = {
 			this.equipmentTypeSelectionTabbar.addComponent(b);
 		}
 	}
-	,FeedDropDownRegion: function(regionNames,regionAmount,currentRegion) {
+	,FeedDropDownRegion: function(regionNames,regionAmount,currentRegion,showLocked,lockedMessage) {
+		if(showLocked == null) {
+			showLocked = 0;
+		}
 		var _gthis = this;
-		this.regionLabel.centeredText.set_text(regionNames[currentRegion]);
-		var buttonAmount = regionAmount;
+		var buttonAmount = regionAmount + showLocked;
 		var _this = this.regionButtonParent;
 		var children = _this._children == null ? [] : _this._children;
 		if(children.length < buttonAmount) {
@@ -3676,18 +4110,24 @@ View.prototype = {
 				_gthis.regionChangeAction(regionPos);
 			});
 			b.set_width(100);
+			b.set_height(40);
+			b.set_toggle(true);
 		}
 		var _g = 0;
 		var _g1 = children.length;
 		while(_g < _g1) {
 			var i = _g++;
 			var hide = i >= buttonAmount;
-			if(currentRegion == i) {
-				hide = true;
-			}
+			var b = js_Boot.__cast(children[i] , haxe_ui_components_Button);
+			var tmp = currentRegion == i;
+			b.set_selected(currentRegion == i);
 			children[i].set_hidden(hide);
 			if(hide == false) {
 				children[i].set_text(regionNames[i]);
+			}
+			b.set_disabled(i >= regionAmount);
+			if(b.get_disabled() && hide == false) {
+				b.set_text(lockedMessage);
 			}
 		}
 	}
@@ -3718,7 +4158,9 @@ View.prototype = {
 		element.tabVisible = visible;
 	}
 	,CreateScrollable: function(parent) {
-		var container = new haxe_ui_containers_ScrollView();
+		var sv = new haxe_ui_containers_ScrollView();
+		sv.set_percentContentWidth(100);
+		var container = sv;
 		if(parent != null) {
 			parent.addComponent(container);
 		}
@@ -3736,7 +4178,7 @@ View.prototype = {
 		} else {
 			container = new haxe_ui_containers_VBox();
 		}
-		container.set_borderColor(haxe_ui_util_Color.fromString("#333333"));
+		container.set_borderColor(haxe_ui_util_Color.fromString("#AAAAAA"));
 		container.set_borderSize(1);
 		container.set_padding(15);
 		parent.addComponent(container);
@@ -3759,9 +4201,25 @@ View.prototype = {
 			var viewParent = new haxe_ui_containers_VBox();
 			viewParent.set_borderSize(1);
 			viewParent.set_padding(6);
+			var header = new haxe_ui_containers_Box();
+			header.set_percentWidth(100);
+			header.set_height(32);
 			var name = new haxe_ui_components_Label();
 			name.set_text("Sword");
-			viewParent.addComponent(name);
+			name.set_percentWidth(80);
+			name.set_verticalAlign("Center");
+			header.addComponent(name);
+			var rightLabelBox = new haxe_ui_containers_VBox();
+			rightLabelBox.set_paddingLeft(5);
+			rightLabelBox.set_paddingRight(5);
+			rightLabelBox.set_horizontalAlign("right");
+			var rightLabel = new haxe_ui_components_Label();
+			rightLabel.set_text("New");
+			rightLabel.set_horizontalAlign("right");
+			rightLabelBox.set_backgroundColor(haxe_ui_util_Color.fromString("#FFAAAA"));
+			rightLabelBox.addComponent(rightLabel);
+			header.addComponent(rightLabelBox);
+			viewParent.addComponent(header);
 			var this1 = new Array(2);
 			var buttonsAct = this1;
 			var _g = 0;
@@ -3784,7 +4242,7 @@ View.prototype = {
 				buttonsAct[i] = button;
 				viewParent.addComponent(button);
 			}
-			var ev = { name : name, parent : viewParent, values : [], actionButtons : buttonsAct};
+			var ev = { name : name, parent : viewParent, values : [], actionButtons : buttonsAct, rightLabelBox : rightLabelBox};
 			this.equipTabChild.addComponent(viewParent);
 			this.equipments.push(ev);
 		}
@@ -3799,7 +4257,10 @@ View.prototype = {
 			this.equipmentMainAction(equipmentPos,actionId);
 		}
 	}
-	,FeedEquipmentBase: function(pos,name,equipped,rarity,numberOfValues,unequipable) {
+	,FeedEquipmentBase: function(pos,name,equipped,rarity,numberOfValues,unequipable,firstTimeSee) {
+		if(firstTimeSee == null) {
+			firstTimeSee = false;
+		}
 		if(unequipable == null) {
 			unequipable = false;
 		}
@@ -3811,6 +4272,7 @@ View.prototype = {
 		}
 		this.equipments[pos].parent.set_hidden(false);
 		this.equipments[pos].name.set_text(name);
+		this.equipments[pos].rightLabelBox.set_hidden(firstTimeSee == false);
 		var color = "#000000";
 		if(rarity == 1) {
 			color = "#002299";
@@ -3844,16 +4306,35 @@ View.prototype = {
 			this.equipments[pos].values[i].parent.set_hidden(true);
 		}
 	}
-	,FeedEquipmentValue: function(pos,valuePos,valueName,value,percent,valueString) {
+	,FeedEquipmentSeparation: function(pos,valuePos) {
+		this.equipments[pos].values[valuePos].parent.set_height(35);
+	}
+	,FeedEquipmentValue: function(pos,valuePos,valueName,value,percent,valueString,separationNext) {
+		if(separationNext == null) {
+			separationNext = false;
+		}
 		if(percent == null) {
 			percent = false;
 		}
 		while(this.equipments[pos].values.length <= valuePos) {
 			var vv = this.CreateValueView(this.equipments[pos].parent,false,"Attr");
+			vv.parent.set_marginBottom(30);
+			vv.parent.set_paddingBottom(30);
 			this.equipments[pos].values.push(vv);
+		}
+		if(separationNext) {
+			this.equipments[pos].values[valuePos].parent.set_paddingBottom(30);
 		}
 		this.UpdateValues(this.equipments[pos].values[valuePos],value,-1,valueName,percent,valueString);
 		this.equipments[pos].values[valuePos].parent.set_hidden(false);
+	}
+	,AnimateButtonPress: function(key) {
+		var comp = this.buttonMap.h[key];
+		var f = new haxe_ui_styles_elements_AnimationKeyFrame();
+		f.directives = [];
+		var frames = new haxe_ui_styles_elements_AnimationKeyFrames("press",[f]);
+		var a = new haxe_ui_styles_animation_Animation(comp);
+		this.buttonMap.h[key].set_componentAnimation(a);
 	}
 	,AddButton: function(id,label,onClick,warningMessage,position,secondArea) {
 		if(secondArea == null) {
@@ -3866,6 +4347,8 @@ View.prototype = {
 		button.set_text(label);
 		button.set_repeater(true);
 		button.set_repeatInterval(300);
+		button.set_width(180);
+		button.set_height(40);
 		var paren = this.buttonBox;
 		if(secondArea) {
 			paren = this.mainComponentB;
@@ -3899,6 +4382,14 @@ View.prototype = {
 		if(lab != null) {
 			lab.set_htmlText(label);
 		}
+	}
+	,ButtonAttackColor: function(id) {
+		var b = this.buttonMap.h[id];
+		b.set_backgroundColor(haxe_ui_util_Color.fromString("#FF6666"));
+	}
+	,ButtonNormalColor: function(id) {
+		var b = this.buttonMap.h[id];
+		b.set_backgroundColor(haxe_ui_util_Color.fromString("#EEEEFF"));
 	}
 	,ButtonEnabled: function(id,enabled) {
 		var b = this.buttonMap.h[id];
@@ -3938,14 +4429,21 @@ View.prototype = {
 		var box = new haxe_ui_containers_VBox();
 		box.set_width(180);
 		parent.addComponent(box);
+		var header = new haxe_ui_containers_Box();
+		header.set_percentWidth(100);
+		header.set_height(20);
+		box.addComponent(header);
 		var label = new haxe_ui_components_Label();
-		box.addComponent(label);
 		label.set_text(name);
-		label.set_height(20);
 		label.set_verticalAlign("center");
+		var rightLabel = new haxe_ui_components_Label();
+		rightLabel.set_styleString("font-weight: bold; font-size: 16px;");
+		rightLabel.set_horizontalAlign("right");
+		header.addComponent(rightLabel);
+		header.addComponent(label);
 		var lifeView = null;
-		lifeView = this.CreateValueView(box,true,"Life: ","#88AA88");
-		return { name : label, life : lifeView, attack : this.CreateValueView(box,false,"Attack: "), parent : box, mp : this.CreateValueView(box,true,"MP: ","#8888AA"), defaultName : name};
+		lifeView = this.CreateValueView(box,true,"Life: ","#FF8888");
+		return { name : label, life : lifeView, attack : this.CreateValueView(box,false,"Attack: "), parent : box, mp : this.CreateValueView(box,true,"MP: ","#CC88FF"), defaultName : name, buffText : rightLabel};
 	}
 	,CreateDropDownView: function(parent,label) {
 		var boxh = new haxe_ui_containers_Box();
@@ -3971,19 +4469,24 @@ View.prototype = {
 		boxh.addComponent(dd);
 		return { parent : boxh, dropdown : dd, labelText : nameLabel};
 	}
-	,CreateValueView: function(parent,withBar,label,barColor) {
+	,CreateValueView: function(parent,withBar,label,barColor,extraHeight) {
+		if(extraHeight == null) {
+			extraHeight = 0;
+		}
 		if(barColor == null) {
-			barColor = "#999999";
+			barColor = "#CCCCDD";
 		}
 		var boxh = new haxe_ui_containers_Box();
 		boxh.set_width(180);
+		boxh.set_height(20 + extraHeight);
 		parent.addComponent(boxh);
 		var addLabel = label != null && label != "";
 		var nameLabel = null;
 		if(addLabel) {
 			var l = new haxe_ui_components_Label();
 			l.set_text(label);
-			l.set_verticalAlign("center");
+			l.set_top(20);
+			l.set_paddingTop(2);
 			boxh.addComponent(l);
 			nameLabel = l;
 		}
@@ -4003,8 +4506,8 @@ View.prototype = {
 		var l = new haxe_ui_components_Label();
 		l.set_text("32/32");
 		l.set_textAlign("center");
-		l.set_styleString("font-size:14px; text-align: center;\r\n\t\t\tvertical-align: middle; width:100%;");
-		l.set_verticalAlign("middle");
+		l.set_styleString("font-size:14px; text-align: center;\r\n\t\t\tvertical-align: center; width:100%;");
+		l.set_verticalAlign("center");
 		progress.addComponent(l);
 		return { centeredText : l, bar : progress, parent : boxh, labelText : nameLabel};
 	}
@@ -8700,7 +9203,7 @@ haxe_ui_containers_dialogs_Dialog.prototype = $extend(haxe_ui_backend_DialogBase
 var StoryDialog = function() {
 	this.messages = [];
 	haxe_ui_containers_dialogs_Dialog.call(this);
-	this.set_title("Entry Form");
+	this.set_title("Story Scene");
 	this.set_width(400);
 	this.set_percentHeight(80);
 	this.messageParent = new haxe_ui_containers_VBox();
@@ -8710,6 +9213,7 @@ var StoryDialog = function() {
 	this.scroll.addComponent(this.messageParent);
 	this.scroll.set_percentHeight(90);
 	this.scroll.set_width(this.get_width() - 10);
+	this.scroll.set_percentContentWidth(100);
 	this.scroll.set_horizontalAlign("center");
 	this.addComponent(this.scroll);
 	var hbox = new haxe_ui_containers_ContinuousHBox();
