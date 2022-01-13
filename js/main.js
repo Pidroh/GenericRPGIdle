@@ -5719,7 +5719,7 @@ View.prototype = {
 		steam.set_percentWidth(100);
 		buttonHolder.addComponent(steam);
 		var steami = new haxe_ui_components_Image();
-		steami.set_resource(haxe_ui_util_Variant.fromString("graphics/steamlogo.png"));
+		steami.set_resource(haxe_ui_util_Variant.fromString("graphics/Steamlogo.png"));
 		steami.set_scaleMode("fitheight");
 		steami.set_height(30);
 		steami.set_horizontalAlign("center");
