@@ -1414,7 +1414,7 @@ BattleManager.prototype = {
 		}
 	}
 	,CalculateHeroMaxLevel: function() {
-		return this.wdata.prestigeTimes * this.GetMaxLevelBonusOnPrestige() + 20;
+		return 99999;
 	}
 	,AwardXP: function(xpPlus) {
 		if(this.wdata.hero.level < this.CalculateHeroMaxLevel()) {
@@ -1429,13 +1429,13 @@ BattleManager.prototype = {
 		return 10;
 	}
 	,GetXPBonusOnPrestige: function() {
-		return 0.05;
+		return 0.5;
 	}
 	,GetXPAddBonusOnPrestige: function() {
 		return this.wdata.prestigeTimes * 2;
 	}
 	,GetLevelRequirementForPrestige: function() {
-		return this.CalculateHeroMaxLevel() - 10;
+		return 25 + this.wdata.prestigeTimes * 25;
 	}
 	,CreateEnemy: function(region,area) {
 		var enemyLevel = area;
@@ -1771,6 +1771,8 @@ BattleManager.prototype = {
 		this.wdata.maxArea = 1;
 		this.wdata.battleAreaRegionMax = 1;
 		this.wdata.prestigeTimes++;
+		this.wdata.currency.currencies.h["Lagrima"].value = 0;
+		this.wdata.currency.currencies.h["Lagrima Stone"].value = 0;
 		this.RecalculateAttributes(this.wdata.hero);
 		var i = 0;
 		while(i < this.wdata.hero.equipment.length) {
@@ -2514,7 +2516,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				console.log("Sources\GRI\logic/BattleManager.hx:2158:","LOOP SCAPE");
+				console.log("Sources\GRI\logic/BattleManager.hx:2160:","LOOP SCAPE");
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -2531,7 +2533,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					console.log("Sources\GRI\logic/BattleManager.hx:2175:","LOOP SCAPE 2");
+					console.log("Sources\GRI\logic/BattleManager.hx:2177:","LOOP SCAPE 2");
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -2999,6 +3001,8 @@ GRIControl.prototype = {
 		var hero = bm.wdata.hero;
 		this.actorToView(hero,actorView,false);
 		this.actorToView(bm.wdata.enemy,this.view.enemyBattleView,true);
+		this.view.levelLabel.text = "Level " + hero.level;
+		this.view.ui.updateBarValue(this.view.xpBar,hero.xp.value,hero.xp.calculatedMax);
 		var executeAction = function(actionId) {
 			if(actionId != null) {
 				var action = bm.playerActions.h[actionId];
@@ -3611,6 +3615,7 @@ GRIControlRegion.prototype = {
 			if(value != null && value.stringData != null) {
 				if(value.stringData == GRIControlRegion.dataRegionB) {
 					this.battleManager.changeRegion(value.intData);
+					this.viewRegion.resetAreaScroll();
 				}
 				if(value.stringData == GRIControlRegion.dataAreaB) {
 					this.battleManager.ChangeBattleArea(value.intData);
@@ -3871,8 +3876,16 @@ GRIView.prototype = {
 		this.tabTags.push(GRIView.tagTabEquip);
 	}
 	,setupBattleActors: function() {
-		this.heroBattleView = this.addActorViewBattleHero(69,121);
+		var heroX = 69;
+		var heroY = 121;
+		this.heroBattleView = this.addActorViewBattleHero(heroX,heroY);
 		this.enemyBattleView = this.addActorViewBattleEnemy(600,100);
+		this.levelLabel = this.addText("levellabel","Level Z",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		this.xpBar = this.addBar(heroX + 52,heroY + 120,"",GRIView.ARCHETYPE_BAR_TIMID,"heroBattleXPbar",null);
+		this.uiCreation.addElement(this.levelLabel);
+		var self = this.levelLabel.transform.position;
+		self.x = heroX + 255;
+		self.y = heroY + 105;
 	}
 	,FeedAreaNames: function(areaNames,currentArea) {
 	}
@@ -3985,6 +3998,11 @@ GRIView.prototype = {
 		var w = 230;
 		var h = 26;
 		var border = 3;
+		if(archetype == GRIView.ARCHETYPE_BAR_TIMID) {
+			h = 12;
+			w = 250;
+			var border1 = 3;
+		}
 		var barView = { barTag : tag, barMaxSize : w - border * 2};
 		var e = new UIElement();
 		e.tags.push(tag);
@@ -4000,6 +4018,11 @@ GRIView.prototype = {
 		e.style.sprite = GRIView.SPRITE_GREENGRAD;
 		if(archetype == "heroBattleMPbar") {
 			e.style.sprite = GRIView.SPRITE_BLUEGRAD;
+		}
+		if(archetype == GRIView.ARCHETYPE_BAR_TIMID) {
+			e.style.sprite = null;
+			e.style.fill = true;
+			e.style.color = GRIView.COLOR_BAR_XP;
 		}
 		barView.barPortion = e;
 		this.uiCreation.addElement(e);
@@ -4017,11 +4040,15 @@ GRIView.prototype = {
 		e.tags.push(parentTag);
 		e.tags.push(tag);
 		e.transform.set(x,y,w,h);
-		e.text = "main";
+		e.text = "";
 		e.textFont = "main14";
 		var self = e.textPivot;
 		self.x = 0.5;
 		self.y = 0.5;
+		if(archetype == GRIView.ARCHETYPE_BAR_TIMID) {
+			e.style.color = GRIView.COLOR_TEXT_NORMAL;
+			e.textFont = "main";
+		}
 		barView.mainText = e;
 		this.uiCreation.addElement(e);
 		return barView;
@@ -4179,6 +4206,13 @@ var ActorView = function(layoutId) {
 ActorView.__name__ = "ActorView";
 ActorView.prototype = {
 	__class__: ActorView
+};
+var haxe_ds_StringMap = function() {
+	this.h = Object.create(null);
+};
+haxe_ds_StringMap.__name__ = "haxe.ds.StringMap";
+haxe_ds_StringMap.prototype = {
+	__class__: haxe_ds_StringMap
 };
 var ActorViewLogic = function() { };
 ActorViewLogic.__name__ = "ActorViewLogic";
@@ -4468,6 +4502,9 @@ GRIViewRegion.__name__ = "GRIViewRegion";
 GRIViewRegion.prototype = {
 	setup: function() {
 		this.scrolls.push(this.view.uiCreation.addScrollToLayout(GRIViewRegion.LAYOUT_REGION_AREAS));
+	}
+	,resetAreaScroll: function() {
+		this.scrolls[0].offset.y = 0;
 	}
 	,feedRegionButtons: function(feed) {
 		this.regionButtons.adjustLength(feed.feedLists.length * 2);
@@ -4779,13 +4816,6 @@ HxOverrides.remove = function(a,obj) {
 };
 HxOverrides.now = function() {
 	return Date.now();
-};
-var haxe_ds_StringMap = function() {
-	this.h = Object.create(null);
-};
-haxe_ds_StringMap.__name__ = "haxe.ds.StringMap";
-haxe_ds_StringMap.prototype = {
-	__class__: haxe_ds_StringMap
 };
 var ImageManager = function() { };
 ImageManager.__name__ = "ImageManager";
@@ -6265,7 +6295,11 @@ UIElementManager.prototype = {
 		bar.leftText.text = text;
 	}
 	,updateBarValue: function(bar,value,maxValue) {
-		bar.barPortion.transform.size.x = value * bar.barMaxSize / maxValue;
+		var sc = value / maxValue;
+		if(sc > 1) {
+			sc = 1;
+		}
+		bar.barPortion.transform.size.x = sc * bar.barMaxSize;
 		bar.mainText.text = value + "";
 	}
 	,endInputHog: function() {
@@ -9006,6 +9040,7 @@ TurnOrderData.charaSprites = [Sprite.create("heroicon",512,512),Sprite.create("e
 GRIView.COLOR_BLACK = 0;
 GRIView.COLOR_BACKGROUND = 988450;
 GRIView.COLOR_BACKGROUND_GRAY = 1779241;
+GRIView.COLOR_BAR_XP = 1322844;
 GRIView.COLOR_OUTLINE = 3824248;
 GRIView.COLOR_TAB = 10390166;
 GRIView.COLOR_TAB_HOVER = 11004149;
@@ -9027,6 +9062,7 @@ GRIView.ARCHETYPE_HEADER = "header";
 GRIView.ARCHETYPE_HEADER_HOVER = "header";
 GRIView.ARCHETYPE_HEADER_TIMID = "headertimid";
 GRIView.ARCHETYPE_HEADER_STAT = "statheader";
+GRIView.ARCHETYPE_BAR_TIMID = "bar_timid";
 GRIView.ARCHETYPE_BG_DEFAULT = "background";
 GRIView.ARCHETYPE_BG_SIMPLE = "backgroundsimple";
 GRIView.ARCHETYPE_BUTTON_SMALL = "buttonsmall";
