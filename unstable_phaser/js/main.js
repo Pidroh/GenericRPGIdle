@@ -6493,6 +6493,7 @@ StoryControlLogic.setupView = function(controlData) {
 	viewGRI.uiCreation.tags.push(StoryControlLogic.TAG_STORY_SCREEN);
 	controlData.viewStory.setup();
 	controlData.viewTab.setup(viewGRI);
+	StoryControlLogic.changeStoryState(controlData,StoryControlState.MEMORY);
 };
 StoryControlLogic.changeStoryState = function(controlData,newState) {
 	controlData.state = newState;
@@ -6521,7 +6522,7 @@ StoryControlLogic.update = function(update,controlData,executer) {
 		StoryLogic.StartStory(runtime.cutsceneStartable.title,runtime);
 		StoryControlLogic.startStory(controlData);
 		viewGRI.ui.genUI.updateAll();
-		haxe_Log.trace("Cutscene Start",{ fileName : "Sources\\GRI/StoryControl.hx", lineNumber : 161, className : "StoryControlLogic", methodName : "update"});
+		haxe_Log.trace("Cutscene Start",{ fileName : "Sources\\GRI/StoryControl.hx", lineNumber : 162, className : "StoryControlLogic", methodName : "update"});
 	}
 	StoryLogic.Update(runtime);
 	StoryLogic.VisibilityUpdate(true,runtime,executer);
