@@ -4056,9 +4056,9 @@ GRIView.prototype = {
 	,setupMiscBattle: function() {
 		var e = this.backgroundElement("area",GRIView.ARCHETYPE_BG_SIMPLE,null,false);
 		var retreat = this.addButtonImage("retreat",Sprite.create("arrowleft",25,13),GRIView.ARCHETYPE_BUTTON_SMALL,null,null);
-		this.uiCreation.offsetElement(retreat,e,0,0,0,0);
+		this.uiCreation.offsetElement(retreat,e,0,0,0,0,false,false);
 		var advance = this.addButtonImage("advance",Sprite.create("arrowleft",25,13),GRIView.ARCHETYPE_BUTTON_SMALL,null,null,true);
-		this.uiCreation.offsetElement(advance,e,1,0,0,0);
+		this.uiCreation.offsetElement(advance,e,1,0,0,0,false,false);
 		var repeat = this.addButtonImage("repeat",Sprite.create("arrowrepeat",20,17),GRIView.ARCHETYPE_BUTTON_SMALL,"subbuttons",null,true);
 		this.areaElement = this.addText("areatext","AREA",GRIView.ARCHETYPE_HEADER_TIMID,null,null,false);
 		this.areaProgressElement = this.addText("areatext","AREAPROG",GRIView.ARCHETYPE_SIMPLE_TIMID,null,null,false);
