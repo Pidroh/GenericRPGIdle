@@ -3385,7 +3385,7 @@ GRIControl.prototype = {
 			actorHover = bm.wdata.enemy;
 		}
 		this.view.ui.tagVisibility(GRIView.TAG_HOVER_ACTOR,hoverActorView != null);
-		if(hoverActorView != null) {
+		if(hoverActorView != null && actorHover != null) {
 			this.view.uiCreation.tags.length = 0;
 			ActorViewLogic.feed(actorHover,this.view.actorHoverView,this.view,null);
 			this.view.ui.genUI.layoutAsHover(hoverActorView.icon,GRIView.LAYOUT_HOVER_ACTOR);
@@ -14286,10 +14286,12 @@ XTextRender.drawTextSingleLine = function(text,font,x,y,pivotx,pivoty,color,mask
 			var i = _g++;
 			var code = HxOverrides.cca(text,i);
 			var letter = font1.letters.h[code];
-			if(i == text.length - 1) {
-				width += letter.width + letter.xoffset;
-			} else {
-				width += letter.xadvance;
+			if(letter != null) {
+				if(i == text.length - 1) {
+					width += letter.width + letter.xoffset;
+				} else {
+					width += letter.xadvance;
+				}
 			}
 		}
 		cursorX = x - width * pivotx | 0;
@@ -14301,8 +14303,10 @@ XTextRender.drawTextSingleLine = function(text,font,x,y,pivotx,pivoty,color,mask
 		var i = _g++;
 		var code = HxOverrides.cca(text,i);
 		var letter = font1.letters.h[code];
-		Renderer.drawScaledSubImage(font1.image,mask,letter.x,letter.y,letter.width,letter.height,cursorX + letter.xoffset,cursorY + letter.yoffset,letter.width,letter.height,color);
-		cursorX += letter.xadvance;
+		if(letter != null) {
+			Renderer.drawScaledSubImage(font1.image,mask,letter.x,letter.y,letter.width,letter.height,cursorX + letter.xoffset,cursorY + letter.yoffset,letter.width,letter.height,color);
+			cursorX += letter.xadvance;
+		}
 	}
 };
 XTextRender.feedLineInformation = function(text,lines) {
