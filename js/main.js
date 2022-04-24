@@ -3288,7 +3288,7 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	config.addRegion("Lagrima Continent",RegionData.regionWithPrize(RegionType.PROCEDURAL,{ statBonus : null, xpPrize : true}));
 	var enemySheets = [];
 	var regionPrizes = [];
-	var regionRequirements = [0,5,9,14,18,22,30,42,50];
+	var regionRequirements = [5,9,14,18,26,34,55,75];
 	var enemyRegionNames = ["Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island","Tartarus","Witchhunter Base","Highsalem","Witchhunter Guild"];
 	var _g = new haxe_ds_StringMap();
 	_g.h["Attack"] = 0.55;
