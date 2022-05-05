@@ -61,7 +61,17 @@ AchievementLogic.canUnlock = function(a,data) {
 	}
 	return true;
 };
+var AchievementGroupHolder = function(dimensionId) {
+	this.achievements = new AchievementGroup();
+	this.dimensionId = dimensionId;
+};
+$hxClasses["AchievementGroupHolder"] = AchievementGroupHolder;
+AchievementGroupHolder.__name__ = "AchievementGroupHolder";
+AchievementGroupHolder.prototype = {
+	__class__: AchievementGroupHolder
+};
 var AchievementModelData = function() {
+	this.achievements = [];
 };
 $hxClasses["AchievementModelData"] = AchievementModelData;
 AchievementModelData.__name__ = "AchievementModelData";
@@ -76,8 +86,7 @@ $hxClasses["AchievementModel"] = AchievementModel;
 AchievementModel.__name__ = "AchievementModel";
 AchievementModel.prototype = {
 	createAchievements: function() {
-		this.modelData.achievements = new AchievementGroup();
-		var as = this.modelData.achievements;
+		var as = new AchievementGroup();
 		var a = new Achievement("test4","Beginner's Door","Clear your first area",Sprite.create("achiev_a1",64,64));
 		a.conditions.push(Condition.createWithKeyAndData(ConditionType.largerOrEqual,"maxarea_region0",2));
 		as.achievements.push(a);
@@ -96,22 +105,35 @@ AchievementModel.prototype = {
 		var a = new Achievement("test3","Step of Glory C","Clear Area 15 of Altar Cave",Sprite.create("achiev_e3",64,64));
 		a.conditions.push(Condition.createWithKeyAndData(ConditionType.largerOrEqual,"maxarea_region3",16));
 		as.achievements.push(a);
+		var agh = new AchievementGroupHolder(GRIConfigurer.DIMENSION_ID_LAGRIMA);
+		agh.achievements = as;
+		this.modelData.achievements.push(agh);
 	}
 	,update: function() {
 		var achievementData = this.modelData.achievementData;
 		var _g_current = 0;
-		var _g_array = this.modelData.achievements.achievements;
+		var _g_array = this.modelData.achievements;
 		while(_g_current < _g_array.length) {
 			var _g1_value = _g_array[_g_current];
 			var _g1_key = _g_current++;
-			var index = _g1_key;
-			var value = _g1_value;
-			if(AchievementLogic.isLocked(value,achievementData)) {
-				if(AchievementLogic.canUnlock(value,this.modelData.globalData)) {
-					AchievementLogic.unlock(value,achievementData);
+			var groupIndex = _g1_key;
+			var agh = _g1_value;
+			if(agh.dimensionId == this.dimensionId) {
+				var _g2_current = 0;
+				var _g2_array = agh.achievements.achievements;
+				while(_g2_current < _g2_array.length) {
+					var _g3_value = _g2_array[_g2_current];
+					var _g3_key = _g2_current++;
+					var index = _g3_key;
+					var value = _g3_value;
+					if(AchievementLogic.isLocked(value,achievementData)) {
+						if(AchievementLogic.canUnlock(value,this.modelData.globalData)) {
+							AchievementLogic.unlock(value,achievementData);
+						}
+					} else if(this.unlockedAchievements.indexOf(value.id) != -1 == false) {
+						this.unlockedAchievements.push(value.id);
+					}
 				}
-			} else if(this.unlockedAchievements.indexOf(value.id) != -1 == false) {
-				this.unlockedAchievements.push(value.id);
 			}
 		}
 	}
@@ -549,12 +571,34 @@ ProceduralUnitRepeated.__name__ = "ProceduralUnitRepeated";
 ProceduralUnitRepeated.prototype = {
 	__class__: ProceduralUnitRepeated
 };
+var BattleConstants = function() { };
+$hxClasses["BattleConstants"] = BattleConstants;
+BattleConstants.__name__ = "BattleConstants";
 var RegionType = $hxEnums["RegionType"] = { __ename__:true,__constructs__:null
 	,PROCEDURAL: {_hx_name:"PROCEDURAL",_hx_index:0,__enum__:"RegionType",toString:$estr}
 	,CHALLENGE: {_hx_name:"CHALLENGE",_hx_index:1,__enum__:"RegionType",toString:$estr}
 	,SEMIPROCEDURAL: {_hx_name:"SEMIPROCEDURAL",_hx_index:2,__enum__:"RegionType",toString:$estr}
 };
 RegionType.__constructs__ = [RegionType.PROCEDURAL,RegionType.CHALLENGE,RegionType.SEMIPROCEDURAL];
+var CounterAttackData = function() {
+	this.attributeInfluenceOnCounterPower = new haxe_ds_StringMap();
+	this.element = null;
+};
+$hxClasses["CounterAttackData"] = CounterAttackData;
+CounterAttackData.__name__ = "CounterAttackData";
+CounterAttackData.prototype = {
+	__class__: CounterAttackData
+};
+var CounterAttackBuffer = function(actor,counter) {
+	this.actor = null;
+	this.actor = actor;
+	this.counterId = counter;
+};
+$hxClasses["CounterAttackBuffer"] = CounterAttackBuffer;
+CounterAttackBuffer.__name__ = "CounterAttackBuffer";
+CounterAttackBuffer.prototype = {
+	__class__: CounterAttackBuffer
+};
 var BattleManagerConfiguration = function() {
 	this.regions = [];
 };
@@ -574,14 +618,18 @@ Prize.prototype = {
 	__class__: Prize
 };
 var AreaData = function() {
-	this.enemies = [];
 };
 $hxClasses["AreaData"] = AreaData;
 AreaData.__name__ = "AreaData";
 AreaData.prototype = {
-	__class__: AreaData
+	setEnemyInfo: function(enemyInfo) {
+		this.enemy = enemyInfo;
+		return this;
+	}
+	,__class__: AreaData
 };
 var RegionData = function(type) {
+	this.areaDatas = [];
 	this.regionPrize = null;
 	this.actorSheet = null;
 	this.conditionArea = -1;
@@ -619,12 +667,16 @@ ArrayHelper.InsertOnEmpty = function(ele,array) {
 	return array.length - 1;
 };
 var BattleManager = function() {
+	this.timePeriodOverwrite = -1;
+	this.heroMaxLevel = 99999;
+	this.counterAttackBuffered = [];
+	this.counterAttackDatas = [];
 	this.achievementModel = new AchievementModel();
 	this.global = new GlobalData();
 	this.enemyAreaFromProcedural = new EnemyAreaFromProceduralUnitRepetition();
 	this.equipmentToDiscard = [];
 	this.volatileAttributeAux = [];
-	this.volatileAttributeList = ["MP","Life","MPRechargeCount","SpeedCount"];
+	this.volatileAttributeList = ["MP","Life","MPRechargeCount","SpeedCount",BattleConstants.damageLastTurn];
 	this.skillSlotUnlocklevel = [2,7,22,35];
 	this.regionRequirements = [0];
 	this.playerActions = new haxe_ds_StringMap();
@@ -637,6 +689,7 @@ var BattleManager = function() {
 	this.equipDropChance_Rare = 15;
 	this.equipDropChance = 30;
 	this.timePeriod = 0.6;
+	this.timeCount = 0;
 	this.turnList = [];
 	this.autoAdvanceRequest = false;
 	this.prestiged = false;
@@ -717,8 +770,26 @@ var BattleManager = function() {
 	_g.h["Speed"] = 20;
 	_g.h["SpeedCount"] = 0;
 	var stats = _g;
-	var w = { worldVersion : 3009, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
+	var w = { worldVersion : 30100, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
 	this.wdata = w;
+	var ctd = new CounterAttackData();
+	ctd.element = "fire";
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 50;
+	ctd.attributeInfluenceOnCounterPower = _g;
+	this.counterAttackDatas.push(ctd);
+	var ctd = new CounterAttackData();
+	ctd.element = "ice";
+	var _g = new haxe_ds_StringMap();
+	_g.h["Defense"] = 120;
+	ctd.attributeInfluenceOnCounterPower = _g;
+	this.counterAttackDatas.push(ctd);
+	var ctd = new CounterAttackData();
+	ctd.element = "thunder";
+	var _g = new haxe_ds_StringMap();
+	_g.h[BattleConstants.damageLastTurn] = 100;
+	ctd.attributeInfluenceOnCounterPower = _g;
+	this.counterAttackDatas.push(ctd);
 	this.ReinitGameValues();
 	this.ChangeBattleArea(0);
 	var v = this.wdata.hero.attributesCalculated.h["LifeMax"];
@@ -863,7 +934,7 @@ BattleManager.prototype = {
 			return;
 		}
 		if(actor == this.wdata.hero) {
-			this.wdata.timeCount = 0;
+			this.timeCount = 0;
 		}
 		var executedEffects = 0;
 		var efs = skillBase.effects;
@@ -1038,7 +1109,7 @@ BattleManager.prototype = {
 		this.RecalculateAttributes(actor);
 		return statAux;
 	}
-	,AttackExecute: function(attacker,defender,attackRate,attackBonus,defenseRate,element) {
+	,AttackExecute: function(attacker,defender,attackRate,attackBonus,defenseRate,element,attackerStatInfluence,attackerText,defenderText) {
 		if(defenseRate == null) {
 			defenseRate = 100;
 		}
@@ -1086,10 +1157,22 @@ BattleManager.prototype = {
 		if(attacker.attributesCalculated.h["Antibuff"] > 0) {
 			this.RemoveBuffs(defender);
 		}
+		var counterAttackHappen = false;
+		var counterAttack = -1;
 		if(magicAttack == false) {
-			if(attacker.attributesCalculated.h["Piercing"] > 0 == true) {
-				defenseRate -= attacker.attributesCalculated.h["Piercing"];
+			var attackPierce = attacker.attributesCalculated.h["Piercing"];
+			if(attackPierce > 0 == true) {
+				if(defender.attributesCalculated.h["Safeguard"] > 0) {
+					attackPierce -= defender.attributesCalculated.h["Safeguard"];
+				}
+				if(attackPierce > 0) {
+					defenseRate -= attackPierce;
+				}
 			}
+			counterAttack = defender.attributesCalculated.h["Counterattack"];
+		}
+		if(counterAttack > 0) {
+			counterAttackHappen = true;
 		}
 		if(defenseRate < 0) {
 			defenseRate = 0;
@@ -1104,6 +1187,22 @@ BattleManager.prototype = {
 			defense = defender.attributesCalculated.h["Defense"];
 		}
 		attack = attackRate * attack / 100 + attackBonus;
+		if(attackerStatInfluence != null) {
+			var h = attackerStatInfluence.h;
+			var _g_h = h;
+			var _g_keys = Object.keys(h);
+			var _g_length = _g_keys.length;
+			var _g_current = 0;
+			while(_g_current < _g_length) {
+				var key = _g_keys[_g_current++];
+				var _g1_key = key;
+				var _g1_value = _g_h[key];
+				var statName = _g1_key;
+				var value = _g1_value;
+				var attr = attacker.attributesCalculated.h[statName];
+				attack += value * attr / 100;
+			}
+		}
 		var damage = attack - defense * defenseRate / 100 | 0;
 		if(damage < 0) {
 			damage = 0;
@@ -1111,8 +1210,31 @@ BattleManager.prototype = {
 		var _g = defender.attributesCalculated;
 		var v = _g.h["Life"] - damage;
 		_g.h["Life"] = v;
-		if(defender.attributesCalculated.h["Life"] < 0) {
+		defender.attributesCalculated.h[BattleConstants.damageLastTurn] = damage;
+		var defenderDead = false;
+		if(defender.attributesCalculated.h["Life"] <= 0) {
 			defender.attributesCalculated.h["Life"] = 0;
+			defenderDead = true;
+		}
+		if(defenderDead == false && counterAttackHappen) {
+			var counterB = new CounterAttackBuffer(defender.reference,counterAttack);
+			var nullIndex = -1;
+			var _g_current = 0;
+			var _g_array = this.counterAttackBuffered;
+			while(_g_current < _g_array.length) {
+				var _g1_value = _g_array[_g_current];
+				var _g1_key = _g_current++;
+				var index = _g1_key;
+				var value = _g1_value;
+				if(value == null) {
+					nullIndex = index;
+				}
+			}
+			if(nullIndex >= 0) {
+				this.counterAttackBuffered[nullIndex] = counterB;
+			} else {
+				this.counterAttackBuffered.push(counterB);
+			}
 		}
 		if(damage >= 1) {
 			var _g = 0;
@@ -1128,6 +1250,8 @@ BattleManager.prototype = {
 		gEvent.origin = attacker.reference;
 		gEvent.target = defender.reference;
 		gEvent.data = damage;
+		gEvent.dataString = attackerText;
+		gEvent.dataString2 = defenderText;
 		var hero = this.wdata.hero;
 		var enemy = this.wdata.enemy;
 		var killedInArea = this.wdata.killedInArea;
@@ -1138,7 +1262,7 @@ BattleManager.prototype = {
 				killedInArea[battleArea] = 0;
 			}
 			killedInArea[battleArea]++;
-			if(this.wdata.battleAreaRegion == 0) {
+			if(this.config.regions[this.wdata.battleAreaRegion].type != RegionType.CHALLENGE) {
 				this.DropItemOrSkillSet(this.equipDropChance,1,enemy.level,enemy.reference);
 			}
 			var e = this.AddEvent(EventTypes.ActorDead);
@@ -1513,14 +1637,23 @@ BattleManager.prototype = {
 		return null;
 	}
 	,ChangeBattleArea: function(area) {
+		var regionData = null;
+		if(this.config != null) {
+			regionData = this.config.regions[this.wdata.battleAreaRegion];
+		} else {
+			return;
+		}
 		if(this.wdata.killedInArea[this.wdata.battleArea] >= this.wdata.necessaryToKillInArea) {
 			this.wdata.killedInArea[this.wdata.battleArea] = 0;
 		}
 		this.wdata.battleArea = area;
 		this.wdata.necessaryToKillInArea = 0;
 		while(this.wdata.killedInArea.length <= area) this.wdata.killedInArea.push(0);
+		var e = this.AddEvent(EventTypes.AreaEnter);
+		e.data = this.wdata.battleAreaRegion;
+		e.data2 = this.wdata.battleArea;
 		var initialEnemyToKill = this.balancing.timeForFirstAreaProgress / this.balancing.timeToKillFirstEnemy | 0;
-		if(area > 0) {
+		if(this.isBattleArea()) {
 			this.wdata.necessaryToKillInArea = initialEnemyToKill + ((area - 1) * initialEnemyToKill * 0.3 | 0);
 			if(this.wdata.necessaryToKillInArea > initialEnemyToKill * 14) {
 				this.wdata.necessaryToKillInArea = initialEnemyToKill * 14;
@@ -1542,7 +1675,13 @@ BattleManager.prototype = {
 					this.wdata.necessaryToKillInArea = eAI.nEnemies;
 				}
 			}
-			if(this.wdata.battleAreaRegion > 0) {
+			if(regionData.type == RegionType.SEMIPROCEDURAL) {
+				var eAI = this.config.regions[this.wdata.battleAreaRegion].areaDatas[this.wdata.battleArea].enemy;
+				if(eAI.nEnemies > 0) {
+					this.wdata.necessaryToKillInArea = eAI.nEnemies;
+				}
+			}
+			if(regionData.type == RegionType.CHALLENGE) {
 				this.wdata.necessaryToKillInArea = 3;
 			}
 			if(this.PlayerFightMode()) {
@@ -1572,7 +1711,7 @@ BattleManager.prototype = {
 		}
 	}
 	,CalculateHeroMaxLevel: function() {
-		return 99999;
+		return this.heroMaxLevel;
 	}
 	,isXPCap: function() {
 		if(this.wdata.hero.xp.value > this.wdata.hero.xp.calculatedMax * 12) {
@@ -1605,8 +1744,9 @@ BattleManager.prototype = {
 	,CreateEnemy: function(region,area) {
 		var enemyLevel = area;
 		var sheet = this.config.regions[region].actorSheet;
+		var regionType = this.config.regions[region].type;
 		var enemy;
-		if(region > 0) {
+		if(regionType == RegionType.CHALLENGE) {
 			var oldLevel = enemyLevel;
 			enemyLevel = 0;
 			var _g = 0;
@@ -1619,7 +1759,14 @@ BattleManager.prototype = {
 		}
 		var equipment = null;
 		var viewOverride = -1;
-		if(region == 0 && this.enemyAreaFromProcedural != null && this.enemyAreaFromProcedural.units != null) {
+		if(regionType == RegionType.SEMIPROCEDURAL) {
+			var areaInfo = this.config.regions[region].areaDatas[area].enemy;
+			sheet = areaInfo.sheet;
+			enemyLevel += areaInfo.level;
+			equipment = areaInfo.equipment;
+			viewOverride = areaInfo.viewOverride;
+		}
+		if(regionType == RegionType.PROCEDURAL && this.enemyAreaFromProcedural != null && this.enemyAreaFromProcedural.units != null) {
 			var areaInfo = this.enemyAreaFromProcedural.GetEnemyAreaInformation(area - 1);
 			sheet = areaInfo.sheet;
 			enemyLevel += areaInfo.level;
@@ -1763,7 +1910,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1261, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1380, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -2047,7 +2194,7 @@ BattleManager.prototype = {
 			this.wdata.enemy = null;
 			attackHappen = false;
 		}
-		if(this.wdata.battleArea > 0 && this.PlayerFightMode() && areaComplete != true) {
+		if(this.isBattleArea() && this.PlayerFightMode() && areaComplete != true) {
 			if(enemy == null) {
 				this.CreateAreaEnemy();
 				enemy = this.wdata.enemy;
@@ -2104,6 +2251,31 @@ BattleManager.prototype = {
 			}
 		}
 		if(attackHappen) {
+			var counterAttackBufferPos = -1;
+			var _g1_current = 0;
+			var _g1_array = this.counterAttackBuffered;
+			while(_g1_current < _g1_array.length) {
+				var _g2_value = _g1_array[_g1_current];
+				var _g2_key = _g1_current++;
+				var index = _g2_key;
+				var value = _g2_value;
+				if(value != null) {
+					counterAttackBufferPos = index;
+				}
+			}
+			if(counterAttackBufferPos >= 0) {
+				var bufferC = this.counterAttackBuffered[counterAttackBufferPos];
+				var counterD = this.counterAttackDatas[bufferC.counterId];
+				var attacker = this.wdata.hero;
+				var defender = this.wdata.enemy;
+				if(bufferC.actor.type != 0) {
+					attacker = this.wdata.enemy;
+					defender = this.wdata.hero;
+				}
+				this.AttackExecute(attacker,defender,100,0,100,counterD.element,counterD.attributeInfluenceOnCounterPower,"Counter");
+				this.counterAttackBuffered[counterAttackBufferPos] = null;
+				return;
+			}
 			var attacker = null;
 			var defender = null;
 			var decided = false;
@@ -2354,8 +2526,28 @@ BattleManager.prototype = {
 		var attack = actor.attributesCalculated.h["Attack"];
 		return "\t Life: " + life + " / " + lifeM + "\n\tAttack: " + attack;
 	}
+	,isTriggeredByEvent: function(trigger) {
+		var _g_current = 0;
+		var _g_array = this.events;
+		while(_g_current < _g_array.length) {
+			var _g1_value = _g_array[_g_current];
+			var _g1_key = _g_current++;
+			var index = _g1_key;
+			var value = _g1_value;
+			if(trigger.necessaryType == value.type) {
+				if(trigger.necessaryData != GameEventTrigger.IGNORE && trigger.necessaryData != value.data) {
+					continue;
+				}
+				if(trigger.necessaryData2 != GameEventTrigger.IGNORE && trigger.necessaryData2 != value.data2) {
+					continue;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
 	,update: function(delta) {
-		this.wdata.timeCount += delta;
+		this.timeCount += delta;
 		this.RefreshCalculatedTurnOrder();
 		var v = this.wdata.maxArea;
 		this.global.data.h["maxarea"] = v;
@@ -2413,19 +2605,33 @@ BattleManager.prototype = {
 				}
 			}
 		}
+		if(this.isBattleArea() == false) {
+			if(this.wdata.maxArea == this.wdata.battleArea) {
+				this.wdata.maxArea++;
+			}
+		}
 		if(recalculate) {
 			this.RecalculateAttributes(this.wdata.hero);
 		}
 		this.wdata.regionProgress[this.wdata.battleAreaRegion].amountEnemyKilledInArea = this.wdata.killedInArea[this.wdata.battleArea];
 		if(this.config.regions.length > this.wdata.battleAreaRegionMax) {
 			var reg = this.config.regions[this.wdata.battleAreaRegionMax];
-			var maxArea = this.wdata.regionProgress[reg.conditionRegion].maxArea;
-			if(maxArea > reg.conditionArea) {
-				this.wdata.battleAreaRegionMax++;
-				this.AddEvent(EventTypes.RegionUnlock).data = this.wdata.battleAreaRegionMax - 1;
+			if(reg.conditionRegion >= 0) {
+				var maxArea = this.wdata.regionProgress[reg.conditionRegion].maxArea;
+				if(maxArea > reg.conditionArea) {
+					this.wdata.battleAreaRegionMax++;
+					this.AddEvent(EventTypes.RegionUnlock).data = this.wdata.battleAreaRegionMax - 1;
+				}
 			}
 		}
-		this.canAdvance = this.wdata.battleArea < this.wdata.maxArea;
+		var maxArea = this.wdata.maxArea;
+		var reg = this.config.regions[this.wdata.battleAreaRegion].areaDatas;
+		if(reg != null && reg.length > 0) {
+			if(maxArea > reg.length - 1) {
+				maxArea = reg.length - 1;
+			}
+		}
+		this.canAdvance = this.wdata.battleArea < maxArea;
 		this.canRetreat = this.wdata.battleArea > 0;
 		this.canLevelUp = this.wdata.hero.xp.value >= this.wdata.hero.xp.calculatedMax && this.wdata.hero.level < this.CalculateHeroMaxLevel();
 		var hasEquipment = this.wdata.hero.equipment.length > 1;
@@ -2542,9 +2748,24 @@ BattleManager.prototype = {
 				this.wdata.hero.attributesCalculated.h["MP"] = v;
 			}
 		}
-		if(this.wdata.timeCount >= this.timePeriod) {
-			this.wdata.timeCount = 0;
+		var timePeriodUsed = this.timePeriod;
+		if(this.timePeriodOverwrite >= 0) {
+			timePeriodUsed = this.timePeriodOverwrite;
+		}
+		if(this.timeCount >= timePeriodUsed) {
+			this.timePeriodOverwrite = -1;
+			this.timeCount = 0;
 			this.advance();
+			var _g = 0;
+			var _g1 = this.counterAttackBuffered;
+			while(_g < _g1.length) {
+				var buffer = _g1[_g];
+				++_g;
+				if(buffer != null) {
+					this.timePeriodOverwrite = this.timePeriod;
+					break;
+				}
+			}
 		}
 		if(this.dirty) {
 			this.dirty = false;
@@ -2767,7 +2988,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2303, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2486, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -2784,7 +3005,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2320, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2503, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -2942,16 +3163,16 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2467, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2650, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
 			HxOverrides.strDate(loadedWdata.retention.gameStartDate);
-			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2472, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2655, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2475, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2658, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -2964,14 +3185,19 @@ BattleManager.prototype = {
 		var loadedWdata = null;
 		try {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
+			if(loadedWdata == null) {
+				ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
+				return false;
+			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2488, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2675, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2493, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2494, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2680, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2681, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			ErrorX.exception = e;
 			return false;
 		}
 		this.testInitializeRetentionWorldVersion(loadedWdata);
@@ -2998,6 +3224,23 @@ BattleManager.prototype = {
 		}
 		this.ReinitGameValues();
 		return true;
+	}
+	,isBattleArea: function() {
+		if(this.config == null) {
+			return false;
+		}
+		var region = this.wdata.battleAreaRegion;
+		var area = this.wdata.battleArea;
+		return this.isBattleAreaVerify(region,area);
+	}
+	,isBattleAreaVerify: function(region,area) {
+		if(this.config == null) {
+			return false;
+		}
+		if(this.config.regions[region].type == RegionType.SEMIPROCEDURAL && this.config.regions[region].areaDatas[area].enemy == null) {
+			return false;
+		}
+		return area > 0;
 	}
 	,__class__: BattleManager
 };
@@ -3123,11 +3366,24 @@ CrossTarget.downloadFile = function(filename,text) {
         download('bla', 'blu');
     ;
 };
-CrossTarget.GetLocalStorageItem = function(key) {
-	return js_Browser.getLocalStorage().getItem(key);
+CrossTarget.GetLocalStorageItem = function(key,updateLatestSave) {
+	if(updateLatestSave == null) {
+		updateLatestSave = true;
+	}
+	var data = "";
+	data = js_Browser.getLocalStorage().getItem(key);
+	if(updateLatestSave) {
+		CrossTarget.latestSave = data;
+	}
+	return data;
 };
-CrossTarget.SetLocalStorageItem = function(key,value) {
-	CrossTarget.latestSave = value;
+CrossTarget.SetLocalStorageItem = function(key,value,updateLatestSave) {
+	if(updateLatestSave == null) {
+		updateLatestSave = true;
+	}
+	if(updateLatestSave) {
+		CrossTarget.latestSave = value;
+	}
 	js_Browser.getLocalStorage().setItem(key,value);
 	return "";
 };
@@ -3148,6 +3404,20 @@ var Direction = $hxEnums["Direction"] = { __ename__:true,__constructs__:null
 	,EAST: {_hx_name:"EAST",_hx_index:3,__enum__:"Direction",toString:$estr}
 };
 Direction.__constructs__ = [Direction.NORTH,Direction.WEST,Direction.SOUTH,Direction.EAST];
+var ErrorX = function() { };
+$hxClasses["ErrorX"] = ErrorX;
+ErrorX.__name__ = "ErrorX";
+ErrorX.hasError = function() {
+	if(ErrorX.errorMessage == null) {
+		return ErrorX.exception != null;
+	} else {
+		return true;
+	}
+};
+ErrorX.clearError = function() {
+	ErrorX.errorMessage = null;
+	ErrorX.exception = null;
+};
 var FileAccessJS = function() { };
 $hxClasses["FileAccessJS"] = FileAccessJS;
 FileAccessJS.__name__ = "FileAccessJS";
@@ -3213,6 +3483,8 @@ FileUtilities.ReadFile = function(file,callback) {
 		if(string.indexOf("data:application/json;base64,") != -1) {
 			var savedata = haxe_crypto_Base64.decode(HxOverrides.substr(string,"data:application/json;base64,".length,null));
 			callback(savedata.toString());
+		} else {
+			ErrorX.errorMessage = "Save File not JSON base 64\n" + string;
 		}
 	};
 };
@@ -3229,67 +3501,111 @@ var GRIAchievementViewLogic = function() { };
 $hxClasses["GRIAchievementViewLogic"] = GRIAchievementViewLogic;
 GRIAchievementViewLogic.__name__ = "GRIAchievementViewLogic";
 GRIAchievementViewLogic.update = function(achievModel,view,griView) {
-	var achievs = achievModel.achievements;
+	var achievementGroups = achievModel.achievements;
 	var data = achievModel.achievementData;
-	while(view.elements.length < achievs.achievements.length) {
-		var e = griView.uiCreation.createImageElement(null,64,64);
-		griView.uiCreation.addElementInLayoutId(e,view.layoutId);
-		view.elements.push(e);
-	}
 	var _g_current = 0;
-	var _g_array = achievs.achievements;
+	var _g_array = achievementGroups;
 	while(_g_current < _g_array.length) {
 		var _g1_value = _g_array[_g_current];
 		var _g1_key = _g_current++;
 		var index = _g1_key;
-		var value = _g1_value;
-		var e = view.elements[index];
-		e.style.sprite = value.image;
-		e.style.alpha = 80;
-		var t = "LOCKED";
-		if(Object.prototype.hasOwnProperty.call(data.achievs.h,value.id)) {
-			if(data.achievs.h[value.id].state == Achievement.UNLOCKED) {
-				t = value.name;
-				e.style.alpha = 255;
-			}
+		var achievGroupHolder = _g1_value;
+		while(view.elements.length < achievGroupHolder.achievements.achievements.length) {
+			var e = griView.uiCreation.createImageElement(null,64,64);
+			griView.uiCreation.addElementInLayoutId(e,view.layoutId);
+			view.elements.push(e);
 		}
-		griView.ui.hover.setHoverGeneric(e,t,value.description);
+	}
+	var _g_current = 0;
+	var _g_array = achievementGroups;
+	while(_g_current < _g_array.length) {
+		var _g1_value = _g_array[_g_current];
+		var _g1_key = _g_current++;
+		var index = _g1_key;
+		var achievGroupHolder = _g1_value;
+		var achievs = achievGroupHolder.achievements;
+		var _g2_current = 0;
+		var _g2_array = achievs.achievements;
+		while(_g2_current < _g2_array.length) {
+			var _g3_value = _g2_array[_g2_current];
+			var _g3_key = _g2_current++;
+			var index1 = _g3_key;
+			var value = _g3_value;
+			var e = view.elements[index1];
+			e.style.sprite = value.image;
+			e.style.alpha = 80;
+			var t = "LOCKED";
+			if(Object.prototype.hasOwnProperty.call(data.achievs.h,value.id)) {
+				if(data.achievs.h[value.id].state == Achievement.UNLOCKED) {
+					t = value.name;
+					e.style.alpha = 255;
+				}
+			}
+			griView.ui.hover.setHoverGeneric(e,t,value.description);
+		}
 	}
 };
 var GRIButtons = function() { };
 $hxClasses["GRIButtons"] = GRIButtons;
 GRIButtons.__name__ = "GRIButtons";
 var GRIConfiguration = function(name) {
+	this.heroMaxLevel = -1;
+	this.heroViewAux = 0;
+	this.eventToStoryTriggers = [];
+	this.areaNameList = [];
 	this.regionNameList = [];
 	this.battleManagerConfiguration = new BattleManagerConfiguration();
-	this.dimension = -1;
+	this.dimensionId = null;
+	this.dimensionSave = -1;
 	this.name = name;
 };
 $hxClasses["GRIConfiguration"] = GRIConfiguration;
 GRIConfiguration.__name__ = "GRIConfiguration";
 GRIConfiguration.prototype = {
-	addRegion: function(title,regionData) {
+	addArea: function(regionPos,areaTitle) {
+		if(this.areaNameList[regionPos] == null) {
+			this.areaNameList[regionPos] = [];
+		}
+		this.areaNameList[regionPos].push(areaTitle);
+		var ad = new AreaData();
+		this.battleManagerConfiguration.regions[regionPos].areaDatas.push(ad);
+		return ad;
+	}
+	,addRegion: function(title,regionData) {
 		this.regionNameList.push(title);
 		this.battleManagerConfiguration.regions.push(regionData);
+		return this.battleManagerConfiguration.regions.length - 1;
+	}
+	,bindStoryToAreaEntrance: function(regPos,area,storyId) {
+		var gameEventTrigger = new GameEventTrigger(EventTypes.AreaEnter);
+		gameEventTrigger.necessaryData = regPos;
+		gameEventTrigger.necessaryData2 = area;
+		this.eventToStoryTriggers.push({ storyId : storyId, eventTrigger : gameEventTrigger});
 	}
 	,__class__: GRIConfiguration
 };
 var GRIConfigurer = function() {
+	this.enemies = new EnemySheets();
 	this.selectedGRIConfiguration = -1;
 	this.dimensions = [];
 	this.dimensions.push(GRIConfigurer.setupLagrimaRegions());
+	this.dimensions.push(this.setupCrystalRoad());
 	this.griControl = new GRIControl();
 	this.griControl.setupTitle(this.dimensions);
 };
 $hxClasses["GRIConfigurer"] = GRIConfigurer;
 GRIConfigurer.__name__ = "GRIConfigurer";
 GRIConfigurer.setupLagrimaRegions = function() {
-	var config = new GRIConfiguration("Continue");
+	var config = new GRIConfiguration("Lagrima Continent");
+	config.mainCharacterName = "You";
+	config.dimensionId = GRIConfigurer.DIMENSION_ID_LAGRIMA;
+	config.storyDataResource = "storyjson";
+	config.dimensionSave = -1;
 	config.addRegion("Lagrima Continent",RegionData.regionWithPrize(RegionType.PROCEDURAL,{ statBonus : null, xpPrize : true}));
 	var enemySheets = [];
 	var regionPrizes = [];
-	var regionRequirements = [5,9,14,18,26,34,55,75];
-	var enemyRegionNames = ["Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island","Tartarus","Witchhunter Base","Highsalem","Witchhunter Guild"];
+	var regionRequirements = [5,9,14,18,26,34,55,75,84];
+	var enemyRegionNames = ["Wolf Fields","Tonberry's Lair","Altar Cave","Bikanel Island","Tartarus","Witchhunter Base","Highsalem","Witchhunter Guild","Mystic Forest"];
 	var _g = new haxe_ds_StringMap();
 	_g.h["Attack"] = 0.55;
 	_g.h["Speed"] = 3.3;
@@ -3401,19 +3717,34 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	_g.h["Defense"] = 1;
 	_g.h["LifeMax"] = 3;
 	regionPrizes.push({ xpPrize : false, statBonus : _g});
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 8;
+	_g.h["Speed"] = 0.2;
+	_g.h["LifeMax"] = 0.03;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Defense"] = 5;
+	_g1.h["Safeguard"] = 75;
+	var _g2 = new haxe_ds_StringMap();
+	_g2.h["Defense"] = 1.1;
+	_g2.h["Speed"] = 0.05;
+	enemySheets.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1;
+	_g.h["Defense"] = 1;
+	regionPrizes.push({ xpPrize : false, statBonus : _g});
 	var _g = 0;
 	while(_g < enemySheets.length) {
 		var unknown = enemySheets[_g];
 		++_g;
 		unknown.viewAux = 3;
 	}
-	var _g30_current = 0;
-	var _g30_array = regionPrizes;
-	while(_g30_current < _g30_array.length) {
-		var _g31_value = _g30_array[_g30_current];
-		var _g31_key = _g30_current++;
-		var index = _g31_key;
-		var value = _g31_value;
+	var _g34_current = 0;
+	var _g34_array = regionPrizes;
+	while(_g34_current < _g34_array.length) {
+		var _g35_value = _g34_array[_g34_current];
+		var _g35_key = _g34_current++;
+		var index = _g35_key;
+		var value = _g35_value;
 		config.addRegion(enemyRegionNames[index],RegionData.challengeRegion(0,regionRequirements[index],enemySheets[index],regionPrizes[index]));
 	}
 	return config;
@@ -3427,13 +3758,72 @@ GRIConfigurer.prototype = {
 	,changeGRIConfiguration: function(dimension) {
 		if(this.selectedGRIConfiguration != dimension) {
 			var previousDimension = this.selectedGRIConfiguration;
-			var tmp = previousDimension >= 0;
+			if(previousDimension >= 0) {
+				this.griControl.saveData();
+			}
 			this.griControl = new GRIControl(this.dimensions[dimension]);
 			var tmp = dimension == 1;
 			this.griControl.setupTitle(this.dimensions);
 			this.griControl.setupView();
 		}
 		this.selectedGRIConfiguration = dimension;
+	}
+	,setupCrystalRoad: function() {
+		var config = new GRIConfiguration("Road of Amazonia");
+		config.heroViewAux = 4;
+		config.mainCharacterName = "Isabel";
+		config.storyDataResource = "story_main_json";
+		config.dimensionSave = 0;
+		config.heroMaxLevel = 20;
+		config.dimensionId = GRIConfigurer.DIMENSION_ID_AMAZONIA;
+		var regionData = RegionData.regionWithPrize(RegionType.SEMIPROCEDURAL,{ statBonus : null, xpPrize : true});
+		var regPos = config.addRegion("5 Days Ago",regionData);
+		config.addArea(regPos,"Graciosa Hills");
+		config.addArea(regPos,"San Agosto Street I").setEnemyInfo(EnemyAreaInformation.create(this.enemies.rat,0,4,4));
+		config.addArea(regPos,"San Agosto Street II").setEnemyInfo(EnemyAreaInformation.create(this.enemies.dog,0,3,1));
+		config.addArea(regPos,"Marino's House");
+		config.addArea(regPos,"San Agosto Hills I").setEnemyInfo(EnemyAreaInformation.create(this.enemies.rat,0,5,4));
+		config.addArea(regPos,"San Agosto Hills II").setEnemyInfo(EnemyAreaInformation.create(this.enemies.goblin,0,4,0));
+		config.addArea(regPos,"San Agosto Hills III").setEnemyInfo(EnemyAreaInformation.create(this.enemies.rat,3,1,4));
+		config.addArea(regPos,"Church of Saint Isabel");
+		config.addArea(regPos,"Behind the Church");
+		config.bindStoryToAreaEntrance(regPos,3,"2_golden_statue");
+		config.bindStoryToAreaEntrance(regPos,8,"3_the_deal");
+		var regionData = RegionData.regionWithPrize(RegionType.SEMIPROCEDURAL,{ statBonus : null, xpPrize : true});
+		regionData.conditionArea = 8;
+		regionData.conditionRegion = 0;
+		var regPos = config.addRegion("Chapter I",regionData);
+		config.addArea(regPos,"Isabel's Bed");
+		config.addArea(regPos,"Marino's House");
+		config.addArea(regPos,"Royal Road I").setEnemyInfo(EnemyAreaInformation.create(this.enemies.cat,0,4,5));
+		config.addArea(regPos,"Royal Road II").setEnemyInfo(EnemyAreaInformation.create(this.enemies.dog,0,3,1));
+		config.addArea(regPos,"Palacio do Veran");
+		config.addArea(regPos,"Royal Road III").setEnemyInfo(EnemyAreaInformation.create(this.enemies.dog,0,5,1));
+		config.addArea(regPos,"Royal Road IV").setEnemyInfo(EnemyAreaInformation.create(this.enemies.cat,0,4,5));
+		config.addArea(regPos,"Royal Road V").setEnemyInfo(EnemyAreaInformation.create(this.enemies.cat,4,1,5));
+		config.addArea(regPos,"The East Gate");
+		config.addArea(regPos,"East Road").setEnemyInfo(EnemyAreaInformation.create(this.enemies.dog,0,5,1));
+		config.addArea(regPos,"East Forest I").setEnemyInfo(EnemyAreaInformation.create(this.enemies.goblin,0,3,0));
+		config.addArea(regPos,"East Forest II").setEnemyInfo(EnemyAreaInformation.create(this.enemies.toad,0,4,6));
+		config.addArea(regPos,"East Forest III").setEnemyInfo(EnemyAreaInformation.create(this.enemies.goblin,7,1,0));
+		config.addArea(regPos,"Farm");
+		config.addArea(regPos,"East Forest IV").setEnemyInfo(EnemyAreaInformation.create(this.enemies.toad,0,3,6));
+		config.addArea(regPos,"Small Road");
+		config.addArea(regPos,"Gate of Fort San Marcelo").setEnemyInfo(EnemyAreaInformation.create(this.enemies.troll,10,1,8));
+		config.addArea(regPos,"Fort San Marcelo I").setEnemyInfo(EnemyAreaInformation.create(this.enemies.giant,0,4,2));
+		config.addArea(regPos,"Fort San Marcelo II").setEnemyInfo(EnemyAreaInformation.create(this.enemies.nutkin,0,5,7));
+		config.addArea(regPos,"Fort San Marcelo III").setEnemyInfo(EnemyAreaInformation.create(this.enemies.goblin,0,3,0));
+		config.addArea(regPos,"Great Hall of Marcelo").setEnemyInfo(EnemyAreaInformation.create(this.enemies.giant,25,1,2));
+		config.addArea(regPos,"The Safe Room");
+		config.bindStoryToAreaEntrance(regPos,1,"4_breakfast");
+		config.bindStoryToAreaEntrance(regPos,4,"5_the_court");
+		config.bindStoryToAreaEntrance(regPos,8,"6_victor");
+		config.bindStoryToAreaEntrance(regPos,11,"7_first_time");
+		config.bindStoryToAreaEntrance(regPos,13,"8_royal_guard");
+		config.bindStoryToAreaEntrance(regPos,15,"9_troll");
+		config.bindStoryToAreaEntrance(regPos,17,"10_strength");
+		config.bindStoryToAreaEntrance(regPos,21,"11_arrest");
+		return config;
 	}
 	,__class__: GRIConfigurer
 };
@@ -3479,10 +3869,11 @@ var GRIControl = function(configuration) {
 	_g.h["Slash"] = "Deals damage";
 	_g.h["Heavy Slash"] = "deals heavy damage";
 	this.SkillToExplanation = _g;
-	this.enemyLabels = [["Goblin","Dog","Giant","Turtle"],["Wolf"],["Tonberry"],["Adamanstoise"],["Cactuar"],["Reaper"],["Witchhunter"],["Buff Witch"],["Witchkiller"]];
+	this.enemyLabels = [["Goblin","Dog","Giant","Turtle","Giant Rat","Stray Cat","Elf Toad","Nutkin","Troll"],["Wolf"],["Tonberry"],["Adamanstoise"],["Cactuar"],["Reaper"],["Witchhunter"],["Buff Witch"],["Witchkiller"]];
 	this.retentionLogic = new RetentionLogic();
 	this.warningActive = true;
 	this.saveCount = 10000;
+	this.sendErrorRequest = false;
 	this.showFeedback = false;
 	this.eventsShown = 0;
 	this.gameStartedAfterTitle = false;
@@ -3496,12 +3887,16 @@ var GRIControl = function(configuration) {
 	var hasConfig = true;
 	if(configuration == null) {
 		configuration = new GRIConfiguration("NO CONFIG");
-		configuration.dimension = -1;
+		configuration.dimensionSave = -1;
 		hasConfig = false;
 	}
 	this.config = configuration;
 	var bm = this.battleManager;
 	bm.config = this.config.battleManagerConfiguration;
+	if(hasConfig) {
+		bm.achievementModel.dimensionId = configuration.dimensionId;
+		this.view.mainCharacterName = this.config.mainCharacterName;
+	}
 	this.genericWarning = { title : "Warning", description : "Warning Description", buttonYes : "Close", buttonFalse : null};
 	this.equipControl = new GRIControlEquip(bm,this);
 	this.regionControl = new GRIControlRegion(this,bm);
@@ -3516,27 +3911,40 @@ var GRIControl = function(configuration) {
 	proto.init();
 	bm.skillBases = proto.skills;
 	bm.ForceSkillSetDrop(-1,null,{ skills : [{ id : "Slash", level : 1},{ id : "Cure", level : 1},{ id : "Protect", level : 3}]},false);
-	bm.wdata.hero.equipmentSets[bm.wdata.hero.chosenEquipSet].equipmentSlots[2] = 0;
+	var _g = 0;
+	var _g1 = bm.wdata.hero.equipmentSets.length;
+	while(_g < _g1) {
+		var i = _g++;
+		bm.wdata.hero.equipmentSets[i].equipmentSlots[2] = 0;
+	}
 	var storyPersistence = { progressionData : new haxe_ds_StringMap(), worldVersion : bm.wdata.worldVersion, currentStoryId : null};
 	var jsonData = CrossTarget.GetLocalStorageItem(GRIControl.key);
 	var persistenceMaster = SaveAssistant.GetPersistenceMaster(jsonData);
+	this.previousPersistenceMaster = persistenceMaster;
 	var jsonData2 = persistenceMaster.jsonStory;
 	if(jsonData2 != null && jsonData2 != "") {
 		storyPersistence = StoryControlLogic.ReadJsonPersistentData(jsonData2);
 	}
 	if(hasConfig) {
-		if(this.config.dimension < 0) {
+		if(this.config.dimensionSave < 0) {
 			if(persistenceMaster.jsonGameplay != null) {
-				bm.SendJsonPersistentData(persistenceMaster.jsonGameplay);
+				var success = bm.SendJsonPersistentData(persistenceMaster.jsonGameplay);
+				var tmp = success == false;
 			}
-		} else if(persistenceMaster.jsonGameplayDimensions.length > this.config.dimension) {
-			var jsonD = persistenceMaster.jsonGameplayDimensions[this.config.dimension];
-			if(jsonD != null) {
-				bm.SendJsonPersistentData(jsonD);
+		} else {
+			if(persistenceMaster.jsonGameplayDimensions == null) {
+				persistenceMaster.jsonGameplayDimensions = [];
+			}
+			if(persistenceMaster.jsonGameplayDimensions.length > this.config.dimensionSave) {
+				var jsonD = persistenceMaster.jsonGameplayDimensions[this.config.dimensionSave];
+				if(jsonD != null) {
+					bm.SendJsonPersistentData(jsonD);
+				}
 			}
 		}
 		bm.loadGeneralJson(persistenceMaster.jsonGeneral,persistenceMaster.worldVersion);
 	}
+	var storyRuntime = [];
 	var _g = new haxe_ds_StringMap();
 	var value = new Sprite("mom_story",512);
 	_g.h["mom"] = value;
@@ -3546,9 +3954,52 @@ var GRIControl = function(configuration) {
 	_g.h["cid"] = value;
 	var value = new Sprite("cid_story",512);
 	_g.h["man"] = value;
-	var storyRuntime = { currentStoryProgression : null, currentCutsceneIndex : -1, cutscene : null, cutsceneStartable : null, cutscenes : null, visibilityConditionScripts : [], messageRuntimeInfo : [], persistence : storyPersistence, speakerToImage : _g};
-	this.storyControl.runtime = storyRuntime;
-	StoryControlLogic.Init(CrossTarget.getTextResource("storyjson"),this.storyControl.runtime);
+	var value = new Sprite("isabel_story",512);
+	_g.h["isabel"] = value;
+	var value = new Sprite("vitor_story",512);
+	_g.h["victor"] = value;
+	var value = new Sprite("pedroiv_story",512);
+	_g.h["dom pedro iv"] = value;
+	var value = new Sprite("iracema_story",512);
+	_g.h["iracema"] = value;
+	var value = new Sprite("iracema_story",512);
+	_g.h["princess"] = value;
+	var value = new Sprite("marino_story",512);
+	_g.h["marino"] = value;
+	var storyRuntime1 = { currentStoryProgression : null, currentCutsceneIndex : -1, cutscene : null, cutsceneExtra : storyRuntime, cutsceneStartable : null, cutscenes : null, visibilityConditionScripts : [], messageRuntimeInfo : [], persistence : storyPersistence, speakerToImage : _g};
+	this.storyControl.runtime = storyRuntime1;
+	var storyFile = "storyjson";
+	if(hasConfig) {
+		storyFile = this.config.storyDataResource;
+	}
+	StoryControlLogic.Init(CrossTarget.getTextResource(storyFile),this.storyControl.runtime);
+	if(hasConfig) {
+		var _g3_current = 0;
+		var _g3_array = this.config.eventToStoryTriggers;
+		while(_g3_current < _g3_array.length) {
+			var _g4_value = _g3_array[_g3_current];
+			var _g4_key = _g3_current++;
+			var index = _g4_key;
+			var value = _g4_value;
+			var storyId = value.storyId;
+			var _g5_current = 0;
+			var _g5_array = this.storyControl.runtime.cutscenes;
+			while(_g5_current < _g5_array.length) {
+				var _g6_value = _g5_array[_g5_current];
+				var _g6_key = _g5_current++;
+				var cutscenePos = _g6_key;
+				var cutscene = _g6_value;
+				if(storyId == cutscene.id) {
+					this.storyControl.runtime.cutsceneExtra[cutscenePos] = new CutsceneExtraData(false);
+					break;
+				}
+			}
+		}
+		bm.wdata.hero.viewAux = this.config.heroViewAux;
+		if(this.config.heroMaxLevel >= 0) {
+			bm.heroMaxLevel = this.config.heroMaxLevel;
+		}
+	}
 	this.scriptExecuter.variables.h["global"] = bm.global.data;
 	CrossTarget.SetLocalStorageItem(GRIControl.key,jsonData);
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.FEEDBACK_BUTTON,102));
@@ -3562,48 +4013,6 @@ var GRIControl = function(configuration) {
 };
 $hxClasses["GRIControl"] = GRIControl;
 GRIControl.__name__ = "GRIControl";
-GRIControl.refreshAreaName = function(bm,region,maxArea,areaNames,lagrimaAreaLabels) {
-	if(areaNames[region] == null) {
-		areaNames[region] = [];
-	}
-	while(areaNames[region].length <= maxArea) {
-		var bArea = areaNames[region].length;
-		if(region == 0) {
-			if(bArea > 0) {
-				var pur = bm.enemyAreaFromProcedural.GetProceduralUnitRepeated(bArea - 1);
-				var characteristic = pur.proceduralUnit.characteristics[0];
-				var text = lagrimaAreaLabels[characteristic];
-				switch(pur.proceduralUnit.repeat) {
-				case 1:
-					text += " II";
-					break;
-				case 2:
-					text += " III";
-					break;
-				case 3:
-					text += " IV";
-					break;
-				case 4:
-					text += " V";
-					break;
-				}
-				text += " - " + (pur.position + 1);
-				areaNames[region].push(text);
-			} else if(region == 0) {
-				areaNames[region].push("Home");
-			} else {
-				areaNames[region].push("Entrance");
-			}
-		} else if(bArea == 0) {
-			areaNames[region].push("Entrance");
-		} else {
-			areaNames[region].push("Danger Area " + bArea);
-		}
-	}
-	if(areaNames[region].length > maxArea + 1) {
-		areaNames[region].length = maxArea + 1;
-	}
-};
 GRIControl.prototype = {
 	setupTitle: function(dimensions) {
 		BitmapText.loadFont("main","font12_0",CrossTarget.getTextResource("font12_fnt"));
@@ -3612,14 +4021,14 @@ GRIControl.prototype = {
 		var genui = new GenUIIntegration();
 		var res = CrossTarget.getTextResource("uigen_txt");
 		CrossTarget.crossPrint(res);
-		haxe_Log.trace(res,{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 231, className : "GRIControl", methodName : "setupTitle"});
+		haxe_Log.trace(res,{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 283, className : "GRIControl", methodName : "setupTitle"});
 		genui.readUIMaster(res);
 		this.view.ui.genUI = genui;
 		this.view.setupTitleTabButtons();
 		this.titleControl.setupView(this,dimensions);
 		this.view.showTab(GRIView.tagTabTitle);
 		var key = GRIControl.PRIVACY_ACCEPTANCE_KEY;
-		var privacyAcceptance = CrossTarget.GetLocalStorageItem(key);
+		var privacyAcceptance = CrossTarget.GetLocalStorageItem(key,false);
 		if(privacyAcceptance == null) {
 			this.titleControl.changeMode(TitleMode.ACCEPT);
 		} else {
@@ -3715,6 +4124,16 @@ GRIControl.prototype = {
 		KeyboardToButtonsLogic.process(this.buttonBindings);
 		this.titleControl.update();
 		this.view.update(miliseconds,Mouse.mouse);
+		var hasError = ErrorX.hasError();
+		this.view.errorButton.visible = hasError && (this.view.currentTab != GRIView.tagTabMemory || this.storyControl.state != StoryControlState.STORY);
+		if(this.view.errorSendButton != null) {
+			this.view.errorSendButton.visible = hasError && (this.view.currentTab != GRIView.tagTabMemory || this.storyControl.state != StoryControlState.STORY);
+		}
+		if(this.showError) {
+			this.view.errorButton.text = "Hide Error";
+		} else {
+			this.view.errorButton.text = "Error Happened\n(click to Show)";
+		}
 		if(this.view.feedbackButton != null) {
 			this.view.feedbackButton.visible = this.view.currentTab != GRIView.tagTabMemory || this.storyControl.state != StoryControlState.STORY;
 		}
@@ -3750,7 +4169,17 @@ GRIControl.prototype = {
 			}
 			if(value.stringData == "fb") {
 				this.showFeedback = true;
-				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 394, className : "GRIControl", methodName : "update"});
+				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 458, className : "GRIControl", methodName : "update"});
+			}
+			if(value.stringData == "error") {
+				this.showError = !this.showError;
+			}
+			if(value.stringData == "error_send") {
+				this.sendErrorRequest = true;
+				this.errorMessage = ErrorX.errorMessage;
+				if(this.errorMessage == null) {
+					this.errorMessage = ErrorX.exception.details();
+				}
 			}
 			if(value.stringData == "set") {
 				this.battleManager.ChangeEquipmentSet(value.intData);
@@ -3782,6 +4211,19 @@ GRIControl.prototype = {
 		this.equipControl.update();
 		this.regionControl.update();
 		this.characterTabControl.update();
+		if(this.config != null) {
+			var _g_current = 0;
+			var _g_array = this.config.eventToStoryTriggers;
+			while(_g_current < _g_array.length) {
+				var _g1_value = _g_array[_g_current];
+				var _g1_key = _g_current++;
+				var index = _g1_key;
+				var value = _g1_value;
+				if(bm.isTriggeredByEvent(value.eventTrigger)) {
+					StoryControlLogic.tryStoryVisible(value.storyId,this.storyControl);
+				}
+			}
+		}
 		StoryControlLogic.update(miliseconds / 1000,this.storyControl,this.scriptExecuter);
 		if(this.storyControl.requestBattleTab) {
 			this.storyControl.requestBattleTab = false;
@@ -3829,11 +4271,7 @@ GRIControl.prototype = {
 		}
 		if(this.saveCount <= 0 || this.battleManager.prestiged) {
 			this.saveCount = GRIControl.saveRate;
-			var json = bm.GetJsonPersistentData();
-			var json2 = StoryControlLogic.GetJsonPersistentData(this.storyControl.runtime);
-			var masterPers = { worldVersion : bm.wdata.worldVersion, jsonGameplay : json, jsonStory : json2, jsonGeneral : null, jsonGameplayDimensions : null};
-			var jsonMaster = JsonX.stringify(masterPers);
-			CrossTarget.SetLocalStorageItem(GRIControl.key,jsonMaster);
+			this.saveData();
 			if(this.battleManager.prestiged) {
 				CrossTarget.reload();
 				this.battleManager = null;
@@ -3868,7 +4306,7 @@ GRIControl.prototype = {
 				this.view.endDialog();
 			}
 		}
-		var storyHappened = this.storyControl.runtime.persistence.progressionData.h[this.storyControl.runtime.cutscenes[0].title].timesCompleted > 0;
+		var storyHappened = this.storyControl.runtime.persistence.progressionData.h[this.storyControl.runtime.cutscenes[0].id].timesCompleted > 0;
 		var storyHappenedPure = storyHappened;
 		if(bm.wdata.regionProgress != null && bm.wdata.regionProgress[0] != null) {
 			storyHappened = storyHappened && bm.wdata.regionProgress[0].maxArea > 2;
@@ -3881,9 +4319,11 @@ GRIControl.prototype = {
 		this.view.tabAccessible(GRIView.tagTabEquip,action.visible);
 		var action = bm.wdata.playerActions.h["tabregion"];
 		this.view.tabAccessible(GRIView.tagTabRegion,action.visible);
-		GRIControl.refreshAreaName(bm,bm.wdata.battleAreaRegion,bm.wdata.maxArea,this.areaNames,this.lagrimaAreaLabels);
+		var action = bm.wdata.playerActions.h["equipset_menu"];
+		this.view.ui.tagVisibility(GRISetView.SETVIEWTAG,action.visible);
+		this.refreshAreaName(bm,bm.wdata.battleAreaRegion,bm.wdata.maxArea,this.areaNames,this.lagrimaAreaLabels);
 		var regionProgress = bm.getRegionProgress(this.regionControl.visualizedRegion);
-		GRIControl.refreshAreaName(bm,this.regionControl.visualizedRegion,regionProgress.maxArea,this.areaNames,this.lagrimaAreaLabels);
+		this.refreshAreaName(bm,this.regionControl.visualizedRegion,regionProgress.maxArea,this.areaNames,this.lagrimaAreaLabels);
 		this.regionControl.updateAreaNames(this.areaNames[this.regionControl.visualizedRegion],bm.wdata.regionProgress[this.regionControl.visualizedRegion].area);
 		this.view.areaElement.text = this.areaNames[bm.wdata.battleAreaRegion][bm.wdata.battleArea];
 		if(bm.wdata.necessaryToKillInArea != 0) {
@@ -3992,9 +4432,15 @@ GRIControl.prototype = {
 				if(e.type == EventTypes.ActorAttack) {
 					if(e.target.type == 0) {
 						this.view.griEffects.showDamageNumber(e.data,this.view.heroBattleView.icon);
+						if(e.dataString != null) {
+							this.view.griEffects.showText(e.dataString,this.view.enemyBattleView.icon);
+						}
 						this.view.enemyBattleView.skeleton.startAnimation("attack");
 					} else {
 						this.view.griEffects.showDamageNumber(e.data,this.view.enemyBattleView.icon);
+						if(e.dataString != null) {
+							this.view.griEffects.showText(e.dataString,this.view.heroBattleView.icon);
+						}
 						this.view.heroBattleView.skeleton.startAnimation("attack");
 					}
 				}
@@ -4011,6 +4457,13 @@ GRIControl.prototype = {
 	}
 	,render: function() {
 		this.view.render(this.buttonBindings);
+		if(this.showError) {
+			var message = ErrorX.errorMessage;
+			if(message == null) {
+				message = ErrorX.exception.details();
+			}
+			this.view.renderError(message);
+		}
 	}
 	,actorToView: function(actor,actorView,enemyName) {
 		if(enemyName == null) {
@@ -4110,12 +4563,62 @@ GRIControl.prototype = {
 		}
 		this.view.ui.tagVisibility(actorView.tag,actor != null);
 	}
+	,refreshAreaName: function(bm,region,maxArea,areaNames,lagrimaAreaLabels) {
+		if(areaNames[region] == null) {
+			areaNames[region] = [];
+		}
+		while(areaNames[region].length <= maxArea) {
+			var bArea = areaNames[region].length;
+			var regionD = this.config.battleManagerConfiguration.regions[region];
+			if(regionD.type == RegionType.PROCEDURAL) {
+				if(bArea > 0) {
+					var pur = bm.enemyAreaFromProcedural.GetProceduralUnitRepeated(bArea - 1);
+					var characteristic = pur.proceduralUnit.characteristics[0];
+					var text = lagrimaAreaLabels[characteristic];
+					switch(pur.proceduralUnit.repeat) {
+					case 1:
+						text += " II";
+						break;
+					case 2:
+						text += " III";
+						break;
+					case 3:
+						text += " IV";
+						break;
+					case 4:
+						text += " V";
+						break;
+					}
+					text += " - " + (pur.position + 1);
+					areaNames[region].push(text);
+				} else if(region == 0) {
+					areaNames[region].push("Home");
+				} else {
+					areaNames[region].push("Entrance");
+				}
+			}
+			if(regionD.type == RegionType.CHALLENGE) {
+				if(bArea == 0) {
+					areaNames[region].push("Entrance");
+				} else {
+					areaNames[region].push("Danger Area " + bArea);
+				}
+			}
+			if(regionD.type == RegionType.SEMIPROCEDURAL) {
+				areaNames[region].push(this.config.areaNameList[region][bArea]);
+			}
+		}
+		if(areaNames[region].length > maxArea + 1) {
+			areaNames[region].length = maxArea + 1;
+		}
+	}
 	,getEnemyName: function(area,region) {
+		var rd = this.config.battleManagerConfiguration.regions[region];
 		var enemyNameLabel = "";
-		if(area == 0) {
+		if(!this.battleManager.isBattleAreaVerify(region,area)) {
 			return "";
 		}
-		if(region == 0) {
+		if(rd.type == RegionType.PROCEDURAL) {
 			var eafp = this.battleManager.enemyAreaFromProcedural;
 			var eai = eafp.GetEnemyAreaInformation(area - 1);
 			enemyNameLabel = this.enemyLabels[0][eai.sheetId];
@@ -4131,9 +4634,27 @@ GRIControl.prototype = {
 					enemyNameLabel += " do Carai";
 				}
 			}
-		} else {
+		}
+		if(rd.type == RegionType.CHALLENGE) {
 			enemyNameLabel = this.enemyLabels[region][0];
 			enemyNameLabel += " " + String.fromCodePoint((65 + area - 1));
+		}
+		if(rd.type == RegionType.SEMIPROCEDURAL) {
+			var areaD = rd.areaDatas[area];
+			var eai = areaD.enemy;
+			enemyNameLabel = this.enemyLabels[0][eai.sheetId];
+			if(this.lagrimaAreaPrefix[eai.equipId] != null) {
+				enemyNameLabel = this.lagrimaAreaPrefix[eai.equipId] + " " + enemyNameLabel;
+			}
+			if(eai.level > 0) {
+				if(eai.level < 10) {
+					enemyNameLabel += " Forte";
+				} else if(eai.level < 30) {
+					enemyNameLabel += " Monstro";
+				} else {
+					enemyNameLabel += " do Carai";
+				}
+			}
 		}
 		return enemyNameLabel;
 	}
@@ -4142,11 +4663,31 @@ GRIControl.prototype = {
 		if(recommended <= 0) {
 			return null;
 		}
-		return JSON.stringify({ recommended : recommended + "", message : reviewText, userId : userId});
+		return JSON.stringify({ recommended : recommended + "", message : reviewText, save : CrossTarget.latestSave, userId : userId});
 	}
 	,getFeedbackJson: function(reviewText) {
 		var userId = this.battleManager.wdata.userId;
-		return JSON.stringify({ message : reviewText, userId : userId});
+		return JSON.stringify({ message : reviewText, save : CrossTarget.latestSave, userId : userId});
+	}
+	,getErrorJson: function() {
+		var userId = this.battleManager.wdata.userId;
+		return JSON.stringify({ message : this.errorMessage, save : CrossTarget.latestSave, userId : userId});
+	}
+	,saveData: function() {
+		var bm = this.battleManager;
+		var json = bm.GetJsonPersistentData();
+		var json2 = StoryControlLogic.GetJsonPersistentData(this.storyControl.runtime);
+		var masterPers = { worldVersion : bm.wdata.worldVersion, jsonGameplay : this.previousPersistenceMaster.jsonGameplay, jsonStory : json2, jsonGeneral : this.previousPersistenceMaster.jsonGeneral, jsonGameplayDimensions : this.previousPersistenceMaster.jsonGameplayDimensions};
+		if(masterPers.jsonGameplayDimensions == null) {
+			masterPers.jsonGameplayDimensions = [];
+		}
+		if(this.config.dimensionSave >= 0) {
+			masterPers.jsonGameplayDimensions[this.config.dimensionSave] = json;
+		} else {
+			masterPers.jsonGameplay = json;
+		}
+		var jsonMaster = JsonX.stringify(masterPers);
+		CrossTarget.SetLocalStorageItem(GRIControl.key,jsonMaster);
 	}
 	,__class__: GRIControl
 };
@@ -4375,7 +4916,7 @@ GRIControlEquip.prototype = {
 			var _g3_key = _g2_current++;
 			var index = _g3_key;
 			var value = _g3_value;
-			if(this.equipView.isEquippedSelectedThisFrame(index)) {
+			if(this.equipView.isEquippedSelectedThisFrame(index) && UIElementManager.latestDevice != Device.MOUSE) {
 				hoveredEquipped = index;
 			}
 			if(value >= 0) {
@@ -4535,7 +5076,8 @@ var GRIControlRegion = function(control,bm) {
 	this.control = control;
 	this.regionFeed.initList("STANDARD");
 	this.regionFeed.initList("DANGER");
-	this.regionFeed.set(GRIControlRegion.listStandard,0,"Lagrima Continent","");
+	var initRegion = control.config.regionNameList[0];
+	this.regionFeed.set(GRIControlRegion.listStandard,0,initRegion,"");
 	this.regionFeed.setData(GRIControlRegion.listStandard,0,"regionbutton",0);
 	this.areaFeed.initList("AREAS OF REGION");
 	this.viewRegion = new GRIViewRegion(control.view);
@@ -4568,7 +5110,7 @@ GRIControlRegion.prototype = {
 		var regionChanged = this.lastRegionVisualized != this.visualizedRegion;
 		var hoverArea = this.viewRegion.getHoveredArea(GRIControlRegion.dataAreaB);
 		var hoverRegion = this.viewRegion.getHoveredRegion(GRIControlRegion.dataRegionB);
-		if(hoverRegion >= 0) {
+		if(hoverRegion >= 0 && UIElementManager.latestDevice != Device.MOUSE) {
 			this.visualizedRegion = hoverRegion;
 		}
 		var areaChanged = this.lastAreaVisualized != hoverArea;
@@ -4576,7 +5118,7 @@ GRIControlRegion.prototype = {
 		if((areaChanged || regionChanged) && hoverArea >= 0) {
 			this.lastRegionVisualized = this.visualizedRegion;
 			this.lastAreaVisualized = hoverArea;
-			if(hoverArea != 0) {
+			if(this.control.battleManager.isBattleAreaVerify(this.visualizedRegion,hoverArea)) {
 				enemy = this.control.battleManager.CreateEnemy(this.visualizedRegion,hoverArea);
 				this.viewRegion.enemyName.text = this.control.getEnemyName(hoverArea,this.visualizedRegion);
 				this.viewRegion.enemyHeader.text = "ENEMY DATA     " + enemyRegionNames[this.visualizedRegion] + " " + this.areaFeed.feedLists[0].feedList[this.lastAreaVisualized].text;
@@ -4615,6 +5157,7 @@ GRIControlRegion.prototype = {
 		this.viewRegion.setup();
 	}
 	,updateAreaNames: function(areaNames,currentArea) {
+		var len = 0;
 		var _g_current = 0;
 		var _g_array = areaNames;
 		while(_g_current < _g_array.length) {
@@ -4622,10 +5165,13 @@ GRIControlRegion.prototype = {
 			var _g1_key = _g_current++;
 			var index = _g1_key;
 			var value = _g1_value;
-			this.areaFeed.set(0,index,value,"",true);
-			this.areaFeed.setData(0,index,GRIControlRegion.dataAreaB,index);
+			if(value != null && value != "") {
+				this.areaFeed.set(0,index,value,"",true);
+				this.areaFeed.setData(0,index,GRIControlRegion.dataAreaB,index);
+				++len;
+			}
 		}
-		this.areaFeed.feedLists[0].invisibleAfterCap(areaNames.length);
+		this.areaFeed.feedLists[0].invisibleAfterCap(len);
 		this.viewRegion.feedAreaButtons(this.areaFeed);
 	}
 	,__class__: GRIControlRegion
@@ -4664,7 +5210,11 @@ GRIControlTitle.prototype = {
 	}
 	,update: function() {
 		var continueV = this.control.gameStartedAfterTitle == false;
-		this.control.view.ui.elementVisibility(GRIViewTitle.DATA_CONTINUE,continueV);
+		if(this.control.config.dimensionSave < 0) {
+			this.control.view.ui.elementEnabled(GRIViewTitle.DATA_CONTINUE,continueV);
+		} else {
+			this.control.view.ui.getElementWithDataInt(GRIViewTitle.DATA_CONTINUE,1).enabled = continueV;
+		}
 		if(continueV == false) {
 			this.titleView.cursorGroup.firstElement = this.control.view.ui.getElement(GRIViewTitle.DATA_DISCORD);
 		}
@@ -4707,7 +5257,7 @@ GRIControlTitle.prototype = {
 			}
 			if(data.stringData == GRIViewTitle.DATA_ACCEPT) {
 				var privacyAcceptance = "accepted";
-				CrossTarget.SetLocalStorageItem(GRIControl.PRIVACY_ACCEPTANCE_KEY,privacyAcceptance);
+				CrossTarget.SetLocalStorageItem(GRIControl.PRIVACY_ACCEPTANCE_KEY,privacyAcceptance,false);
 				this.changeMode(TitleMode.NORMAL);
 			}
 			if(data.stringData == GRIViewTitle.DATA_PRIVACYSEE) {
@@ -4814,10 +5364,24 @@ GRIEffects.prototype = {
 			effect.skeletonUnit.startAnimation("down_slideleft");
 		}
 	}
+	,showText: function(text,target) {
+		var effect = this.getFreeEffect(this.textEffects);
+		var xR = 0;
+		var yR = 0;
+		var _g_current = 0;
+		var _g_array = effect.elements;
+		while(_g_current < _g_array.length) {
+			var _g1_value = _g_array[_g_current];
+			var _g1_key = _g_current++;
+			var index = _g1_key;
+			var value = _g1_value;
+			value.transform.centerIn(target.transform.get_centerX() + xR,target.transform.get_centerY() + yR);
+		}
+		effect.elements[1].text = text;
+		effect.skeletonUnit.startAnimation("popin");
+	}
 	,showDamageNumber: function(damage,target) {
 		var effect = this.getFreeEffect(this.textEffects);
-		var xR = this.random.random() * 30 - 15;
-		var yR = this.random.random() * 30 - 15;
 		var xR = 0;
 		var yR = 0;
 		var _g_current = 0;
@@ -4834,13 +5398,69 @@ GRIEffects.prototype = {
 	}
 	,__class__: GRIEffects
 };
+var EnemySheets = function() {
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1.4;
+	_g.h["Speed"] = 0.8;
+	_g.h["LifeMax"] = 2.3;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Speed"] = 0.1;
+	this.troll = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1.3;
+	_g.h["Speed"] = 1.0;
+	_g.h["LifeMax"] = 0.8;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Speed"] = 0.1;
+	this.nutkin = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 0.9;
+	_g.h["Speed"] = 1.1;
+	_g.h["LifeMax"] = 1.3;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Defense"] = 0.11;
+	this.toad = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 0.8;
+	_g.h["Speed"] = 0.4;
+	_g.h["LifeMax"] = 0.8;
+	this.rat = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : null};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 0.9;
+	_g.h["Speed"] = 1.6;
+	_g.h["LifeMax"] = 0.3;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Speed"] = 0.7;
+	this.cat = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 1.8;
+	_g.h["Speed"] = 0.3;
+	_g.h["LifeMax"] = 1.2;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Speed"] = 0.05;
+	_g1.h["Defense"] = 0.05;
+	this.giant = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	var _g = new haxe_ds_StringMap();
+	_g.h["Attack"] = 0.6;
+	_g.h["Speed"] = 1.3;
+	_g.h["LifeMax"] = 0.85;
+	var _g1 = new haxe_ds_StringMap();
+	_g1.h["Speed"] = 0.6;
+	this.dog = { speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}};
+	this.goblin = { speciesMultiplier : null, speciesLevelStats : null, speciesAdd : null};
+};
+$hxClasses["EnemySheets"] = EnemySheets;
+EnemySheets.__name__ = "EnemySheets";
+EnemySheets.prototype = {
+	__class__: EnemySheets
+};
 var GRISetView = function(nButtons,layoutId,view,cursorGroup) {
 	this.buttons = [];
 	var _g = 0;
 	var _g1 = nButtons;
 	while(_g < _g1) {
 		var i = _g++;
-		var b = view.addButton("set",i + 1 + "",GRIView.ARCHETYPE_BUTTON_SMALL,layoutId,null,cursorGroup);
+		var b = view.addButton("set",i + 1 + "",GRIView.ARCHETYPE_BUTTON_SMALL,layoutId,GRISetView.SETVIEWTAG,cursorGroup);
 		b.data.intData = i;
 		this.buttons.push(b);
 		if(cursorGroup != null) {
@@ -4982,6 +5602,7 @@ EventView.prototype = {
 	,__class__: EventView
 };
 var GRIView = function() {
+	this.mainCharacterName = "You";
 	this.spine = new SpineManager();
 	this.dialogMiscTag = "dialogmisc";
 	this.lootList = new EventView();
@@ -5070,7 +5691,7 @@ GRIView.prototype = {
 			var _g1_key = key;
 			var index = _g1_key;
 			var value = _g1_value;
-			if(this.ui.isVisible(value)) {
+			if(this.ui.isVisible(value) && value.enabled) {
 				var _this = value.transform;
 				var x = _this.position.x + _this.size.x - 7;
 				var _this1 = value.transform;
@@ -5135,6 +5756,7 @@ GRIView.prototype = {
 		this.ui.tagVisibility(GRIView.TAG_HOVER_ACTOR,false);
 		this.uiCreation.activeLayer = GRIView.LAYER_DEFAULT;
 		this.uiCreation.tags.length = 0;
+		this.errorButton = this.addButton("error","Error Happened\n( click to show )",null,"lowerbuttons");
 	}
 	,setupTitleTabButtons: function() {
 		this.uiCreation.tags.length = 0;
@@ -5250,7 +5872,7 @@ GRIView.prototype = {
 		if(this.ui.invisibleTags.indexOf("dialog") != -1 == false) {
 			this.ui.invisibleTags.push("dialog");
 		}
-		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI/GRIView.hx", lineNumber : 429, className : "GRIView", methodName : "endDialog"});
+		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI/GRIView.hx", lineNumber : 437, className : "GRIView", methodName : "endDialog"});
 		if(this.ui.keyboardManager.currentCursorGroup == this.dialogCursorGroup) {
 			this.ui.returnCursorGroup();
 		}
@@ -5303,8 +5925,8 @@ GRIView.prototype = {
 		var header;
 		var e = new UIElement();
 		e.tags.push(tag);
-		e.transform.set(mainX,mainY,100,20);
-		e.text = "You";
+		e.transform.set(mainX,mainY,-1,20);
+		e.text = this.mainCharacterName;
 		e.textFont = "main16";
 		var self = e.textPivot;
 		self.x = 0;
@@ -5504,6 +6126,9 @@ GRIView.prototype = {
 			cursorGroup.elements.push(button);
 		}
 		return button;
+	}
+	,renderError: function(message) {
+		XTextRender.drawTextMultiLine(message,"main",4,4,Renderer.width - 20);
 	}
 	,__class__: GRIView
 };
@@ -6056,7 +6681,7 @@ GRIViewRegion.prototype = {
 				var _g1_key = _g_current++;
 				var index = _g1_key;
 				var value = _g1_value;
-				if(value.hovered.state) {
+				if(value.hovered.trueThisFrame()) {
 					if(value.data.stringData == regionData) {
 						return value.data.intData;
 					}
@@ -6225,6 +6850,7 @@ GRIViewStory.prototype = {
 				var self2 = mv.text.textPivot;
 				self2.x = 0;
 				self2.y = 0;
+				mv.text.transform.size.x = 350;
 				this.view.uiCreation.addWithOffset(mv.text,mv.parent,0,0,214,58);
 				mv.image = this.view.uiCreation.createImageElement(null,128,128);
 				this.view.uiCreation.addWithOffset(mv.image,mv.parent,0,0.5,0,0);
@@ -6265,7 +6891,7 @@ GRIViewTitle.prototype = {
 		this.view.uiCreation.singleTag(GRIView.tagTabTitle);
 		var logo = this.view.uiCreation.createImageElement(Sprite.create("logo",420,360),420,360);
 		this.view.uiCreation.addElementInLayoutId(logo,"titlelogo");
-		var e = this.view.addText("","Version: 0.09r",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		var e = this.view.addText("","Version: 0.10r",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-130);
 		var e = this.view.addText("","Developed by Pedro Gabriel Fonteles Furtado",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-110);
@@ -6310,7 +6936,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild(("0.09r" + platform));
+            gameanalytics.GameAnalytics.configureBuild(("0.10r" + platform));
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -7016,7 +7642,7 @@ JsonParser_$1.__name__ = "JsonParser_1";
 JsonParser_$1.__super__ = json2object_reader_BaseParser;
 JsonParser_$1.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ worldVersion : Int, ?userId : Null<String>, ?timesReviewed : Null<Int>, timeCount : Float, sleeping : Bool, ?skillSets : Null<Array<SkillSet>>, ?retention : Null<RetentionData>, regionProgress : Array<AreaPersistence>, recovering : Bool, prestigeTimes : Int, playerTimesKilled : Int, playerActions : Map<String, PlayerAction>, necessaryToKillInArea : Int, maxArea : Int, killedInArea : Array<Int>, hero : Actor, ?equipLevels : Null<Array<EquipmentLevel>>, enemy : Actor, ?currency : Null<CurrencyHolderPersistent>, battleAreaRegionMax : Int, battleAreaRegion : Int, battleArea : Int, ?autoAdvance : Null<Bool> }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ worldVersion : Int, ?userId : Null<String>, ?timesReviewed : Null<Int>, timeCount : Int, sleeping : Bool, ?skillSets : Null<Array<SkillSet>>, ?retention : Null<RetentionData>, regionProgress : Array<AreaPersistence>, recovering : Bool, prestigeTimes : Int, playerTimesKilled : Int, playerActions : Map<String, PlayerAction>, necessaryToKillInArea : Int, maxArea : Int, killedInArea : Array<Int>, hero : Actor, ?equipLevels : Null<Array<EquipmentLevel>>, enemy : Actor, ?currency : Null<CurrencyHolderPersistent>, battleAreaRegionMax : Int, battleAreaRegion : Int, battleArea : Int, ?autoAdvance : Null<Bool> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -7089,13 +7715,13 @@ JsonParser_$1.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.sleeping = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"sleeping",assigned,this.value.sleeping,pos);
 				break;
 			case "timeCount":
-				this.value.timeCount = this.loadObjectField(($_=new JsonParser_$22(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timeCount",assigned,this.value.timeCount,pos);
+				this.value.timeCount = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timeCount",assigned,this.value.timeCount,pos);
 				break;
 			case "timesReviewed":
-				this.value.timesReviewed = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timesReviewed",assigned,this.value.timesReviewed,pos);
+				this.value.timesReviewed = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timesReviewed",assigned,this.value.timesReviewed,pos);
 				break;
 			case "userId":
-				this.value.userId = this.loadObjectField(($_=new JsonParser_$26(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"userId",assigned,this.value.userId,pos);
+				this.value.userId = this.loadObjectField(($_=new JsonParser_$25(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"userId",assigned,this.value.userId,pos);
 				break;
 			case "worldVersion":
 				this.value.worldVersion = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"worldVersion",assigned,this.value.worldVersion,pos);
@@ -7107,9 +7733,61 @@ JsonParser_$1.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { autoAdvance : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleAreaRegion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleAreaRegionMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), currency : new JsonParser_$7([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), enemy : new JsonParser_$9([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipLevels : new JsonParser_$11([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), hero : new JsonParser_$9([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), killedInArea : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), maxArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), necessaryToKillInArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), playerActions : new JsonParser_$14([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), playerTimesKilled : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), prestigeTimes : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), recovering : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), regionProgress : new JsonParser_$16([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), retention : new JsonParser_$19([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), skillSets : new JsonParser_$21([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), sleeping : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timeCount : new JsonParser_$22([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesReviewed : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), userId : new JsonParser_$26([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { autoAdvance : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleAreaRegion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), battleAreaRegionMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), currency : new JsonParser_$7([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), enemy : new JsonParser_$9([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipLevels : new JsonParser_$11([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), hero : new JsonParser_$9([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), killedInArea : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), maxArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), necessaryToKillInArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), playerActions : new JsonParser_$14([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), playerTimesKilled : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), prestigeTimes : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), recovering : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), regionProgress : new JsonParser_$16([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), retention : new JsonParser_$19([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), skillSets : new JsonParser_$21([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), sleeping : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timeCount : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesReviewed : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), userId : new JsonParser_$25([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$1
+});
+var JsonParser_$100 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_100"] = JsonParser_$100;
+JsonParser_$100.__name__ = "JsonParser_100";
+JsonParser_$100.__super__ = json2object_reader_BaseParser;
+JsonParser_$100.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ visibilityScript : String, title : String, messages : Array<Message>, id : String, actionLabel : String }",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["actionLabel","id","messages","title","visibilityScript"],[false,false,false,false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "actionLabel":
+				this.value.actionLabel = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"actionLabel",assigned,this.value.actionLabel,pos);
+				break;
+			case "id":
+				this.value.id = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"id",assigned,this.value.id,pos);
+				break;
+			case "messages":
+				this.value.messages = this.loadObjectField(($_=new JsonParser_$101(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"messages",assigned,this.value.messages,pos);
+				break;
+			case "title":
+				this.value.title = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"title",assigned,this.value.title,pos);
+				break;
+			case "visibilityScript":
+				this.value.visibilityScript = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visibilityScript",assigned,this.value.visibilityScript,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		return { actionLabel : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), id : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), messages : new JsonParser_$101([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), title : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibilityScript : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+	}
+	,__class__: JsonParser_$100
 });
 var JsonParser_$101 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -7122,55 +7800,6 @@ JsonParser_$101.__name__ = "JsonParser_101";
 JsonParser_$101.__super__ = json2object_reader_BaseParser;
 JsonParser_$101.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ visibilityScript : String, title : String, messages : Array<Message>, actionLabel : String }",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["actionLabel","messages","title","visibilityScript"],[false,false,false,false]);
-		this.value = this.getAuto();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			switch(field.name) {
-			case "actionLabel":
-				this.value.actionLabel = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"actionLabel",assigned,this.value.actionLabel,pos);
-				break;
-			case "messages":
-				this.value.messages = this.loadObjectField(($_=new JsonParser_$102(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"messages",assigned,this.value.messages,pos);
-				break;
-			case "title":
-				this.value.title = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"title",assigned,this.value.title,pos);
-				break;
-			case "visibilityScript":
-				this.value.visibilityScript = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visibilityScript",assigned,this.value.visibilityScript,pos);
-				break;
-			default:
-				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
-			}
-		}
-		this.objectErrors(assigned,pos);
-	}
-	,getAuto: function() {
-		return { actionLabel : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), messages : new JsonParser_$102([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), title : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibilityScript : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
-	}
-	,__class__: JsonParser_$101
-});
-var JsonParser_$102 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_102"] = JsonParser_$102;
-JsonParser_$102.__name__ = "JsonParser_102";
-JsonParser_$102.__super__ = json2object_reader_BaseParser;
-JsonParser_$102.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Message>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
@@ -7178,23 +7807,23 @@ JsonParser_$102.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$104(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$103(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$102([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$101([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$102
+	,__class__: JsonParser_$101
 });
-var JsonParser_$104 = function(errors,putils,errorType) {
+var JsonParser_$103 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_104"] = JsonParser_$104;
-JsonParser_$104.__name__ = "JsonParser_104";
-JsonParser_$104.__super__ = json2object_reader_BaseParser;
-JsonParser_$104.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_103"] = JsonParser_$103;
+JsonParser_$103.__name__ = "JsonParser_103";
+JsonParser_$103.__super__ = json2object_reader_BaseParser;
+JsonParser_$103.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ speaker : String, script : String, body : String }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7212,13 +7841,13 @@ JsonParser_$104.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "body":
-				this.value.body = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"body",assigned,this.value.body,pos);
+				this.value.body = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"body",assigned,this.value.body,pos);
 				break;
 			case "script":
-				this.value.script = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"script",assigned,this.value.script,pos);
+				this.value.script = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"script",assigned,this.value.script,pos);
 				break;
 			case "speaker":
-				this.value.speaker = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"speaker",assigned,this.value.speaker,pos);
+				this.value.speaker = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"speaker",assigned,this.value.speaker,pos);
 				break;
 			default:
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
@@ -7227,9 +7856,9 @@ JsonParser_$104.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { body : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), script : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), speaker : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { body : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), script : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), speaker : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$104
+	,__class__: JsonParser_$103
 });
 var JsonParser_$11 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -7249,7 +7878,7 @@ JsonParser_$11.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$42(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$41(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
 		return new JsonParser_$11([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
@@ -7307,7 +7936,7 @@ JsonParser_$14.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var this1 = this.value;
 			var key;
 			try {
-				var key1 = new JsonParser_$36(this.errors,this.putils,2);
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
 				var _this = this.putils;
 				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
 			} catch( _g1 ) {
@@ -7325,7 +7954,7 @@ JsonParser_$14.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			}
 			var value;
 			try {
-				value = new JsonParser_$40(this.errors,this.putils,2).loadJson(field.value,field.name);
+				value = new JsonParser_$39(this.errors,this.putils,2).loadJson(field.value,field.name);
 			} catch( _g3 ) {
 				haxe_NativeStackTrace.lastError = _g3;
 				var _g4 = haxe_Exception.caught(_g3).unwrap();
@@ -7388,7 +8017,7 @@ JsonParser_$16.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$38(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$37(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
 		return new JsonParser_$16([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
@@ -7422,7 +8051,7 @@ JsonParser_$19.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "gameStartDate":
-				this.value.gameStartDate = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"gameStartDate",assigned,this.value.gameStartDate,pos);
+				this.value.gameStartDate = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"gameStartDate",assigned,this.value.gameStartDate,pos);
 				break;
 			case "gameStartVersion":
 				this.value.gameStartVersion = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"gameStartVersion",assigned,this.value.gameStartVersion,pos);
@@ -7440,7 +8069,7 @@ JsonParser_$19.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { gameStartDate : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), gameStartVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), latestDayRetention : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reportedRollingRetention : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { gameStartDate : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), gameStartVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), latestDayRetention : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reportedRollingRetention : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$19
 });
@@ -7462,46 +8091,23 @@ JsonParser_$21.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$32(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$31(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
 		return new JsonParser_$21([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
 	,__class__: JsonParser_$21
 });
-var JsonParser_$22 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-	this.value = 0;
-};
-$hxClasses["JsonParser_22"] = JsonParser_$22;
-JsonParser_$22.__name__ = "JsonParser_22";
-JsonParser_$22.__super__ = json2object_reader_BaseParser;
-JsonParser_$22.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Float",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNumber: function(f,pos,variable) {
-		this.value = this.loadJsonFloat(f,pos,variable,this.value);
-	}
-	,getAuto: function() {
-		return new JsonParser_$22([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$22
-});
-var JsonParser_$24 = function(errors,putils,errorType) {
+var JsonParser_$23 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_24"] = JsonParser_$24;
-JsonParser_$24.__name__ = "JsonParser_24";
-JsonParser_$24.__super__ = json2object_reader_BaseParser;
-JsonParser_$24.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_23"] = JsonParser_$23;
+JsonParser_$23.__name__ = "JsonParser_23";
+JsonParser_$23.__super__ = json2object_reader_BaseParser;
+JsonParser_$23.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Int",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7513,20 +8119,20 @@ JsonParser_$24.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = this.loadJsonInt(f,pos,variable,this.value);
 	}
 	,getAuto: function() {
-		return new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$24
+	,__class__: JsonParser_$23
 });
-var JsonParser_$26 = function(errors,putils,errorType) {
+var JsonParser_$25 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_26"] = JsonParser_$26;
-JsonParser_$26.__name__ = "JsonParser_26";
-JsonParser_$26.__super__ = json2object_reader_BaseParser;
-JsonParser_$26.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_25"] = JsonParser_$25;
+JsonParser_$25.__name__ = "JsonParser_25";
+JsonParser_$25.__super__ = json2object_reader_BaseParser;
+JsonParser_$25.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"String",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7538,9 +8144,9 @@ JsonParser_$26.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = s;
 	}
 	,getAuto: function() {
-		return new JsonParser_$26([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$25([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$26
+	,__class__: JsonParser_$25
 });
 var JsonParser_$3 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -7567,16 +8173,16 @@ JsonParser_$3.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,__class__: JsonParser_$3
 });
-var JsonParser_$32 = function(errors,putils,errorType) {
+var JsonParser_$31 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_32"] = JsonParser_$32;
-JsonParser_$32.__name__ = "JsonParser_32";
-JsonParser_$32.__super__ = json2object_reader_BaseParser;
-JsonParser_$32.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_31"] = JsonParser_$31;
+JsonParser_$31.__name__ = "JsonParser_31";
+JsonParser_$31.__super__ = json2object_reader_BaseParser;
+JsonParser_$31.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ skills : Array<SkillUsable> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7593,7 +8199,7 @@ JsonParser_$32.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var field = o[_g];
 			++_g;
 			if(field.name == "skills") {
-				this.value.skills = this.loadObjectField(($_=new JsonParser_$33(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"skills",assigned,this.value.skills,pos);
+				this.value.skills = this.loadObjectField(($_=new JsonParser_$32(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"skills",assigned,this.value.skills,pos);
 			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
@@ -7601,20 +8207,20 @@ JsonParser_$32.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { skills : new JsonParser_$33([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { skills : new JsonParser_$32([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$32
+	,__class__: JsonParser_$31
 });
-var JsonParser_$33 = function(errors,putils,errorType) {
+var JsonParser_$32 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_33"] = JsonParser_$33;
-JsonParser_$33.__name__ = "JsonParser_33";
-JsonParser_$33.__super__ = json2object_reader_BaseParser;
-JsonParser_$33.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_32"] = JsonParser_$32;
+JsonParser_$32.__name__ = "JsonParser_32";
+JsonParser_$32.__super__ = json2object_reader_BaseParser;
+JsonParser_$32.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<SkillUsable>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7623,23 +8229,23 @@ JsonParser_$33.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$35(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$34(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$33([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$32([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$33
+	,__class__: JsonParser_$32
 });
-var JsonParser_$35 = function(errors,putils,errorType) {
+var JsonParser_$34 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_35"] = JsonParser_$35;
-JsonParser_$35.__name__ = "JsonParser_35";
-JsonParser_$35.__super__ = json2object_reader_BaseParser;
-JsonParser_$35.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_34"] = JsonParser_$34;
+JsonParser_$34.__name__ = "JsonParser_34";
+JsonParser_$34.__super__ = json2object_reader_BaseParser;
+JsonParser_$34.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ level : Int, id : String }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7657,7 +8263,7 @@ JsonParser_$35.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "id":
-				this.value.id = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"id",assigned,this.value.id,pos);
+				this.value.id = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"id",assigned,this.value.id,pos);
 				break;
 			case "level":
 				this.value.level = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"level",assigned,this.value.level,pos);
@@ -7669,20 +8275,20 @@ JsonParser_$35.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { id : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { id : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$35
+	,__class__: JsonParser_$34
 });
-var JsonParser_$36 = function(errors,putils,errorType) {
+var JsonParser_$35 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_36"] = JsonParser_$36;
-JsonParser_$36.__name__ = "JsonParser_36";
-JsonParser_$36.__super__ = json2object_reader_BaseParser;
-JsonParser_$36.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_35"] = JsonParser_$35;
+JsonParser_$35.__name__ = "JsonParser_35";
+JsonParser_$35.__super__ = json2object_reader_BaseParser;
+JsonParser_$35.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"String",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7694,20 +8300,20 @@ JsonParser_$36.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = s;
 	}
 	,getAuto: function() {
-		return new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$36
+	,__class__: JsonParser_$35
 });
-var JsonParser_$38 = function(errors,putils,errorType) {
+var JsonParser_$37 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_38"] = JsonParser_$38;
-JsonParser_$38.__name__ = "JsonParser_38";
-JsonParser_$38.__super__ = json2object_reader_BaseParser;
-JsonParser_$38.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_37"] = JsonParser_$37;
+JsonParser_$37.__name__ = "JsonParser_37";
+JsonParser_$37.__super__ = json2object_reader_BaseParser;
+JsonParser_$37.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ maxAreaRecord : Int, maxAreaOnPrestigeRecord : Array<Int>, maxArea : Int, area : Int, amountEnemyKilledInArea : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7748,41 +8354,18 @@ JsonParser_$38.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { amountEnemyKilledInArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), area : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), maxArea : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), maxAreaOnPrestigeRecord : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), maxAreaRecord : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$38
+	,__class__: JsonParser_$37
 });
-var JsonParser_$4 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-	this.value = 0;
-};
-$hxClasses["JsonParser_4"] = JsonParser_$4;
-JsonParser_$4.__name__ = "JsonParser_4";
-JsonParser_$4.__super__ = json2object_reader_BaseParser;
-JsonParser_$4.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Int",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNumber: function(f,pos,variable) {
-		this.value = this.loadJsonInt(f,pos,variable,this.value);
-	}
-	,getAuto: function() {
-		return new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$4
-});
-var JsonParser_$40 = function(errors,putils,errorType) {
+var JsonParser_$39 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_40"] = JsonParser_$40;
-JsonParser_$40.__name__ = "JsonParser_40";
-JsonParser_$40.__super__ = json2object_reader_BaseParser;
-JsonParser_$40.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_39"] = JsonParser_$39;
+JsonParser_$39.__name__ = "JsonParser_39";
+JsonParser_$39.__super__ = json2object_reader_BaseParser;
+JsonParser_$39.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ visible : Bool, timesUsed : Int, mode : Int, enabled : Bool }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7820,18 +8403,41 @@ JsonParser_$40.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { enabled : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mode : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesUsed : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$40
+	,__class__: JsonParser_$39
 });
-var JsonParser_$42 = function(errors,putils,errorType) {
+var JsonParser_$4 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+	this.value = 0;
+};
+$hxClasses["JsonParser_4"] = JsonParser_$4;
+JsonParser_$4.__name__ = "JsonParser_4";
+JsonParser_$4.__super__ = json2object_reader_BaseParser;
+JsonParser_$4.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Int",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNumber: function(f,pos,variable) {
+		this.value = this.loadJsonInt(f,pos,variable,this.value);
+	}
+	,getAuto: function() {
+		return new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$4
+});
+var JsonParser_$41 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_42"] = JsonParser_$42;
-JsonParser_$42.__name__ = "JsonParser_42";
-JsonParser_$42.__super__ = json2object_reader_BaseParser;
-JsonParser_$42.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_41"] = JsonParser_$41;
+JsonParser_$41.__name__ = "JsonParser_41";
+JsonParser_$41.__super__ = json2object_reader_BaseParser;
+JsonParser_$41.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ limitbreak : Int, level : Int, ascension : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7866,18 +8472,18 @@ JsonParser_$42.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { ascension : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), limitbreak : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$42
+	,__class__: JsonParser_$41
 });
-var JsonParser_$44 = function(errors,putils,errorType) {
+var JsonParser_$43 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_44"] = JsonParser_$44;
-JsonParser_$44.__name__ = "JsonParser_44";
-JsonParser_$44.__super__ = json2object_reader_BaseParser;
-JsonParser_$44.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_43"] = JsonParser_$43;
+JsonParser_$43.__name__ = "JsonParser_43";
+JsonParser_$43.__super__ = json2object_reader_BaseParser;
+JsonParser_$43.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, Int>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -7894,7 +8500,7 @@ JsonParser_$44.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var this1 = this.value;
 			var key;
 			try {
-				var key1 = new JsonParser_$36(this.errors,this.putils,2);
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
 				var _this = this.putils;
 				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
 			} catch( _g1 ) {
@@ -7930,9 +8536,34 @@ JsonParser_$44.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		}
 	}
 	,getAuto: function() {
-		return new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$44
+	,__class__: JsonParser_$43
+});
+var JsonParser_$45 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_45"] = JsonParser_$45;
+JsonParser_$45.__name__ = "JsonParser_45";
+JsonParser_$45.__super__ = json2object_reader_BaseParser;
+JsonParser_$45.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Buff>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$79(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$45([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$45
 });
 var JsonParser_$46 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -7945,31 +8576,6 @@ JsonParser_$46.__name__ = "JsonParser_46";
 JsonParser_$46.__super__ = json2object_reader_BaseParser;
 JsonParser_$46.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Buff>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$80(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
-	}
-	,getAuto: function() {
-		return new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$46
-});
-var JsonParser_$47 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_47"] = JsonParser_$47;
-JsonParser_$47.__name__ = "JsonParser_47";
-JsonParser_$47.__super__ = json2object_reader_BaseParser;
-JsonParser_$47.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Equipment>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
@@ -7977,12 +8583,37 @@ JsonParser_$47.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$62(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$61(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$47([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$47
+	,__class__: JsonParser_$46
+});
+var JsonParser_$48 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_48"] = JsonParser_$48;
+JsonParser_$48.__name__ = "JsonParser_48";
+JsonParser_$48.__super__ = json2object_reader_BaseParser;
+JsonParser_$48.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<EquipmentSet>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$59(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$48
 });
 var JsonParser_$49 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -7994,31 +8625,6 @@ $hxClasses["JsonParser_49"] = JsonParser_$49;
 JsonParser_$49.__name__ = "JsonParser_49";
 JsonParser_$49.__super__ = json2object_reader_BaseParser;
 JsonParser_$49.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<EquipmentSet>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$60(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
-	}
-	,getAuto: function() {
-		return new JsonParser_$49([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$49
-});
-var JsonParser_$50 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_50"] = JsonParser_$50;
-JsonParser_$50.__name__ = "JsonParser_50";
-JsonParser_$50.__super__ = json2object_reader_BaseParser;
-JsonParser_$50.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"ActorReference",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8053,18 +8659,18 @@ JsonParser_$50.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		value.pos = new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 		return value;
 	}
-	,__class__: JsonParser_$50
+	,__class__: JsonParser_$49
 });
-var JsonParser_$52 = function(errors,putils,errorType) {
+var JsonParser_$51 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_52"] = JsonParser_$52;
-JsonParser_$52.__name__ = "JsonParser_52";
-JsonParser_$52.__super__ = json2object_reader_BaseParser;
-JsonParser_$52.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_51"] = JsonParser_$51;
+JsonParser_$51.__name__ = "JsonParser_51";
+JsonParser_$51.__super__ = json2object_reader_BaseParser;
+JsonParser_$51.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Int>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8076,20 +8682,20 @@ JsonParser_$52.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$4(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$52([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$51([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$52
+	,__class__: JsonParser_$51
 });
-var JsonParser_$54 = function(errors,putils,errorType) {
+var JsonParser_$53 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_54"] = JsonParser_$54;
-JsonParser_$54.__name__ = "JsonParser_54";
-JsonParser_$54.__super__ = json2object_reader_BaseParser;
-JsonParser_$54.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_53"] = JsonParser_$53;
+JsonParser_$53.__name__ = "JsonParser_53";
+JsonParser_$53.__super__ = json2object_reader_BaseParser;
+JsonParser_$53.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<SkillUsable>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8098,23 +8704,23 @@ JsonParser_$54.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$35(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$34(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$54([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$53([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$54
+	,__class__: JsonParser_$53
 });
-var JsonParser_$56 = function(errors,putils,errorType) {
+var JsonParser_$55 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_56"] = JsonParser_$56;
-JsonParser_$56.__name__ = "JsonParser_56";
-JsonParser_$56.__super__ = json2object_reader_BaseParser;
-JsonParser_$56.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_55"] = JsonParser_$55;
+JsonParser_$55.__name__ = "JsonParser_55";
+JsonParser_$55.__super__ = json2object_reader_BaseParser;
+JsonParser_$55.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ value : Int, scaling : Scaling, lastUsedBaseAttribute : Int, cap : Int, calculatedMax : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8141,7 +8747,7 @@ JsonParser_$56.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.lastUsedBaseAttribute = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"lastUsedBaseAttribute",assigned,this.value.lastUsedBaseAttribute,pos);
 				break;
 			case "scaling":
-				this.value.scaling = this.loadObjectField(($_=new JsonParser_$58(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"scaling",assigned,this.value.scaling,pos);
+				this.value.scaling = this.loadObjectField(($_=new JsonParser_$57(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"scaling",assigned,this.value.scaling,pos);
 				break;
 			case "value":
 				this.value.value = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"value",assigned,this.value.value,pos);
@@ -8153,22 +8759,22 @@ JsonParser_$56.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { calculatedMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), cap : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), lastUsedBaseAttribute : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), scaling : new JsonParser_$58([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { calculatedMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), cap : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), lastUsedBaseAttribute : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), scaling : new JsonParser_$57([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$56
+	,__class__: JsonParser_$55
 });
-var JsonParser_$58 = function(errors,putils,errorType) {
+var JsonParser_$57 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_58"] = JsonParser_$58;
-JsonParser_$58.__name__ = "JsonParser_58";
-JsonParser_$58.__super__ = json2object_reader_BaseParser;
-JsonParser_$58.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_57"] = JsonParser_$57;
+JsonParser_$57.__name__ = "JsonParser_57";
+JsonParser_$57.__super__ = json2object_reader_BaseParser;
+JsonParser_$57.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ minimumIncrement : Int, initialMultiplication : Bool, initial : Int, exponential : Bool, data1 : Float }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ minimumIncrement : Int, initialMultiplication : Bool, initial : Int, exponential : Bool, data1 : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -8184,7 +8790,7 @@ JsonParser_$58.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "data1":
-				this.value.data1 = this.loadObjectField(($_=new JsonParser_$22(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"data1",assigned,this.value.data1,pos);
+				this.value.data1 = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"data1",assigned,this.value.data1,pos);
 				break;
 			case "exponential":
 				this.value.exponential = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"exponential",assigned,this.value.exponential,pos);
@@ -8205,20 +8811,20 @@ JsonParser_$58.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { data1 : new JsonParser_$22([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), exponential : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initial : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initialMultiplication : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), minimumIncrement : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { data1 : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), exponential : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initial : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initialMultiplication : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), minimumIncrement : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$58
+	,__class__: JsonParser_$57
 });
-var JsonParser_$60 = function(errors,putils,errorType) {
+var JsonParser_$59 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_60"] = JsonParser_$60;
-JsonParser_$60.__name__ = "JsonParser_60";
-JsonParser_$60.__super__ = json2object_reader_BaseParser;
-JsonParser_$60.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_59"] = JsonParser_$59;
+JsonParser_$59.__name__ = "JsonParser_59";
+JsonParser_$59.__super__ = json2object_reader_BaseParser;
+JsonParser_$59.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ equipmentSlots : Array<Int> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8245,18 +8851,18 @@ JsonParser_$60.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { equipmentSlots : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$60
+	,__class__: JsonParser_$59
 });
-var JsonParser_$62 = function(errors,putils,errorType) {
+var JsonParser_$61 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_62"] = JsonParser_$62;
-JsonParser_$62.__name__ = "JsonParser_62";
-JsonParser_$62.__super__ = json2object_reader_BaseParser;
-JsonParser_$62.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_61"] = JsonParser_$61;
+JsonParser_$61.__name__ = "JsonParser_61";
+JsonParser_$61.__super__ = json2object_reader_BaseParser;
+JsonParser_$61.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ type : Int, seen : Int, requiredAttributes : Map<String, Int>, ?outsideSystems : Null<Map<String, Int>>, ?generationVariationsMultiplier : Null<Map<String, Int>>, ?generationVariations : Null<Map<String, Int>>, ?generationSuffixModSeed : Null<Int>, ?generationSuffixMod : Null<Int>, ?generationPrefixModSeed : Null<Int>, ?generationPrefixMod : Null<Int>, ?generationLevel : Null<Int>, ?generationBaseItem : Null<Int>, attributes : Map<String, Int>, ?attributeMultiplier : Null<Map<String, Int>> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8274,40 +8880,40 @@ JsonParser_$62.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "attributeMultiplier":
-				this.value.attributeMultiplier = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributeMultiplier",assigned,this.value.attributeMultiplier,pos);
+				this.value.attributeMultiplier = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributeMultiplier",assigned,this.value.attributeMultiplier,pos);
 				break;
 			case "attributes":
-				this.value.attributes = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributes",assigned,this.value.attributes,pos);
+				this.value.attributes = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributes",assigned,this.value.attributes,pos);
 				break;
 			case "generationBaseItem":
-				this.value.generationBaseItem = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationBaseItem",assigned,this.value.generationBaseItem,pos);
+				this.value.generationBaseItem = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationBaseItem",assigned,this.value.generationBaseItem,pos);
 				break;
 			case "generationLevel":
-				this.value.generationLevel = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationLevel",assigned,this.value.generationLevel,pos);
+				this.value.generationLevel = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationLevel",assigned,this.value.generationLevel,pos);
 				break;
 			case "generationPrefixMod":
-				this.value.generationPrefixMod = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationPrefixMod",assigned,this.value.generationPrefixMod,pos);
+				this.value.generationPrefixMod = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationPrefixMod",assigned,this.value.generationPrefixMod,pos);
 				break;
 			case "generationPrefixModSeed":
-				this.value.generationPrefixModSeed = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationPrefixModSeed",assigned,this.value.generationPrefixModSeed,pos);
+				this.value.generationPrefixModSeed = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationPrefixModSeed",assigned,this.value.generationPrefixModSeed,pos);
 				break;
 			case "generationSuffixMod":
-				this.value.generationSuffixMod = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationSuffixMod",assigned,this.value.generationSuffixMod,pos);
+				this.value.generationSuffixMod = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationSuffixMod",assigned,this.value.generationSuffixMod,pos);
 				break;
 			case "generationSuffixModSeed":
-				this.value.generationSuffixModSeed = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationSuffixModSeed",assigned,this.value.generationSuffixModSeed,pos);
+				this.value.generationSuffixModSeed = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationSuffixModSeed",assigned,this.value.generationSuffixModSeed,pos);
 				break;
 			case "generationVariations":
-				this.value.generationVariations = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationVariations",assigned,this.value.generationVariations,pos);
+				this.value.generationVariations = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationVariations",assigned,this.value.generationVariations,pos);
 				break;
 			case "generationVariationsMultiplier":
-				this.value.generationVariationsMultiplier = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationVariationsMultiplier",assigned,this.value.generationVariationsMultiplier,pos);
+				this.value.generationVariationsMultiplier = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"generationVariationsMultiplier",assigned,this.value.generationVariationsMultiplier,pos);
 				break;
 			case "outsideSystems":
-				this.value.outsideSystems = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"outsideSystems",assigned,this.value.outsideSystems,pos);
+				this.value.outsideSystems = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"outsideSystems",assigned,this.value.outsideSystems,pos);
 				break;
 			case "requiredAttributes":
-				this.value.requiredAttributes = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"requiredAttributes",assigned,this.value.requiredAttributes,pos);
+				this.value.requiredAttributes = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"requiredAttributes",assigned,this.value.requiredAttributes,pos);
 				break;
 			case "seen":
 				this.value.seen = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"seen",assigned,this.value.seen,pos);
@@ -8322,9 +8928,9 @@ JsonParser_$62.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { attributeMultiplier : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributes : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationBaseItem : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationLevel : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixMod : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixModSeed : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixMod : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixModSeed : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariations : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariationsMultiplier : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), outsideSystems : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), requiredAttributes : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), seen : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), type : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { attributeMultiplier : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributes : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationBaseItem : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationLevel : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixMod : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixModSeed : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixMod : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixModSeed : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariations : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariationsMultiplier : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), outsideSystems : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), requiredAttributes : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), seen : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), type : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$62
+	,__class__: JsonParser_$61
 });
 var JsonParser_$7 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -8352,7 +8958,7 @@ JsonParser_$7.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var field = o[_g];
 			++_g;
 			if(field.name == "currencies") {
-				this.value.currencies = this.loadObjectField(($_=new JsonParser_$82(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currencies",assigned,this.value.currencies,pos);
+				this.value.currencies = this.loadObjectField(($_=new JsonParser_$81(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currencies",assigned,this.value.currencies,pos);
 			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
@@ -8360,20 +8966,20 @@ JsonParser_$7.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { currencies : new JsonParser_$82([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { currencies : new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$7
 });
-var JsonParser_$80 = function(errors,putils,errorType) {
+var JsonParser_$79 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_80"] = JsonParser_$80;
-JsonParser_$80.__name__ = "JsonParser_80";
-JsonParser_$80.__super__ = json2object_reader_BaseParser;
-JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_79"] = JsonParser_$79;
+JsonParser_$79.__name__ = "JsonParser_79";
+JsonParser_$79.__super__ = json2object_reader_BaseParser;
+JsonParser_$79.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ uniqueId : String, strength : Int, ?noble : Null<Bool>, mulStats : Map<String, Int>, duration : Int, ?debuff : Null<Bool>, addStats : Map<String, Int> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8391,7 +8997,7 @@ JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "addStats":
-				this.value.addStats = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"addStats",assigned,this.value.addStats,pos);
+				this.value.addStats = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"addStats",assigned,this.value.addStats,pos);
 				break;
 			case "debuff":
 				this.value.debuff = this.loadObjectField(($_=new JsonParser_$3(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"debuff",assigned,this.value.debuff,pos);
@@ -8400,7 +9006,7 @@ JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.duration = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"duration",assigned,this.value.duration,pos);
 				break;
 			case "mulStats":
-				this.value.mulStats = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"mulStats",assigned,this.value.mulStats,pos);
+				this.value.mulStats = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"mulStats",assigned,this.value.mulStats,pos);
 				break;
 			case "noble":
 				this.value.noble = this.loadObjectField(($_=new JsonParser_$3(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"noble",assigned,this.value.noble,pos);
@@ -8409,7 +9015,7 @@ JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.strength = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"strength",assigned,this.value.strength,pos);
 				break;
 			case "uniqueId":
-				this.value.uniqueId = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"uniqueId",assigned,this.value.uniqueId,pos);
+				this.value.uniqueId = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"uniqueId",assigned,this.value.uniqueId,pos);
 				break;
 			default:
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
@@ -8418,20 +9024,20 @@ JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { addStats : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), debuff : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), duration : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mulStats : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), noble : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), strength : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), uniqueId : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { addStats : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), debuff : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), duration : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mulStats : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), noble : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), strength : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), uniqueId : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$80
+	,__class__: JsonParser_$79
 });
-var JsonParser_$82 = function(errors,putils,errorType) {
+var JsonParser_$81 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_82"] = JsonParser_$82;
-JsonParser_$82.__name__ = "JsonParser_82";
-JsonParser_$82.__super__ = json2object_reader_BaseParser;
-JsonParser_$82.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_81"] = JsonParser_$81;
+JsonParser_$81.__name__ = "JsonParser_81";
+JsonParser_$81.__super__ = json2object_reader_BaseParser;
+JsonParser_$81.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, CurrencyPersistent>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8448,7 +9054,7 @@ JsonParser_$82.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var this1 = this.value;
 			var key;
 			try {
-				var key1 = new JsonParser_$36(this.errors,this.putils,2);
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
 				var _this = this.putils;
 				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
 			} catch( _g1 ) {
@@ -8466,7 +9072,7 @@ JsonParser_$82.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			}
 			var value;
 			try {
-				value = new JsonParser_$84(this.errors,this.putils,2).loadJson(field.value,field.name);
+				value = new JsonParser_$83(this.errors,this.putils,2).loadJson(field.value,field.name);
 			} catch( _g3 ) {
 				haxe_NativeStackTrace.lastError = _g3;
 				var _g4 = haxe_Exception.caught(_g3).unwrap();
@@ -8484,20 +9090,20 @@ JsonParser_$82.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		}
 	}
 	,getAuto: function() {
-		return new JsonParser_$82([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$82
+	,__class__: JsonParser_$81
 });
-var JsonParser_$84 = function(errors,putils,errorType) {
+var JsonParser_$83 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_84"] = JsonParser_$84;
-JsonParser_$84.__name__ = "JsonParser_84";
-JsonParser_$84.__super__ = json2object_reader_BaseParser;
-JsonParser_$84.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_83"] = JsonParser_$83;
+JsonParser_$83.__name__ = "JsonParser_83";
+JsonParser_$83.__super__ = json2object_reader_BaseParser;
+JsonParser_$83.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ visible : Bool, value : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8529,18 +9135,18 @@ JsonParser_$84.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$84
+	,__class__: JsonParser_$83
 });
-var JsonParser_$86 = function(errors,putils,errorType) {
+var JsonParser_$85 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_86"] = JsonParser_$86;
-JsonParser_$86.__name__ = "JsonParser_86";
-JsonParser_$86.__super__ = json2object_reader_BaseParser;
-JsonParser_$86.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_85"] = JsonParser_$85;
+JsonParser_$85.__name__ = "JsonParser_85";
+JsonParser_$85.__super__ = json2object_reader_BaseParser;
+JsonParser_$85.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievementData : AchievementsPersistence }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8557,7 +9163,7 @@ JsonParser_$86.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var field = o[_g];
 			++_g;
 			if(field.name == "achievementData") {
-				this.value.achievementData = this.loadObjectField(($_=new JsonParser_$88(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievementData",assigned,this.value.achievementData,pos);
+				this.value.achievementData = this.loadObjectField(($_=new JsonParser_$87(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievementData",assigned,this.value.achievementData,pos);
 			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
@@ -8565,20 +9171,20 @@ JsonParser_$86.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { achievementData : new JsonParser_$88([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { achievementData : new JsonParser_$87([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$86
+	,__class__: JsonParser_$85
 });
-var JsonParser_$88 = function(errors,putils,errorType) {
+var JsonParser_$87 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_88"] = JsonParser_$88;
-JsonParser_$88.__name__ = "JsonParser_88";
-JsonParser_$88.__super__ = json2object_reader_BaseParser;
-JsonParser_$88.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_87"] = JsonParser_$87;
+JsonParser_$87.__name__ = "JsonParser_87";
+JsonParser_$87.__super__ = json2object_reader_BaseParser;
+JsonParser_$87.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievs : Map<String, AchievementPersistence> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8595,7 +9201,7 @@ JsonParser_$88.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var field = o[_g];
 			++_g;
 			if(field.name == "achievs") {
-				this.value.achievs = this.loadObjectField(($_=new JsonParser_$90(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievs",assigned,this.value.achievs,pos);
+				this.value.achievs = this.loadObjectField(($_=new JsonParser_$89(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievs",assigned,this.value.achievs,pos);
 			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
@@ -8603,9 +9209,75 @@ JsonParser_$88.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { achievs : new JsonParser_$90([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { achievs : new JsonParser_$89([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$88
+	,__class__: JsonParser_$87
+});
+var JsonParser_$89 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_89"] = JsonParser_$89;
+JsonParser_$89.__name__ = "JsonParser_89";
+JsonParser_$89.__super__ = json2object_reader_BaseParser;
+JsonParser_$89.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, AchievementPersistence>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		this.value = new haxe_ds_StringMap();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			var this1 = this.value;
+			var key;
+			try {
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
+				var _this = this.putils;
+				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
+			} catch( _g1 ) {
+				haxe_NativeStackTrace.lastError = _g1;
+				var _g2 = haxe_Exception.caught(_g1).unwrap();
+				if(js_Boot.__instanceof(_g2,json2object_InternalError)) {
+					var e = _g2;
+					if(e != json2object_InternalError.ParsingThrow) {
+						throw haxe_Exception.thrown(e);
+					}
+					continue;
+				} else {
+					throw _g1;
+				}
+			}
+			var value;
+			try {
+				value = new JsonParser_$91(this.errors,this.putils,2).loadJson(field.value,field.name);
+			} catch( _g3 ) {
+				haxe_NativeStackTrace.lastError = _g3;
+				var _g4 = haxe_Exception.caught(_g3).unwrap();
+				if(js_Boot.__instanceof(_g4,json2object_InternalError)) {
+					var e1 = _g4;
+					if(e1 != json2object_InternalError.ParsingThrow) {
+						throw haxe_Exception.thrown(e1);
+					}
+					continue;
+				} else {
+					throw _g3;
+				}
+			}
+			this1.h[key] = value;
+		}
+	}
+	,getAuto: function() {
+		return new JsonParser_$89([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$89
 });
 var JsonParser_$9 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -8634,40 +9306,40 @@ JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "attributesBase":
-				this.value.attributesBase = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributesBase",assigned,this.value.attributesBase,pos);
+				this.value.attributesBase = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributesBase",assigned,this.value.attributesBase,pos);
 				break;
 			case "attributesCalculated":
-				this.value.attributesCalculated = this.loadObjectField(($_=new JsonParser_$44(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributesCalculated",assigned,this.value.attributesCalculated,pos);
+				this.value.attributesCalculated = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributesCalculated",assigned,this.value.attributesCalculated,pos);
 				break;
 			case "buffs":
-				this.value.buffs = this.loadObjectField(($_=new JsonParser_$46(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"buffs",assigned,this.value.buffs,pos);
+				this.value.buffs = this.loadObjectField(($_=new JsonParser_$45(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"buffs",assigned,this.value.buffs,pos);
 				break;
 			case "chosenEquipSet":
-				this.value.chosenEquipSet = this.loadObjectField(($_=new JsonParser_$24(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"chosenEquipSet",assigned,this.value.chosenEquipSet,pos);
+				this.value.chosenEquipSet = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"chosenEquipSet",assigned,this.value.chosenEquipSet,pos);
 				break;
 			case "equipment":
-				this.value.equipment = this.loadObjectField(($_=new JsonParser_$47(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipment",assigned,this.value.equipment,pos);
+				this.value.equipment = this.loadObjectField(($_=new JsonParser_$46(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipment",assigned,this.value.equipment,pos);
 				break;
 			case "equipmentSets":
-				this.value.equipmentSets = this.loadObjectField(($_=new JsonParser_$49(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipmentSets",assigned,this.value.equipmentSets,pos);
+				this.value.equipmentSets = this.loadObjectField(($_=new JsonParser_$48(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipmentSets",assigned,this.value.equipmentSets,pos);
 				break;
 			case "level":
 				this.value.level = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"level",assigned,this.value.level,pos);
 				break;
 			case "reference":
-				this.value.reference = this.loadObjectField(($_=new JsonParser_$50(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"reference",assigned,this.value.reference,pos);
+				this.value.reference = this.loadObjectField(($_=new JsonParser_$49(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"reference",assigned,this.value.reference,pos);
 				break;
 			case "turnRecharge":
-				this.value.turnRecharge = this.loadObjectField(($_=new JsonParser_$52(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"turnRecharge",assigned,this.value.turnRecharge,pos);
+				this.value.turnRecharge = this.loadObjectField(($_=new JsonParser_$51(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"turnRecharge",assigned,this.value.turnRecharge,pos);
 				break;
 			case "usableSkills":
-				this.value.usableSkills = this.loadObjectField(($_=new JsonParser_$54(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"usableSkills",assigned,this.value.usableSkills,pos);
+				this.value.usableSkills = this.loadObjectField(($_=new JsonParser_$53(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"usableSkills",assigned,this.value.usableSkills,pos);
 				break;
 			case "viewAux":
 				this.value.viewAux = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"viewAux",assigned,this.value.viewAux,pos);
 				break;
 			case "xp":
-				this.value.xp = this.loadObjectField(($_=new JsonParser_$56(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"xp",assigned,this.value.xp,pos);
+				this.value.xp = this.loadObjectField(($_=new JsonParser_$55(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"xp",assigned,this.value.xp,pos);
 				break;
 			default:
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
@@ -8676,86 +9348,20 @@ JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { attributesBase : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributesCalculated : new JsonParser_$44([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), buffs : new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), chosenEquipSet : new JsonParser_$24([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipment : new JsonParser_$47([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipmentSets : new JsonParser_$49([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reference : new JsonParser_$50([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), turnRecharge : new JsonParser_$52([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), usableSkills : new JsonParser_$54([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), viewAux : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), xp : new JsonParser_$56([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { attributesBase : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributesCalculated : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), buffs : new JsonParser_$45([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), chosenEquipSet : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipment : new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipmentSets : new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reference : new JsonParser_$49([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), turnRecharge : new JsonParser_$51([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), usableSkills : new JsonParser_$53([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), viewAux : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), xp : new JsonParser_$55([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$9
 });
-var JsonParser_$90 = function(errors,putils,errorType) {
+var JsonParser_$91 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_90"] = JsonParser_$90;
-JsonParser_$90.__name__ = "JsonParser_90";
-JsonParser_$90.__super__ = json2object_reader_BaseParser;
-JsonParser_$90.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, AchievementPersistence>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		this.value = new haxe_ds_StringMap();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			var this1 = this.value;
-			var key;
-			try {
-				var key1 = new JsonParser_$36(this.errors,this.putils,2);
-				var _this = this.putils;
-				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
-			} catch( _g1 ) {
-				haxe_NativeStackTrace.lastError = _g1;
-				var _g2 = haxe_Exception.caught(_g1).unwrap();
-				if(js_Boot.__instanceof(_g2,json2object_InternalError)) {
-					var e = _g2;
-					if(e != json2object_InternalError.ParsingThrow) {
-						throw haxe_Exception.thrown(e);
-					}
-					continue;
-				} else {
-					throw _g1;
-				}
-			}
-			var value;
-			try {
-				value = new JsonParser_$92(this.errors,this.putils,2).loadJson(field.value,field.name);
-			} catch( _g3 ) {
-				haxe_NativeStackTrace.lastError = _g3;
-				var _g4 = haxe_Exception.caught(_g3).unwrap();
-				if(js_Boot.__instanceof(_g4,json2object_InternalError)) {
-					var e1 = _g4;
-					if(e1 != json2object_InternalError.ParsingThrow) {
-						throw haxe_Exception.thrown(e1);
-					}
-					continue;
-				} else {
-					throw _g3;
-				}
-			}
-			this1.h[key] = value;
-		}
-	}
-	,getAuto: function() {
-		return new JsonParser_$90([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$90
-});
-var JsonParser_$92 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_92"] = JsonParser_$92;
-JsonParser_$92.__name__ = "JsonParser_92";
-JsonParser_$92.__super__ = json2object_reader_BaseParser;
-JsonParser_$92.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_91"] = JsonParser_$91;
+JsonParser_$91.__name__ = "JsonParser_91";
+JsonParser_$91.__super__ = json2object_reader_BaseParser;
+JsonParser_$91.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ state : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8782,18 +9388,18 @@ JsonParser_$92.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { state : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$92
+	,__class__: JsonParser_$91
 });
-var JsonParser_$94 = function(errors,putils,errorType) {
+var JsonParser_$93 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_94"] = JsonParser_$94;
-JsonParser_$94.__name__ = "JsonParser_94";
-JsonParser_$94.__super__ = json2object_reader_BaseParser;
-JsonParser_$94.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_93"] = JsonParser_$93;
+JsonParser_$93.__name__ = "JsonParser_93";
+JsonParser_$93.__super__ = json2object_reader_BaseParser;
+JsonParser_$93.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ worldVersion : Int, progressionData : Map<String, StoryProgress>, currentStoryId : String }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8811,10 +9417,10 @@ JsonParser_$94.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			++_g;
 			switch(field.name) {
 			case "currentStoryId":
-				this.value.currentStoryId = this.loadObjectField(($_=new JsonParser_$36(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currentStoryId",assigned,this.value.currentStoryId,pos);
+				this.value.currentStoryId = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currentStoryId",assigned,this.value.currentStoryId,pos);
 				break;
 			case "progressionData":
-				this.value.progressionData = this.loadObjectField(($_=new JsonParser_$96(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"progressionData",assigned,this.value.progressionData,pos);
+				this.value.progressionData = this.loadObjectField(($_=new JsonParser_$95(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"progressionData",assigned,this.value.progressionData,pos);
 				break;
 			case "worldVersion":
 				this.value.worldVersion = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"worldVersion",assigned,this.value.worldVersion,pos);
@@ -8826,20 +9432,20 @@ JsonParser_$94.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { currentStoryId : new JsonParser_$36([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), progressionData : new JsonParser_$96([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { currentStoryId : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), progressionData : new JsonParser_$95([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$94
+	,__class__: JsonParser_$93
 });
-var JsonParser_$96 = function(errors,putils,errorType) {
+var JsonParser_$95 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_96"] = JsonParser_$96;
-JsonParser_$96.__name__ = "JsonParser_96";
-JsonParser_$96.__super__ = json2object_reader_BaseParser;
-JsonParser_$96.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_95"] = JsonParser_$95;
+JsonParser_$95.__name__ = "JsonParser_95";
+JsonParser_$95.__super__ = json2object_reader_BaseParser;
+JsonParser_$95.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, StoryProgress>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8856,7 +9462,7 @@ JsonParser_$96.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var this1 = this.value;
 			var key;
 			try {
-				var key1 = new JsonParser_$36(this.errors,this.putils,2);
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
 				var _this = this.putils;
 				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
 			} catch( _g1 ) {
@@ -8874,7 +9480,7 @@ JsonParser_$96.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			}
 			var value;
 			try {
-				value = new JsonParser_$98(this.errors,this.putils,2).loadJson(field.value,field.name);
+				value = new JsonParser_$97(this.errors,this.putils,2).loadJson(field.value,field.name);
 			} catch( _g3 ) {
 				haxe_NativeStackTrace.lastError = _g3;
 				var _g4 = haxe_Exception.caught(_g3).unwrap();
@@ -8892,20 +9498,20 @@ JsonParser_$96.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		}
 	}
 	,getAuto: function() {
-		return new JsonParser_$96([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$95([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$96
+	,__class__: JsonParser_$95
 });
-var JsonParser_$98 = function(errors,putils,errorType) {
+var JsonParser_$97 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_98"] = JsonParser_$98;
-JsonParser_$98.__name__ = "JsonParser_98";
-JsonParser_$98.__super__ = json2object_reader_BaseParser;
-JsonParser_$98.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_97"] = JsonParser_$97;
+JsonParser_$97.__name__ = "JsonParser_97";
+JsonParser_$97.__super__ = json2object_reader_BaseParser;
+JsonParser_$97.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ wantToWatch : Bool, visibleSeen : Bool, visible : Bool, timesCompleted : Int, index : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8946,18 +9552,18 @@ JsonParser_$98.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { index : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesCompleted : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibleSeen : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), wantToWatch : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$98
+	,__class__: JsonParser_$97
 });
-var JsonParser_$99 = function(errors,putils,errorType) {
+var JsonParser_$98 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_99"] = JsonParser_$99;
-JsonParser_$99.__name__ = "JsonParser_99";
-JsonParser_$99.__super__ = json2object_reader_BaseParser;
-JsonParser_$99.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_98"] = JsonParser_$98;
+JsonParser_$98.__name__ = "JsonParser_98";
+JsonParser_$98.__super__ = json2object_reader_BaseParser;
+JsonParser_$98.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Cutscene>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8966,23 +9572,23 @@ JsonParser_$99.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$101(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$100(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$99([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$98([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$99
+	,__class__: JsonParser_$98
 });
-var JsonWriter_$82 = function(ignoreNullOptionals) {
+var JsonWriter_$81 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_82"] = JsonWriter_$82;
-JsonWriter_$82.__name__ = "JsonWriter_82";
-JsonWriter_$82.prototype = {
+$hxClasses["JsonWriter_81"] = JsonWriter_$81;
+JsonWriter_$81.__name__ = "JsonWriter_81";
+JsonWriter_$81.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -9022,7 +9628,7 @@ JsonWriter_$82.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"currentStoryId\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.currentStoryId,space,level + 1,false,onAllOptionalNull),indent + space + "\"progressionData\": " + new JsonWriter_$84(this.ignoreNullOptionals)._write(o.progressionData,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"currentStoryId\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.currentStoryId,space,level + 1,false,onAllOptionalNull),indent + space + "\"progressionData\": " + new JsonWriter_$83(this.ignoreNullOptionals)._write(o.progressionData,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false,false,false];
 			if(skips.indexOf(false) == -1) {
@@ -9056,21 +9662,21 @@ JsonWriter_$82.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$82
+	,__class__: JsonWriter_$81
 };
 var JsonStoryTypes = function() { };
 $hxClasses["JsonStoryTypes"] = JsonStoryTypes;
 JsonStoryTypes.__name__ = "JsonStoryTypes";
-var JsonWriter_$74 = function(ignoreNullOptionals) {
+var JsonWriter_$73 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_74"] = JsonWriter_$74;
-JsonWriter_$74.__name__ = "JsonWriter_74";
-JsonWriter_$74.prototype = {
+$hxClasses["JsonWriter_73"] = JsonWriter_$73;
+JsonWriter_$73.__name__ = "JsonWriter_73";
+JsonWriter_$73.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -9110,7 +9716,7 @@ JsonWriter_$74.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$76(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$75(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false];
 			if(skips.indexOf(false) == -1) {
@@ -9144,7 +9750,7 @@ JsonWriter_$74.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$74
+	,__class__: JsonWriter_$73
 };
 var JsonWriter_$1 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -9195,7 +9801,7 @@ JsonWriter_$1.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"autoAdvance\": " + new JsonWriter_$3(this.ignoreNullOptionals)._write(o.autoAdvance,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegion,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegionMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegionMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"currency\": " + new JsonWriter_$7(this.ignoreNullOptionals)._write(o.currency,space,level + 1,false,onAllOptionalNull),indent + space + "\"enemy\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.enemy,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipLevels\": " + new JsonWriter_$53(this.ignoreNullOptionals)._write(o.equipLevels,space,level + 1,false,onAllOptionalNull),indent + space + "\"hero\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.hero,space,level + 1,false,onAllOptionalNull),indent + space + "\"killedInArea\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.killedInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"necessaryToKillInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.necessaryToKillInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerActions\": " + new JsonWriter_$57(this.ignoreNullOptionals)._write(o.playerActions,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerTimesKilled\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.playerTimesKilled,space,level + 1,false,onAllOptionalNull),indent + space + "\"prestigeTimes\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.prestigeTimes,space,level + 1,false,onAllOptionalNull),indent + space + "\"recovering\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.recovering,space,level + 1,false,onAllOptionalNull),indent + space + "\"regionProgress\": " + new JsonWriter_$60(this.ignoreNullOptionals)._write(o.regionProgress,space,level + 1,false,onAllOptionalNull),indent + space + "\"retention\": " + new JsonWriter_$65(this.ignoreNullOptionals)._write(o.retention,space,level + 1,false,onAllOptionalNull),indent + space + "\"skillSets\": " + new JsonWriter_$67(this.ignoreNullOptionals)._write(o.skillSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"sleeping\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.sleeping,space,level + 1,false,onAllOptionalNull),indent + space + "\"timeCount\": " + new JsonWriter_$51(this.ignoreNullOptionals)._write(o.timeCount,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesReviewed\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.timesReviewed,space,level + 1,false,onAllOptionalNull),indent + space + "\"userId\": " + new JsonWriter_$72(this.ignoreNullOptionals)._write(o.userId,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"autoAdvance\": " + new JsonWriter_$3(this.ignoreNullOptionals)._write(o.autoAdvance,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegion,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegionMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegionMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"currency\": " + new JsonWriter_$7(this.ignoreNullOptionals)._write(o.currency,space,level + 1,false,onAllOptionalNull),indent + space + "\"enemy\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.enemy,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipLevels\": " + new JsonWriter_$52(this.ignoreNullOptionals)._write(o.equipLevels,space,level + 1,false,onAllOptionalNull),indent + space + "\"hero\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.hero,space,level + 1,false,onAllOptionalNull),indent + space + "\"killedInArea\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.killedInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"necessaryToKillInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.necessaryToKillInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerActions\": " + new JsonWriter_$56(this.ignoreNullOptionals)._write(o.playerActions,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerTimesKilled\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.playerTimesKilled,space,level + 1,false,onAllOptionalNull),indent + space + "\"prestigeTimes\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.prestigeTimes,space,level + 1,false,onAllOptionalNull),indent + space + "\"recovering\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.recovering,space,level + 1,false,onAllOptionalNull),indent + space + "\"regionProgress\": " + new JsonWriter_$59(this.ignoreNullOptionals)._write(o.regionProgress,space,level + 1,false,onAllOptionalNull),indent + space + "\"retention\": " + new JsonWriter_$64(this.ignoreNullOptionals)._write(o.retention,space,level + 1,false,onAllOptionalNull),indent + space + "\"skillSets\": " + new JsonWriter_$66(this.ignoreNullOptionals)._write(o.skillSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"sleeping\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.sleeping,space,level + 1,false,onAllOptionalNull),indent + space + "\"timeCount\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.timeCount,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesReviewed\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.timesReviewed,space,level + 1,false,onAllOptionalNull),indent + space + "\"userId\": " + new JsonWriter_$71(this.ignoreNullOptionals)._write(o.userId,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [o.autoAdvance == null,false,false,false,o.currency == null,false,o.equipLevels == null,false,false,false,false,false,false,false,false,false,o.retention == null,o.skillSets == null,false,false,o.timesReviewed == null,o.userId == null,false];
 			if(skips.indexOf(false) == -1) {
@@ -10740,7 +11346,7 @@ JsonWriter_$50.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"data1\": " + new JsonWriter_$51(this.ignoreNullOptionals)._write(o.data1,space,level + 1,false,onAllOptionalNull),indent + space + "\"exponential\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.exponential,space,level + 1,false,onAllOptionalNull),indent + space + "\"initial\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.initial,space,level + 1,false,onAllOptionalNull),indent + space + "\"initialMultiplication\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.initialMultiplication,space,level + 1,false,onAllOptionalNull),indent + space + "\"minimumIncrement\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.minimumIncrement,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"data1\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data1,space,level + 1,false,onAllOptionalNull),indent + space + "\"exponential\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.exponential,space,level + 1,false,onAllOptionalNull),indent + space + "\"initial\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.initial,space,level + 1,false,onAllOptionalNull),indent + space + "\"initialMultiplication\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.initialMultiplication,space,level + 1,false,onAllOptionalNull),indent + space + "\"minimumIncrement\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.minimumIncrement,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false,false,false,false,false];
 			if(skips.indexOf(false) == -1) {
@@ -10776,70 +11382,16 @@ JsonWriter_$50.prototype = {
 	}
 	,__class__: JsonWriter_$50
 };
-var JsonWriter_$51 = function(ignoreNullOptionals) {
+var JsonWriter_$52 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_51"] = JsonWriter_$51;
-JsonWriter_$51.__name__ = "JsonWriter_51";
-JsonWriter_$51.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		return (indentFirst ? this.buildIndent(space,level) : "") + o;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$51
-};
-var JsonWriter_$53 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_53"] = JsonWriter_$53;
-JsonWriter_$53.__name__ = "JsonWriter_53";
-JsonWriter_$53.prototype = {
+$hxClasses["JsonWriter_52"] = JsonWriter_$52;
+JsonWriter_$52.__name__ = "JsonWriter_52";
+JsonWriter_$52.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -10879,7 +11431,7 @@ JsonWriter_$53.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$55(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$54(this.ignoreNullOptionals);
 		var _g = [];
 		var _g1 = 0;
 		while(_g1 < o.length) {
@@ -10900,18 +11452,18 @@ JsonWriter_$53.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$53
+	,__class__: JsonWriter_$52
 };
-var JsonWriter_$55 = function(ignoreNullOptionals) {
+var JsonWriter_$54 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_55"] = JsonWriter_$55;
-JsonWriter_$55.__name__ = "JsonWriter_55";
-JsonWriter_$55.prototype = {
+$hxClasses["JsonWriter_54"] = JsonWriter_$54;
+JsonWriter_$54.__name__ = "JsonWriter_54";
+JsonWriter_$54.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -10985,18 +11537,18 @@ JsonWriter_$55.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$55
+	,__class__: JsonWriter_$54
 };
-var JsonWriter_$57 = function(ignoreNullOptionals) {
+var JsonWriter_$56 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_57"] = JsonWriter_$57;
-JsonWriter_$57.__name__ = "JsonWriter_57";
-JsonWriter_$57.prototype = {
+$hxClasses["JsonWriter_56"] = JsonWriter_$56;
+JsonWriter_$56.__name__ = "JsonWriter_56";
+JsonWriter_$56.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11036,7 +11588,7 @@ JsonWriter_$57.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$59(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$58(this.ignoreNullOptionals);
 		var _g = [];
 		var h = o.h;
 		var key_h = h;
@@ -11060,18 +11612,18 @@ JsonWriter_$57.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$57
+	,__class__: JsonWriter_$56
 };
-var JsonWriter_$59 = function(ignoreNullOptionals) {
+var JsonWriter_$58 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_59"] = JsonWriter_$59;
-JsonWriter_$59.__name__ = "JsonWriter_59";
-JsonWriter_$59.prototype = {
+$hxClasses["JsonWriter_58"] = JsonWriter_$58;
+JsonWriter_$58.__name__ = "JsonWriter_58";
+JsonWriter_$58.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11145,18 +11697,18 @@ JsonWriter_$59.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$59
+	,__class__: JsonWriter_$58
 };
-var JsonWriter_$60 = function(ignoreNullOptionals) {
+var JsonWriter_$59 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_60"] = JsonWriter_$60;
-JsonWriter_$60.__name__ = "JsonWriter_60";
-JsonWriter_$60.prototype = {
+$hxClasses["JsonWriter_59"] = JsonWriter_$59;
+JsonWriter_$59.__name__ = "JsonWriter_59";
+JsonWriter_$59.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11196,7 +11748,7 @@ JsonWriter_$60.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$62(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$61(this.ignoreNullOptionals);
 		var _g = [];
 		var _g1 = 0;
 		while(_g1 < o.length) {
@@ -11217,18 +11769,18 @@ JsonWriter_$60.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$60
+	,__class__: JsonWriter_$59
 };
-var JsonWriter_$62 = function(ignoreNullOptionals) {
+var JsonWriter_$61 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_62"] = JsonWriter_$62;
-JsonWriter_$62.__name__ = "JsonWriter_62";
-JsonWriter_$62.prototype = {
+$hxClasses["JsonWriter_61"] = JsonWriter_$61;
+JsonWriter_$61.__name__ = "JsonWriter_61";
+JsonWriter_$61.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11302,18 +11854,18 @@ JsonWriter_$62.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$62
+	,__class__: JsonWriter_$61
 };
-var JsonWriter_$65 = function(ignoreNullOptionals) {
+var JsonWriter_$64 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_65"] = JsonWriter_$65;
-JsonWriter_$65.__name__ = "JsonWriter_65";
-JsonWriter_$65.prototype = {
+$hxClasses["JsonWriter_64"] = JsonWriter_$64;
+JsonWriter_$64.__name__ = "JsonWriter_64";
+JsonWriter_$64.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11387,18 +11939,18 @@ JsonWriter_$65.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$65
+	,__class__: JsonWriter_$64
 };
-var JsonWriter_$67 = function(ignoreNullOptionals) {
+var JsonWriter_$66 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_67"] = JsonWriter_$67;
-JsonWriter_$67.__name__ = "JsonWriter_67";
-JsonWriter_$67.prototype = {
+$hxClasses["JsonWriter_66"] = JsonWriter_$66;
+JsonWriter_$66.__name__ = "JsonWriter_66";
+JsonWriter_$66.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11438,7 +11990,7 @@ JsonWriter_$67.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$69(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$68(this.ignoreNullOptionals);
 		var _g = [];
 		var _g1 = 0;
 		while(_g1 < o.length) {
@@ -11459,7 +12011,92 @@ JsonWriter_$67.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$67
+	,__class__: JsonWriter_$66
+};
+var JsonWriter_$68 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_68"] = JsonWriter_$68;
+JsonWriter_$68.__name__ = "JsonWriter_68";
+JsonWriter_$68.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"skills\": " + new JsonWriter_$69(this.ignoreNullOptionals)._write(o.skills,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$68
 };
 var JsonWriter_$69 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -11510,32 +12147,19 @@ JsonWriter_$69.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"skills\": " + new JsonWriter_$70(this.ignoreNullOptionals)._write(o.skills,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
+		var valueWriter = new JsonWriter_$46(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
 		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
 		return json;
 	}
 	,write: function(o,space) {
@@ -11631,88 +12255,16 @@ JsonWriter_$7.prototype = {
 	}
 	,__class__: JsonWriter_$7
 };
-var JsonWriter_$70 = function(ignoreNullOptionals) {
+var JsonWriter_$71 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_70"] = JsonWriter_$70;
-JsonWriter_$70.__name__ = "JsonWriter_70";
-JsonWriter_$70.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$46(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$70
-};
-var JsonWriter_$72 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_72"] = JsonWriter_$72;
-JsonWriter_$72.__name__ = "JsonWriter_72";
-JsonWriter_$72.prototype = {
+$hxClasses["JsonWriter_71"] = JsonWriter_$71;
+JsonWriter_$71.__name__ = "JsonWriter_71";
+JsonWriter_$71.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11763,18 +12315,18 @@ JsonWriter_$72.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$72
+	,__class__: JsonWriter_$71
 };
-var JsonWriter_$76 = function(ignoreNullOptionals) {
+var JsonWriter_$75 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_76"] = JsonWriter_$76;
-JsonWriter_$76.__name__ = "JsonWriter_76";
-JsonWriter_$76.prototype = {
+$hxClasses["JsonWriter_75"] = JsonWriter_$75;
+JsonWriter_$75.__name__ = "JsonWriter_75";
+JsonWriter_$75.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11814,7 +12366,7 @@ JsonWriter_$76.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"achievs\": " + new JsonWriter_$78(this.ignoreNullOptionals)._write(o.achievs,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"achievs\": " + new JsonWriter_$77(this.ignoreNullOptionals)._write(o.achievs,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false];
 			if(skips.indexOf(false) == -1) {
@@ -11848,18 +12400,18 @@ JsonWriter_$76.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$76
+	,__class__: JsonWriter_$75
 };
-var JsonWriter_$78 = function(ignoreNullOptionals) {
+var JsonWriter_$77 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_78"] = JsonWriter_$78;
-JsonWriter_$78.__name__ = "JsonWriter_78";
-JsonWriter_$78.prototype = {
+$hxClasses["JsonWriter_77"] = JsonWriter_$77;
+JsonWriter_$77.__name__ = "JsonWriter_77";
+JsonWriter_$77.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11899,7 +12451,7 @@ JsonWriter_$78.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$80(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$79(this.ignoreNullOptionals);
 		var _g = [];
 		var h = o.h;
 		var key_h = h;
@@ -11923,18 +12475,18 @@ JsonWriter_$78.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$78
+	,__class__: JsonWriter_$77
 };
-var JsonWriter_$80 = function(ignoreNullOptionals) {
+var JsonWriter_$79 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_80"] = JsonWriter_$80;
-JsonWriter_$80.__name__ = "JsonWriter_80";
-JsonWriter_$80.prototype = {
+$hxClasses["JsonWriter_79"] = JsonWriter_$79;
+JsonWriter_$79.__name__ = "JsonWriter_79";
+JsonWriter_$79.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12008,18 +12560,18 @@ JsonWriter_$80.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$80
+	,__class__: JsonWriter_$79
 };
-var JsonWriter_$84 = function(ignoreNullOptionals) {
+var JsonWriter_$83 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_84"] = JsonWriter_$84;
-JsonWriter_$84.__name__ = "JsonWriter_84";
-JsonWriter_$84.prototype = {
+$hxClasses["JsonWriter_83"] = JsonWriter_$83;
+JsonWriter_$83.__name__ = "JsonWriter_83";
+JsonWriter_$83.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12059,7 +12611,7 @@ JsonWriter_$84.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$86(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$85(this.ignoreNullOptionals);
 		var _g = [];
 		var h = o.h;
 		var key_h = h;
@@ -12083,18 +12635,18 @@ JsonWriter_$84.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$84
+	,__class__: JsonWriter_$83
 };
-var JsonWriter_$86 = function(ignoreNullOptionals) {
+var JsonWriter_$85 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_86"] = JsonWriter_$86;
-JsonWriter_$86.__name__ = "JsonWriter_86";
-JsonWriter_$86.prototype = {
+$hxClasses["JsonWriter_85"] = JsonWriter_$85;
+JsonWriter_$85.__name__ = "JsonWriter_85";
+JsonWriter_$85.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12168,7 +12720,7 @@ JsonWriter_$86.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$86
+	,__class__: JsonWriter_$85
 };
 var JsonWriter_$9 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -12406,6 +12958,7 @@ PlayScene.prototype = $extend(Phaser.Scene.prototype,{
 		this.load.image("bossb","Assets/bossb.png");
 		this.load.image("enemyicon","Assets/enemyicon.png");
 		this.load.image("heroicon","Assets/heroicon.png");
+		this.load.image("isabelicon","Assets/isabelicon.png");
 		this.load.image("main_story","Assets/main_story.jpg");
 		this.load.image("mom_story","Assets/mom_story.png");
 		this.load.image("cid_story","Assets/cid_story.jpg");
@@ -12424,6 +12977,11 @@ PlayScene.prototype = $extend(Phaser.Scene.prototype,{
 		this.load.image("buttonback_h_disabled","Assets/buttonback_h_disabled.png");
 		this.load.image("buttonback_h_selected","Assets/buttonback_h_selected.png");
 		this.load.image("purpleback","Assets/purpleback.png");
+		this.load.image("isabel_story","Assets/isabel_story.jpeg");
+		this.load.image("iracema_story","Assets/iracema_story.jpeg");
+		this.load.image("marino_story","Assets/marino_story.jpeg");
+		this.load.image("pedroiv_story","Assets/pedroiv_story.jpeg");
+		this.load.image("vitor_story","Assets/vitor_story.jpeg");
 	}
 	,update: function(time,delta) {
 		var griControl = this.griDimension.griControl;
@@ -12501,6 +13059,14 @@ var EnemyAreaInformation = function() {
 };
 $hxClasses["EnemyAreaInformation"] = EnemyAreaInformation;
 EnemyAreaInformation.__name__ = "EnemyAreaInformation";
+EnemyAreaInformation.create = function(sheet,level,nEnemies,sheetId) {
+	var eai = new EnemyAreaInformation();
+	eai.level = level;
+	eai.sheet = sheet;
+	eai.nEnemies = nEnemies;
+	eai.sheetId = sheetId;
+	return eai;
+};
 EnemyAreaInformation.prototype = {
 	__class__: EnemyAreaInformation
 };
@@ -12782,7 +13348,7 @@ $hxClasses["ResourceLogic"] = ResourceLogic;
 ResourceLogic.__name__ = "ResourceLogic";
 ResourceLogic.recalculateScalingResource = function(base,res) {
 	if(res.lastUsedBaseAttribute != base) {
-		var data1 = res.scaling.data1;
+		var data1 = res.scaling.data1 * 0.001;
 		var baseValue = res.scaling.initial;
 		if(res.scaling.initialMultiplication) {
 			baseValue *= base;
@@ -12804,7 +13370,7 @@ ResourceLogic.recalculateScalingResource = function(base,res) {
 	}
 };
 ResourceLogic.getExponentialResource = function(expBase,minimumIncrement,initial,cap) {
-	var res = { scaling : { data1 : expBase, initial : initial, minimumIncrement : minimumIncrement, initialMultiplication : true, exponential : true}, value : 0, lastUsedBaseAttribute : 0, calculatedMax : 0, cap : cap};
+	var res = { scaling : { data1 : expBase * 1000 | 0, initial : initial, minimumIncrement : minimumIncrement, initialMultiplication : true, exponential : true}, value : 0, lastUsedBaseAttribute : 0, calculatedMax : 0, cap : cap};
 	ResourceLogic.recalculateScalingResource(1,res);
 	return res;
 };
@@ -12877,19 +13443,20 @@ var EventTypes = $hxEnums["EventTypes"] = { __ename__:true,__constructs__:null
 	,RegionUnlock: {_hx_name:"RegionUnlock",_hx_index:9,__enum__:"EventTypes",toString:$estr}
 	,AreaComplete: {_hx_name:"AreaComplete",_hx_index:10,__enum__:"EventTypes",toString:$estr}
 	,AreaEnterFirstTime: {_hx_name:"AreaEnterFirstTime",_hx_index:11,__enum__:"EventTypes",toString:$estr}
-	,GetXP: {_hx_name:"GetXP",_hx_index:12,__enum__:"EventTypes",toString:$estr}
-	,PermanentStatUpgrade: {_hx_name:"PermanentStatUpgrade",_hx_index:13,__enum__:"EventTypes",toString:$estr}
-	,statUpgrade: {_hx_name:"statUpgrade",_hx_index:14,__enum__:"EventTypes",toString:$estr}
-	,SkillUse: {_hx_name:"SkillUse",_hx_index:15,__enum__:"EventTypes",toString:$estr}
-	,MPRunOut: {_hx_name:"MPRunOut",_hx_index:16,__enum__:"EventTypes",toString:$estr}
-	,BuffRemoval: {_hx_name:"BuffRemoval",_hx_index:17,__enum__:"EventTypes",toString:$estr}
-	,DebuffBlock: {_hx_name:"DebuffBlock",_hx_index:18,__enum__:"EventTypes",toString:$estr}
-	,EquipMaxed: {_hx_name:"EquipMaxed",_hx_index:19,__enum__:"EventTypes",toString:$estr}
-	,GameStartOnVersion: {_hx_name:"GameStartOnVersion",_hx_index:20,__enum__:"EventTypes",toString:$estr}
-	,DayNRetention: {_hx_name:"DayNRetention",_hx_index:21,__enum__:"EventTypes",toString:$estr}
-	,DayNRolling: {_hx_name:"DayNRolling",_hx_index:22,__enum__:"EventTypes",toString:$estr}
+	,AreaEnter: {_hx_name:"AreaEnter",_hx_index:12,__enum__:"EventTypes",toString:$estr}
+	,GetXP: {_hx_name:"GetXP",_hx_index:13,__enum__:"EventTypes",toString:$estr}
+	,PermanentStatUpgrade: {_hx_name:"PermanentStatUpgrade",_hx_index:14,__enum__:"EventTypes",toString:$estr}
+	,statUpgrade: {_hx_name:"statUpgrade",_hx_index:15,__enum__:"EventTypes",toString:$estr}
+	,SkillUse: {_hx_name:"SkillUse",_hx_index:16,__enum__:"EventTypes",toString:$estr}
+	,MPRunOut: {_hx_name:"MPRunOut",_hx_index:17,__enum__:"EventTypes",toString:$estr}
+	,BuffRemoval: {_hx_name:"BuffRemoval",_hx_index:18,__enum__:"EventTypes",toString:$estr}
+	,DebuffBlock: {_hx_name:"DebuffBlock",_hx_index:19,__enum__:"EventTypes",toString:$estr}
+	,EquipMaxed: {_hx_name:"EquipMaxed",_hx_index:20,__enum__:"EventTypes",toString:$estr}
+	,GameStartOnVersion: {_hx_name:"GameStartOnVersion",_hx_index:21,__enum__:"EventTypes",toString:$estr}
+	,DayNRetention: {_hx_name:"DayNRetention",_hx_index:22,__enum__:"EventTypes",toString:$estr}
+	,DayNRolling: {_hx_name:"DayNRolling",_hx_index:23,__enum__:"EventTypes",toString:$estr}
 };
-EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.EquipFullFail,EventTypes.EquipFullJustNow,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade,EventTypes.SkillUse,EventTypes.MPRunOut,EventTypes.BuffRemoval,EventTypes.DebuffBlock,EventTypes.EquipMaxed,EventTypes.GameStartOnVersion,EventTypes.DayNRetention,EventTypes.DayNRolling];
+EventTypes.__constructs__ = [EventTypes.GameStart,EventTypes.ActorDead,EventTypes.EquipDrop,EventTypes.EquipFullFail,EventTypes.EquipFullJustNow,EventTypes.ActorAppear,EventTypes.ActorAttack,EventTypes.ActorLevelUp,EventTypes.AreaUnlock,EventTypes.RegionUnlock,EventTypes.AreaComplete,EventTypes.AreaEnterFirstTime,EventTypes.AreaEnter,EventTypes.GetXP,EventTypes.PermanentStatUpgrade,EventTypes.statUpgrade,EventTypes.SkillUse,EventTypes.MPRunOut,EventTypes.BuffRemoval,EventTypes.DebuffBlock,EventTypes.EquipMaxed,EventTypes.GameStartOnVersion,EventTypes.DayNRetention,EventTypes.DayNRolling];
 var ActorReference = function(type,pos) {
 	this.type = type;
 	this.pos = pos;
@@ -12899,7 +13466,18 @@ ActorReference.__name__ = "ActorReference";
 ActorReference.prototype = {
 	__class__: ActorReference
 };
+var GameEventTrigger = function(eType) {
+	this.necessaryData2 = GameEventTrigger.IGNORE;
+	this.necessaryData = GameEventTrigger.IGNORE;
+	this.necessaryType = eType;
+};
+$hxClasses["GameEventTrigger"] = GameEventTrigger;
+GameEventTrigger.__name__ = "GameEventTrigger";
+GameEventTrigger.prototype = {
+	__class__: GameEventTrigger
+};
 var GameEvent = function(eType) {
+	this.dataString2 = null;
 	this.dataString = null;
 	this.type = eType;
 };
@@ -13453,8 +14031,9 @@ SaveAssistant.GetPersistenceMaster = function(jsonData) {
 			var parsed = JSON.parse(jsonData);
 			persistenceMaster = parsed;
 		} catch( _g ) {
+			var e = haxe_Exception.caught(_g);
 			haxe_Log.trace("save problem!",{ fileName : "Sources\\GRI\\logic/SaveAssistant.hx", lineNumber : 12, className : "SaveAssistant", methodName : "GetPersistenceMaster"});
-			return null;
+			ErrorX.exception = e;
 		}
 		if(persistenceMaster != null) {
 			if(persistenceMaster.worldVersion >= 602 == false) {
@@ -14180,8 +14759,8 @@ StoryControlLogic.Init = function(jsonStory,runtime) {
 	while(_g < _g1) {
 		var i = _g++;
 		runtime.messageRuntimeInfo[i] = [];
-		if(Object.prototype.hasOwnProperty.call(runtime.persistence.progressionData.h,cutscenes[i].title) == false) {
-			runtime.persistence.progressionData.h[cutscenes[i].title] = { index : 0, timesCompleted : 0, visible : false, visibleSeen : false, wantToWatch : false};
+		if(Object.prototype.hasOwnProperty.call(runtime.persistence.progressionData.h,cutscenes[i].id) == false) {
+			runtime.persistence.progressionData.h[cutscenes[i].id] = { index : 0, timesCompleted : 0, visible : false, visibleSeen : false, wantToWatch : false};
 		}
 		var vs = cutscenes[i].visibilityScript;
 		if(vs != null) {
@@ -14208,7 +14787,7 @@ StoryControlLogic.updateStoryButtons = function(runtime,view,storyView) {
 	var _g1 = runtime.cutscenes.length;
 	while(_g < _g1) {
 		var i = _g++;
-		var prog = runtime.persistence.progressionData.h[runtime.cutscenes[i].title];
+		var prog = runtime.persistence.progressionData.h[runtime.cutscenes[i].id];
 		if(runtime.cutsceneStartable == null && prog.timesCompleted == 0 && prog.visible == true && runtime.cutscene == null) {
 			runtime.cutsceneStartable = runtime.cutscenes[i];
 		}
@@ -14266,7 +14845,7 @@ StoryControlLogic.update = function(update,controlData,executer) {
 	StoryControlLogic.updateStoryButtons(controlData.runtime,controlData.view,controlData.viewTab);
 	var runtime = controlData.runtime;
 	if(runtime.cutsceneStartable != null && runtime.cutscene == null) {
-		StoryLogic.StartStory(runtime.cutsceneStartable.title,runtime);
+		StoryLogic.StartStory(runtime.cutsceneStartable.id,runtime);
 		StoryControlLogic.startStory(controlData);
 		viewGRI.ui.genUI.updateAll();
 		haxe_Log.trace("Cutscene Start",{ fileName : "Sources\\GRI/StoryControl.hx", lineNumber : 147, className : "StoryControlLogic", methodName : "update"});
@@ -14312,15 +14891,15 @@ StoryControlLogic.update = function(update,controlData,executer) {
 			StoryLogic.SkipStory(runtime);
 		}
 		if(value.stringData == GRIViewMemoryTab.DATA_START) {
-			StoryLogic.StartStory(cutscenes[argument].title,runtime);
+			StoryLogic.StartStory(cutscenes[argument].id,runtime);
 			StoryControlLogic.startStory(controlData);
 		}
 		if(value.stringData == GRIViewMemoryTab.DATA_RESTART) {
-			StoryLogic.StartStory(cutscenes[argument].title,runtime);
+			StoryLogic.StartStory(cutscenes[argument].id,runtime);
 			StoryControlLogic.startStory(controlData);
 		}
 		if(value.stringData == GRIViewMemoryTab.DATA_RESUME) {
-			StoryLogic.StartStory(cutscenes[argument].title,runtime,true);
+			StoryLogic.StartStory(cutscenes[argument].id,runtime,true);
 			StoryControlLogic.startStory(controlData);
 		}
 	}
@@ -14332,6 +14911,9 @@ StoryControlLogic.ReadJsonPersistentData = function(json) {
 StoryControlLogic.GetJsonPersistentData = function(runtime) {
 	return JsonStoryTypes.jsonwriterstory.write(runtime.persistence);
 };
+StoryControlLogic.tryStoryVisible = function(cutsceneId,data) {
+	StoryLogic.forceCutsceneVisible(cutsceneId,false,data.runtime);
+};
 var StoryLogic = function() { };
 $hxClasses["StoryLogic"] = StoryLogic;
 StoryLogic.__name__ = "StoryLogic";
@@ -14340,26 +14922,52 @@ StoryLogic.Update = function(runtime) {
 StoryLogic.RunScript = function(executer,script) {
 };
 StoryLogic.VisibilityUpdate = function(storyButtonsVisible,runtime,executer) {
+	var cutsceneExtraDatas = runtime.cutsceneExtra;
 	var _g = 0;
 	var _g1 = runtime.cutscenes.length;
 	while(_g < _g1) {
 		var i = _g++;
-		var prog = runtime.persistence.progressionData.h[runtime.cutscenes[i].title];
+		var cutsceneExtra = cutsceneExtraDatas[i];
+		var cutsceneId = runtime.cutscenes[i].id;
+		var prog = runtime.persistence.progressionData.h[cutsceneId];
 		if(prog != null) {
 			var visible = prog.visible;
 			if(visible == false) {
-				var wantVisible = true;
-				if(runtime.visibilityConditionScripts[i] != null) {
-					wantVisible = executer.execute(runtime.visibilityConditionScripts[i]);
+				var autoVisibleOn = true;
+				if(cutsceneExtra != null) {
+					autoVisibleOn = cutsceneExtra.autoVisibilityOn;
 				}
-				if(wantVisible) {
-					prog.visible = true;
+				if(autoVisibleOn) {
+					var wantVisible = true;
+					if(runtime.visibilityConditionScripts[i] != null) {
+						wantVisible = executer.execute(runtime.visibilityConditionScripts[i]);
+					}
+					if(wantVisible) {
+						prog.visible = true;
+					}
 				}
 			}
 			if(storyButtonsVisible) {
 				if(prog.visible) {
 					prog.visibleSeen = true;
 				}
+			}
+		}
+	}
+};
+StoryLogic.forceCutsceneVisible = function(cutsceneId,storyButtonsVisible,runtime) {
+	var prog = runtime.persistence.progressionData.h[cutsceneId];
+	if(prog != null) {
+		var visible = prog.visible;
+		if(visible == false) {
+			var wantVisible = true;
+			if(wantVisible) {
+				prog.visible = true;
+			}
+		}
+		if(storyButtonsVisible) {
+			if(prog.visible) {
+				prog.visibleSeen = true;
 			}
 		}
 	}
@@ -14378,7 +14986,7 @@ StoryLogic.StartStory = function(sceneId,runtime,resume) {
 	while(_g < _g1.length) {
 		var a = _g1[_g];
 		++_g;
-		if(a.title == sceneId) {
+		if(a.id == sceneId) {
 			runtime.currentCutsceneIndex = runtime.cutscenes.indexOf(a);
 			runtime.cutscene = a;
 			break;
@@ -14413,6 +15021,15 @@ StoryLogic.WatchLater = function(runtime) {
 	runtime.currentStoryProgression.wantToWatch = true;
 	runtime.currentStoryProgression = null;
 	runtime.cutscene = null;
+};
+var CutsceneExtraData = function(autoVisible) {
+	this.autoVisibilityOn = true;
+	this.autoVisibilityOn = autoVisible;
+};
+$hxClasses["CutsceneExtraData"] = CutsceneExtraData;
+CutsceneExtraData.__name__ = "CutsceneExtraData";
+CutsceneExtraData.prototype = {
+	__class__: CutsceneExtraData
 };
 var StringBuf = function() {
 	this.b = "";
@@ -15050,6 +15667,23 @@ UIElementManager.prototype = {
 				var element = elements[_g2];
 				++_g2;
 				if(element.id == elementId) {
+					return element;
+				}
+			}
+		}
+		return null;
+	}
+	,getElementWithDataInt: function(elementId,dataInt) {
+		var _g = 0;
+		var _g1 = this.elementsHolder;
+		while(_g < _g1.length) {
+			var elements = _g1[_g];
+			++_g;
+			var _g2 = 0;
+			while(_g2 < elements.length) {
+				var element = elements[_g2];
+				++_g2;
+				if(element.id == elementId && element.data.intData == dataInt) {
 					return element;
 				}
 			}
@@ -16407,6 +17041,7 @@ XTextRender.feedLineInformation = function(text,lines,font,maxWidth) {
 				if(lastWordBreak >= 0) {
 					lines[line].end = lastWordBreak - 1;
 					newLine = lastWordBreak + 1;
+					lastWordBreak = -1;
 				} else {
 					lines[line].end = i - 1;
 					newLine = i;
@@ -16934,11 +17569,41 @@ haxe_Exception.prototype = $extend(Error.prototype,{
 	unwrap: function() {
 		return this.__nativeException;
 	}
+	,toString: function() {
+		return this.get_message();
+	}
+	,details: function() {
+		if(this.get_previous() == null) {
+			var tmp = "Exception: " + this.toString();
+			var tmp1 = this.get_stack();
+			return tmp + (tmp1 == null ? "null" : haxe_CallStack.toString(tmp1));
+		} else {
+			var result = "";
+			var e = this;
+			var prev = null;
+			while(e != null) {
+				if(prev == null) {
+					var result1 = "Exception: " + e.get_message();
+					var tmp = e.get_stack();
+					result = result1 + (tmp == null ? "null" : haxe_CallStack.toString(tmp)) + result;
+				} else {
+					var prevStack = haxe_CallStack.subtract(e.get_stack(),prev.get_stack());
+					result = "Exception: " + e.get_message() + (prevStack == null ? "null" : haxe_CallStack.toString(prevStack)) + "\n\nNext " + result;
+				}
+				prev = e;
+				e = e.get_previous();
+			}
+			return result;
+		}
+	}
 	,__shiftStack: function() {
 		this.__skipStack++;
 	}
 	,get_message: function() {
 		return this.message;
+	}
+	,get_previous: function() {
+		return this.__previousException;
 	}
 	,get_native: function() {
 		return this.__nativeException;
@@ -16962,7 +17627,7 @@ haxe_Exception.prototype = $extend(Error.prototype,{
 		}
 	}
 	,__class__: haxe_Exception
-	,__properties__: {get_native:"get_native",get_stack:"get_stack",get_message:"get_message"}
+	,__properties__: {get_native:"get_native",get_previous:"get_previous",get_stack:"get_stack",get_message:"get_message"}
 });
 var haxe_Int32 = {};
 haxe_Int32.ucompare = function(a,b) {
@@ -46783,7 +47448,7 @@ $hxClasses["Math"] = Math;
 if(typeof(performance) != "undefined" ? typeof(performance.now) == "function" : false) {
 	HxOverrides.now = performance.now.bind(performance);
 }
-haxe_Resource.content = [{ name : "font12_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMTgiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjE4IiBiYXNlPSIxNSIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDEyXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjUzIiB5PSI2MSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MyIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjIyMSIgeT0iNDYiIHdpZHRoPSI5IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM1IiB4PSIxMzIiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9IjExNiIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIyNCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzgiIHg9IjcwIiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIyMzkiIHk9IjQ2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iNzgiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI1NCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDIiIHg9IjIxMCIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iNzkiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjIzMSIgeT0iNDYiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NSIgeD0iNDQiIHk9IjYxIiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIyNCIgeT0iNjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ3IiB4PSIyNiIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDgiIHg9IjIxNSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjEzIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUwIiB4PSIyMjciIHk9IjE2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTEiIHg9IjIzOSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMCIgeT0iMzYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MyIgeD0iMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9Ijk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSIyNCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iMzYiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjQ4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIxNjciIHk9IjQ2IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iMjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIxODciIHk9IjQ2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjAiIHk9IjY0IiB3aWR0aD0iMTEiIGhlaWdodD0iOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MiIgeD0iMTc1IiB5PSI0NiIgd2lkdGg9IjExIiBoZWlnaHQ9IjExIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMTEiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iODYiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjU2IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIxMDgiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE3NyIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2OCIgeD0iMTU2IiB5PSIzMSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMjQiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjE5MSIgeT0iMzEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MSIgeD0iMTkwIiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNDQiIHk9IjMxIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjI0NSIgeT0iMzEiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIxODAiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzUiIHg9IjE2NCIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMjAyIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSI5OCIgeT0iMTciIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjIwMyIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iODQiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijg0IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSIxMDIiIHk9IjAiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iNzIiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIxNTEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjE2OCIgeT0iMzEiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMTM4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg3IiB4PSI0MCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjEyNSIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTEyIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIxMjAiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjYyIiB5PSIwIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iMTYiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkzIiB4PSI3MCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5OSIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMzIiIHk9IjYxIiB3aWR0aD0iMTEiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjI0NiIgeT0iNDYiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjExMyIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OCIgeD0iMTM5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjEzNSIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMSIgeD0iNDMiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAyIiB4PSIyMzMiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTUxIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjgiIHk9IjE5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjciIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNyIgeD0iMTYzIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA4IiB4PSIxNiIgeT0iMTgiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOSIgeD0iMTYiIHk9IjUwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iMTIiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMCIgeD0iOTEiIHk9IjQ4IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI1NSIgeT0iNDgiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjE3NSIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIxNTciIHk9IjQ2IiB3aWR0aD0iOSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEwMiIgeT0iNDgiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjIzNSIgeT0iMzEiIHdpZHRoPSI5IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMTI0IiB5PSI0NyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExOCIgeD0iNjciIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIwIiB5PSI1MSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjMxIiB5PSI0OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMTk5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIxNDYiIHk9IjQ2IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIzNiIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI0IiB4PSIwIiB5PSIwIiB3aWR0aD0iNiIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjUiIHg9IjQ1IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjYiIHg9IjEyIiB5PSI2NCIgd2lkdGg9IjExIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjczIj4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjMiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjY1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iOTIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDUiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDAiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgPC9rZXJuaW5ncz4KPC9mb250Pgo"},{ name : "spine/text_effect_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoieGZKSTErVFltVWMiLCJzcGluZSI6IjQuMC42MyIsIngiOi0yMiwieSI6LTE5LjUsIndpZHRoIjo0NCwiaGVpZ2h0IjozOX0sImJvbmVzIjpbeyJuYW1lIjoicm9vdCJ9LHsibmFtZSI6InRleHQiLCJwYXJlbnQiOiJyb290In1dLCJzbG90cyI6W3sibmFtZSI6ImJhY2tncm91bmQiLCJib25lIjoicm9vdCIsImF0dGFjaG1lbnQiOiJwdXJwbGViYWNrIn0seyJuYW1lIjoibnVtYmVyX3Rlc3QiLCJib25lIjoidGV4dCIsImF0dGFjaG1lbnQiOiJudW1iZXJfdGVzdCJ9XSwic2tpbnMiOlt7Im5hbWUiOiJkZWZhdWx0IiwiYXR0YWNobWVudHMiOnsiYmFja2dyb3VuZCI6eyJwdXJwbGViYWNrIjp7IndpZHRoIjo0NCwiaGVpZ2h0IjozOX19LCJudW1iZXJfdGVzdCI6eyJudW1iZXJfdGVzdCI6eyJ3aWR0aCI6MjEsImhlaWdodCI6MTR9fX19XSwiYW5pbWF0aW9ucyI6eyJkb3duX3NsaWRlbGVmdCI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1fSx7InRpbWUiOjEuNSwieCI6LTguNzEsInkiOi01M30seyJ0aW1lIjoxLjY2NjcsIngiOi0zMS4zNywieSI6LTUzfV19fX0sImRvd25fc2xpZGVsZWZ0MiI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjEuNzY2NywieSI6LTUzLjQ1fSx7InRpbWUiOjIuMTY2NywieCI6LTEuNzQsInkiOi01M30seyJ0aW1lIjoyLjMzMzMsIngiOi0zMS4zNywieSI6LTUzfV19fX0sInBvcGluIjp7ImJvbmVzIjp7InRleHQiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjAzMzMsInkiOjE5LjAzfSx7InRpbWUiOjAuMTMzMywieSI6LTE0LjY2LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjAuMiwieSI6LTE0LjY2fSx7InRpbWUiOjAuMjY2NywieSI6Ni41NX0seyJ0aW1lIjowLjMzMzMsImN1cnZlIjoic3RlcHBlZCJ9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "uigen_txt", data : "eyJsaW5lYXJMYXlvdXRzIjpbeyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoyMCwiY2hpbGRQaXZvdFkiOjAsImNoaWxkUGl2b3RYIjowLCJlbGVtZW50Ijp7ImlkIjoibWFpbmJ1dHRvbmdyb3VwIiwieCI6NjUsInkiOjM0MCwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjo3NzAsImhlaWdodCI6LTF9fSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjoyMCwic2VwYXJhdGlvblkiOjIwLCJjaGlsZFBpdm90WSI6MCwiY2hpbGRQaXZvdFgiOjAsImVsZW1lbnQiOnsiaWQiOiJzZXRidXR0b25ncm91cCIsIngiOjY1LCJ5Ijo0NjUsInNjcmVlblBpdm90WSI6MCwic2NyZWVuUGl2b3RYIjowLCJ3aWR0aCI6NzcwLCJoZWlnaHQiOi0xfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6NSwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjAsImVsZW1lbnQiOnsiaWQiOiJ0dXJub3JkZXIiLCJ4Ijo0NTcsInkiOjI4NSwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjoyNzAsImhlaWdodCI6MH19LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjUsInNlcGFyYXRpb25ZIjoxMCwiY2hpbGRQaXZvdFgiOjEsImNoaWxkUGl2b3RZIjoxLCJlbGVtZW50Ijp7ImlkIjoibG93ZXJidXR0b25zIiwieCI6LTUwLCJ5IjotMTAsInNjcmVlblBpdm90WSI6MSwic2NyZWVuUGl2b3RYIjoxLCJ3aWR0aCI6MCwiaGVpZ2h0IjowfX0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiY2hpbGRQaXZvdFgiOjAuNSwiY2hpbGRQaXZvdFkiOjAsImVsZW1lbnQiOnsiaWQiOiJkaWFsb2didXR0b24iLCJ4IjowLCJ5IjowLCJzY3JlZW5QaXZvdFkiOjAuNSwic2NyZWVuUGl2b3RYIjowLjUsIndpZHRoIjoyNzAsImhlaWdodCI6MH19LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjE1LCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJlcXVpcGJ1dHRvbiIsIngiOjMzMCwieSI6MTUwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjoxMCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoidGFiYnV0dG9uIiwieCI6NTYsInkiOjAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6MjJ9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjo0NSwic2VwYXJhdGlvblkiOjEwLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBwZWRidXR0b25zIiwieCI6MTcsInkiOjE1NCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjE1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJtaXNjZXF1aXBidXR0b25zIiwieCI6MTcsInkiOjgyLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOjUwfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MTAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InNldGVxdWlwYnV0dG9ucyIsIngiOjcwMCwieSI6ODIsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJsb2ciLCJ4Ijo4NzYsInkiOjc1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjMsImVsZW1lbnQiOnsiaWQiOiJlcXVpcGFjdG9ydmlldyIsIngiOjIyLCJ5IjozMjksInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImFjdG9yc3RhdGhvdmVyIiwieCI6MjIyLCJ5IjoyOTUsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImVxdWlwY3VycmVuY3l2aWV3IiwieCI6MjIsInkiOi0xMDAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjoxLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImVxdWlwaG92ZXIiLCJ4IjoyMjIsInkiOjI5NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjoyODAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJnZW5lcmljaG92ZXIiLCJ4IjoyMjIsInkiOjI5NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjoyODAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJ0aXRsZWJ1dHRvbnMiLCJ4Ijo1MCwieSI6MTAwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjE1MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoidGl0bGVsb2dvIiwieCI6MjAwLCJ5IjowLCJzY3JlZW5QaXZvdFgiOjAuNSwic2NyZWVuUGl2b3RZIjowLjUsIndpZHRoIjoxNTAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MC41LCJjaGlsZFBpdm90WSI6MC41fSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoiYXJlYSIsIngiOjIwMCwieSI6NTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MjUwLCJoZWlnaHQiOjMwfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoic3ViYnV0dG9ucyIsIngiOjUxMCwieSI6NTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6MzB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6NywiZWxlbWVudCI6eyJpZCI6InJlZ2lvbl9yZWdpb25zIiwieCI6MzUsInkiOjcwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjIzMCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjcsImVsZW1lbnQiOnsiaWQiOiJyZWdpb25fYXJlYXMiLCJ4IjoyMzIsInkiOjcwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjM0MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6InJlZ2lvbl9lbmVteSIsIngiOjU3MiwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MzQwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX2VuZW15X3N0YXQiLCJ4Ijo1NzIsInkiOjEyMCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjowLCJlbGVtZW50Ijp7ImlkIjoibWVtb3J5X2J1dHRvbnMiLCJ4Ijo1MCwieSI6NjUsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6NjAwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjAsImVsZW1lbnQiOnsiaWQiOiJzdG9yeV9tYWluIiwieCI6MCwieSI6NzAsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2NjAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjo0NSwic2VwYXJhdGlvblkiOjEwLCJlbGVtZW50Ijp7ImlkIjoic3RvcnlidXR0b25hIiwieCI6MCwieSI6LTIyLCJzY3JlZW5QaXZvdFgiOjAuNSwic2NyZWVuUGl2b3RZIjoxLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MC41LCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjIwLCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJzdG9yeWJ1dHRvbmIiLCJ4IjotMzQ1LCJ5IjotMjIsInNjcmVlblBpdm90WCI6MSwic2NyZWVuUGl2b3RZIjoxLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjIwLCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJsYXlvdXRfYWNoaWV2ZW1lbnQiLCJ4Ijo0MCwieSI6OTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6NjgwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfV19"},{ name : "Unnamed_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9IlBpeGVsTXBsdXMxMCIgc2l6ZT0iMTEiIGJvbGQ9IjAiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjAiIGFhPSIxIiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjAiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjExIiBiYXNlPSI5IiBzY2FsZVc9IjI1NiIgc2NhbGVIPSIyNTYiIHBhZ2VzPSIxIiBwYWNrZWQ9IjAiIGFscGhhQ2hubD0iMCIgcmVkQ2hubD0iNCIgZ3JlZW5DaG5sPSI0IiBibHVlQ2hubD0iNCIvPgogIDxwYWdlcz4KICAgIDxwYWdlIGlkPSIwIiBmaWxlPSJVbm5hbWVkXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSIxMjciPgogICAgPGNoYXIgaWQ9IjEiIHg9IjI1IiB5PSIxOSIgd2lkdGg9IjQiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIiIHg9IjE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMiIHg9IjI2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNCIgeD0iMzgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1IiB4PSI0MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYiIHg9IjQ4IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNyIgeD0iMyIgeT0iMjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4IiB4PSIxMjAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5IiB4PSI1MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwIiB4PSIzMiIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExIiB4PSIxNTciIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMiIgeD0iMTYxIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTMiIHg9IjE2OSIgeT0iOCIgd2lkdGg9IjMiIGhlaWdodD0iNiIgeG9mZnNldD0iMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE0IiB4PSIxNjUiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNiIgeD0iNTUiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTciIHg9IjY3IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE4IiB4PSI2MSIgeT0iMTgiIHdpZHRoPSI1IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxOSIgeD0iNDkiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjAiIHg9IjQzIiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iOSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIxIiB4PSI2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iMiIgeW9mZnNldD0iMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIyIiB4PSIxMCIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyMyIgeD0iMTQ1IiB5PSI4IiB3aWR0aD0iNSIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIwIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjQiIHg9IjE1MSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNiIgeG9mZnNldD0iMCIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI1IiB4PSIxNCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyNiIgeD0iMTQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjciIHg9IjE0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI4IiB4PSIyNDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyOSIgeD0iMTU3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzAiIHg9IjE2MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMxIiB4PSI5MSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMiIgeD0iODMiIHk9IjE4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMyIgeD0iMTQzIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjgiIHk9IjIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzUiIHg9IjE3NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSI5NiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIxODIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzkiIHg9IjE1IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSI4NSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI4MSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQyIiB4PSIyNDUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iMTkwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjQwIiB5PSIxOCIgd2lkdGg9IjIiIGhlaWdodD0iMiIgeG9mZnNldD0iMSIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ1IiB4PSI3OCIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NiIgeD0iOTMiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjEwMSIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ4IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjUyIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjIzMiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIyMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMjQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjI0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU0IiB4PSIwIiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSI1IiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSIxMCIgeT0iMTIiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMTUiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTgiIHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSIwIiB5PSIyMCIgd2lkdGg9IjIiIGhlaWdodD0iNSIgeG9mZnNldD0iMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIzMCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMzAiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIzIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjE5NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMjI3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjE1MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIyNSIgeT0iMTEiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMjAiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjIxNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMTIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MCIgeD0iMjA3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjE5MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNzIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MyIgeD0iMTM5IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzQiIHg9IjE2NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSIxMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTMyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzciIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc4IiB4PSIxMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijk1IiB5PSI5IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODEiIHg9IjYzIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODIiIHg9IjM1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSI0MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NCIgeD0iMTEwIiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjQ1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI1MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMTE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjU1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg5IiB4PSIxMzAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MCIgeD0iNjAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijc3IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjkxIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTMiIHg9IjczIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5IiB5PSIyMCIgd2lkdGg9IjUiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk1IiB4PSI3MyIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjkiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NiIgeD0iMTIiIHk9IjIwIiB3aWR0aD0iMiIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjIyMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSI3MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OSIgeD0iMjA1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSI3NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMiIgeD0iODAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAzIiB4PSI4NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDQiIHg9IjkwIiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNSIgeD0iMTA2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA2IiB4PSIyMiIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTAiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjEwMCIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMTM1IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSIxNzMiIHk9IjgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjI1MCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMSIgeD0iMTg1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEyIiB4PSI2NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjEwNSIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMTk1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIyMDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjExMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMjEwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIyMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjE3OSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMjI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIxIiB4PSIxMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjIiIHg9IjIzNSIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMyIgeD0iNjgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9Ijg5IiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSI1OCIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMzUiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI3IiB4PSI4NyIgeT0iMTgiIHdpZHRoPSIzIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogIDwvY2hhcnM+CjwvZm9udD4K"},{ name : "font14_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjAiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIwIiBiYXNlPSIxNiIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE0XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI1MCIgeT0iNDgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNyIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMzIiB4PSIxNyIgeT0iNTMiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM0IiB4PSIzNiIgeT0iNjUiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iOTgiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9Ijg4IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzciIHg9IjEzNyIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMjI2IiB5PSIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSI1NiIgeT0iNjUiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSIzNyIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDEiIHg9IjQ2IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iMTIiIHk9IjY5IiB3aWR0aD0iMTAiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjEyMiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iNDciIHk9IjY1IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjEwNyIgeT0iNjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI5IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDYiIHg9Ijg2IiB5PSI2NCIgd2lkdGg9IjciIGhlaWdodD0iNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjE3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTI0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIxNDgiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjE4NCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MSIgeD0iMjA4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUyIiB4PSIyMTUiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjIyMCIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NCIgeD0iNzYiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTUiIHg9IjIzMiIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iNTIiIHk9IjM2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjY0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIyNDIiIHk9IjQ4IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iNTMiIHdpZHRoPSI4IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSI5NiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMjMiIHk9IjY5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTAiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjEwOSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MyIgeD0iMjQ0IiB5PSIzMiIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY0IiB4PSI1NSIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NSIgeD0iNDIiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjExMSIgeT0iMTkiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMTUwIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY4IiB4PSIxMjQiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjkiIHg9Ijg4IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcwIiB4PSIxMDAiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjAiIHk9IjIxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzIiIHg9IjE3NiIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjkiIHk9IjUzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NCIgeD0iMTM2IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSI4NCIgeT0iMTkiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSIyNDEiIHk9IjAiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjE2MyIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzkiIHg9IjcwIiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMjI4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSI3MyIgeT0iMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iMTg5IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSIwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIzOSIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTM3IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMjgiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODciIHg9IjIwOCIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEyIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OCIgeD0iMTQiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODkiIHg9IjU2IiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMDIiIHk9IjE3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjEyOSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjI3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iMTIwIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NCIgeD0iMCIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iOTQiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjY0IiB5PSI2NSIgd2lkdGg9IjgiIGhlaWdodD0iOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NyIgeD0iMTYwIiB5PSI0OSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSIyNDEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjE5NiIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjE3MiIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIwOCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjE4MSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTU1IiB5PSIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA1IiB4PSIxOTIiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNiIgeD0iNyIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0zIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA3IiB4PSIxNjgiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDgiIHg9IjIwMCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSI1MyIgeT0iNTIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSIxMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEwIiB4PSIxNDgiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI3MCIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjEzIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMjMyIiB5PSI0OCIgd2lkdGg9IjkiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIxNzIiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE2IiB4PSIyNSIgeT0iNTMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTciIHg9IjE4NCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTgiIHg9IjEzNSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjM2IiB5PSI1MiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjgzIiB5PSI1MSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMjYiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyMjAiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIxMDAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNCIgeD0iMCIgeT0iMCIgd2lkdGg9IjYiIGhlaWdodD0iMjAiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSIxMTAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iNzMiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICA8L2NoYXJzPgogIDxrZXJuaW5ncyBjb3VudD0iODUiPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMyIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTEiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTA3IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI4NiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDIiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTgiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEyMiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTEzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAxIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI5MCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI5MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI0MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0MCIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NyIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIxMTYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMTE2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ1IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogIDwva2VybmluZ3M+CjwvZm9udD4K"},{ name : "font16_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjIiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIyIiBiYXNlPSIxOCIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE2XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI0OSIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE5IiB4YWR2YW5jZT0iMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjEwMyIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iMTc2IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSIyNSIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSI4IiB5PSIyMiIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iNDYiIHk9IjIxIiB3aWR0aD0iMTUiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIxMTUiIHk9IjY5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iMTYiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI3IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iNjkiIHk9IjcyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjE3OSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iODEiIHk9IjcyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjE1NCIgeT0iNjgiIHdpZHRoPSI5IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIxNDYiIHk9IjY4IiB3aWR0aD0iNyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NyIgeD0iMzgiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTYzIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIyNSIgeT0iNTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MCIgeD0iMTUwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIxMzciIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTIiIHg9IjcwIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUzIiB4PSIxMjQiIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9IjIyOCIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NSIgeD0iMTExIiB5PSIzOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSI5OCIgeT0iMzgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMjQxIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSI0OCIgeT0iNzIiIHdpZHRoPSI3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSI3MiIgeT0iNTUiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIyMTgiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjkwIiB5PSI2OSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYyIiB4PSIwIiB5PSI3NSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDkiIHk9IjAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMTA4IiB5PSIwIiB3aWR0aD0iMTgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY1IiB4PSIxMzciIHk9IjIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjE4MSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE5NSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjAiIHk9IjQxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMDIiIHk9IjM1IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjEzIiB5PSI1OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcxIiB4PSIyMDkiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIyMjMiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjczIiB4PSI4MSIgeT0iNTUiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIzNyIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NSIgeD0iOTIiIHk9IjIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc2IiB4PSI0OSIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NyIgeD0iMTA3IiB5PSIyMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OCIgeD0iMTY3IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTIyIiB5PSIyMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMTg5IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MSIgeD0iMTI3IiB5PSIwIiB3aWR0aD0iMTUiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgyIiB4PSI4NCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjQyIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIyOCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTQiIHk9IjM5IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI3NyIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMjciIHk9IjIxIiB3aWR0aD0iMTgiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg4IiB4PSI2MiIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTUyIiB5PSIxOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMzciIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijk5IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iNDkiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iOTAiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk0IiB4PSI1NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMTY0IiB5PSI2OCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk2IiB4PSIxMjMiIHk9IjY5IiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk3IiB4PSIxNjYiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTgiIHg9IjE4MyIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk5IiB4PSIyNDQiIHk9IjUyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSIxNzAiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjIyMSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTQzIiB5PSIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxNTciIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjAiIHk9IjIzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjYwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTMiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjE5NiIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMjMyIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDkiIHg9Ijg5IiB5PSI1NSIgd2lkdGg9IjE3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjE5MiIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTEiIHg9IjIwNSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjIxNSIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjAiIHk9IjU4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIzNyIgeT0iNzIiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEzIiB5PSI3NSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNiIgeD0iNjEiIHk9IjU1IiB3aWR0aD0iMTAiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE3IiB4PSIxNTMiIHk9IjU0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIxMjUiIHk9IjU0IiB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIxMDciIHk9IjU1IiB3aWR0aD0iMTciIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iMTMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMTM5IiB5PSI1NCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iNTYiIHk9IjM4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyNSIgeT0iNzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjMiIHg9IjcwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9IjAiIHk9IjAiIHdpZHRoPSI2IiBoZWlnaHQ9IjIyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNSIgeD0iODAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMTMzIiB5PSI2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjEwNiI+CiAgICA8a2VybmluZyBmaXJzdD0iMTIzIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjEiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTgiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE4IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTExIiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MSIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMjIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTE1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODUiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExNSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTExIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjkwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQwIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM5IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjQyIiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9IjkyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIxMTgiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMTE4IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICA8L2tlcm5pbmdzPgo8L2ZvbnQ+Cg"},{ name : "spine/character_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiRFhRcjgwUEZUS2siLCJzcGluZSI6IjQuMC42MyJ9LCJib25lcyI6W3sibmFtZSI6InJvb3QifV0sImFuaW1hdGlvbnMiOnsiYXR0YWNrIjp7ImJvbmVzIjp7InJvb3QiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjA2NjcsIngiOi01NS43OH0seyJ0aW1lIjowLjEzMzMsIngiOjkxLjh9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "storyjson", data : "W3sibWVzc2FnZXMiOlt7ImJvZHkiOiJJdCdzIGEgZmluZSBtb3JuaW5nLiAiLCJzcGVha2VyIjpudWxsLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IllvdSBoZWFkIGZvciB0aGUgZG9vciwgcmVhZHkgdG8gZ28gb3V0c2lkZS4iLCJzcGVha2VyIjpudWxsLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiBZb3UncmUgZ29pbmcgb3V0IHRvZGF5IHRvbz8gV2hlcmUgdG8/Iiwic3BlYWtlciI6Ik1vbSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEtpbGwgc29tZSBtb25zdGVycywgbW9tLiIsInNwZWFrZXIiOiJZb3UiLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiBXaHkgZG8gSSBldmVuIGFzaywgc2hlIGRvZXMgdGhpcyBldmVyeSBkYXkuLi4iLCJzcGVha2VyIjoiTW9tIiwic2NyaXB0IjpudWxsfV0sInRpdGxlIjoiQSBmaW5lIG1vcm5pbmcuIiwidmlzaWJpbGl0eVNjcmlwdCI6bnVsbCwiYWN0aW9uTGFiZWwiOiJXYWtlIHVwIn0seyJtZXNzYWdlcyI6W3siYm9keSI6IllvdXIgcnVtYmxpbmcgc3RvbWFjaCBtYWRlIHlvdSBkZWNpZGUgdG8gZ28gYmFjayBob21lLiIsInNwZWFrZXIiOm51bGwsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEknbSBiYWNrIiwic3BlYWtlciI6IllvdSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEdvb2QsIGl0J3MgdGltZSBmb3IgZGlubmVyLiIsInNwZWFrZXIiOiJNb20iLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiBIZXkgbW9tLi4uIiwic3BlYWtlciI6IllvdSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIFdoYXQgaXMgd3JvbmcsIGRlYXI/Iiwic3BlYWtlciI6Ik1vbSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEknbSBsZWF2aW5nIHRvd24iLCJzcGVha2VyIjoiWW91Iiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgSGFoYWhhaGFhLCBvaCBZb3UuLi4iLCJzcGVha2VyIjoiTW9tIiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgQW5kIEknbSBNYm9pLCBHb2Qgb2YgV2F0ZXJ3YXlzISIsInNwZWFrZXIiOiJNb20iLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiAuLi4iLCJzcGVha2VyIjoiWW91Iiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgQydtb24sIGVhdCB1cC4iLCJzcGVha2VyIjoiTW9tIiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiJZb3UgZ28gYmFjayB0byBiZWQsIHVuc2F0aXNmaWVkIHdpdGggd2hhdCB5b3VyIG1vbSBzYWlkLiIsInNwZWFrZXIiOm51bGwsInNjcmlwdCI6bnVsbH1dLCJ0aXRsZSI6IlRpbWUgZm9yIGRpbm5lciIsInZpc2liaWxpdHlTY3JpcHQiOiIgcmV0dXJuIGdsb2JhbFtcIm1heGFyZWFcIl0gPiAyOyAiLCJhY3Rpb25MYWJlbCI6IkknbSBodW5ncnkuLi4ifSx7Im1lc3NhZ2VzIjpbeyJib2R5IjoiWW91IHN0b3AgbW92aW5nIGFuZCB0YWtlIGEgZGVlcCBicmVhdGguICIsInNwZWFrZXIiOm51bGwsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiWW91IHN0YXJlIGF0IHlvdXIgaGFuZHMsIHdoaWNoIGFyZSBzdHJvbmdlciB0aGFuIGV2ZXIuIiwic3BlYWtlciI6bnVsbCwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiJZZXQsIHNvbWV0aGluZyBjb25jZXJucyB5b3UuIiwic3BlYWtlciI6bnVsbCwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgSSBmZWVsIGxpa2UgaXQgYmVjb21lcyBoYXJkZXIgYW5kIGhhcmRlciB0byBiZWNvbWUgc3Ryb25nZXIuLi4iLCJzcGVha2VyIjoiWW91Iiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiJBIHNoYWR5IG1hbiBhcHByb2FjaGVzIHlvdS4iLCJzcGVha2VyIjpudWxsLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiBIZXkga2lkLiIsInNwZWFrZXIiOiJNYW4iLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6IiBXaG8gYXJlIHlvdT8iLCJzcGVha2VyIjoiWW91Iiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgTmFtZSdzIENpZC4gIiwic3BlYWtlciI6Ik1hbiIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEkgZmVlbCBsaWtlIEkndmUgc2VlbiB0aGF0IG5hbWUgYmVmb3JlLi4uIiwic3BlYWtlciI6IllvdSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIFlvdSB3YW5uYSBiZWNvbWUgc3Ryb25nZXI/IEhlaC4gU29tZXRpbWVzIHlvdSBnb3R0YSBsb3NlIGl0IGFsbCB0byByZWFjaCBhIG5ldyBoZWlnaHQuIiwic3BlYWtlciI6IkNpZCIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEFueXdheXMsIHRha2UgdGhpcy4gSXQgdGVhY2hlcyB5b3UgaG93IHRvIFNvdWwgQ3J1c2guIiwic3BlYWtlciI6IkNpZCIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiSGUgaGFuZHMgeW91IGFuIG9sZCBzY3JvbGwuIiwic3BlYWtlciI6bnVsbCwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgSSBzaG91bGRuJ3QgcmVhbGx5IHRha2UgdGhpbmdzIGZyb20gc3RyYW5nZXJzLi4uIiwic3BlYWtlciI6IllvdSIsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiIEJ1dCBvaCB3ZWxsLiBJJ2xsIHRha2UgYSBzaG90LiBIb3BlIGl0IGRvZXNuJ3QgZ2V0IG1lIGtpbGxlZC4iLCJzcGVha2VyIjoiWW91Iiwic2NyaXB0IjpudWxsfSx7ImJvZHkiOiIgWW91IG1heSBub3QgYmUgYWJsZSB0byBkbyBpdCBub3csIGJ1dCBzb21lZGF5Li4uIEdvb2QgbHVjaywga2lkLiIsInNwZWFrZXIiOiJDaWQiLCJzY3JpcHQiOm51bGx9LHsiYm9keSI6Ii0tLSIsInNwZWFrZXIiOm51bGwsInNjcmlwdCI6bnVsbH0seyJib2R5IjoiU291bCBDcnVzaCBpcyBub3cgYWNjZXNzaWJsZS4gWW91IG5lZWQgdG8gYmUgYXQgYSBjZXJ0YWluIGxldmVsIHRvIHVzZSBpdC4iLCJzcGVha2VyIjpudWxsLCJzY3JpcHQiOm51bGx9XSwidGl0bGUiOiJCZWNvbWUgc3Ryb25nZXIiLCJ2aXNpYmlsaXR5U2NyaXB0IjoiIHJldHVybiBnbG9iYWxbXCJoZXJvbGV2ZWxcIl0gPiA4OyAiLCJhY3Rpb25MYWJlbCI6IkhvdyBkbyBJIGdldCBzdHJvbmdlci4uLiJ9XQ"}];
+haxe_Resource.content = [{ name : "font12_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMTgiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjE4IiBiYXNlPSIxNSIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDEyXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjUzIiB5PSI2MSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MyIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjIyMSIgeT0iNDYiIHdpZHRoPSI5IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM1IiB4PSIxMzIiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9IjExNiIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIyNCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzgiIHg9IjcwIiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIyMzkiIHk9IjQ2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iNzgiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI1NCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDIiIHg9IjIxMCIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iNzkiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjIzMSIgeT0iNDYiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NSIgeD0iNDQiIHk9IjYxIiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIyNCIgeT0iNjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ3IiB4PSIyNiIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDgiIHg9IjIxNSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjEzIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUwIiB4PSIyMjciIHk9IjE2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTEiIHg9IjIzOSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMCIgeT0iMzYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MyIgeD0iMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9Ijk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSIyNCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iMzYiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjQ4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIxNjciIHk9IjQ2IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iMjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIxODciIHk9IjQ2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjAiIHk9IjY0IiB3aWR0aD0iMTEiIGhlaWdodD0iOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MiIgeD0iMTc1IiB5PSI0NiIgd2lkdGg9IjExIiBoZWlnaHQ9IjExIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMTEiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iODYiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjU2IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIxMDgiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE3NyIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2OCIgeD0iMTU2IiB5PSIzMSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMjQiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjE5MSIgeT0iMzEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MSIgeD0iMTkwIiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNDQiIHk9IjMxIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjI0NSIgeT0iMzEiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIxODAiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzUiIHg9IjE2NCIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMjAyIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSI5OCIgeT0iMTciIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjIwMyIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iODQiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijg0IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSIxMDIiIHk9IjAiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iNzIiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIxNTEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjE2OCIgeT0iMzEiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMTM4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg3IiB4PSI0MCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjEyNSIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTEyIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIxMjAiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjYyIiB5PSIwIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iMTYiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkzIiB4PSI3MCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5OSIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMzIiIHk9IjYxIiB3aWR0aD0iMTEiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjI0NiIgeT0iNDYiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjExMyIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OCIgeD0iMTM5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjEzNSIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMSIgeD0iNDMiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAyIiB4PSIyMzMiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTUxIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjgiIHk9IjE5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjciIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNyIgeD0iMTYzIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA4IiB4PSIxNiIgeT0iMTgiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOSIgeD0iMTYiIHk9IjUwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iMTIiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMCIgeD0iOTEiIHk9IjQ4IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI1NSIgeT0iNDgiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjE3NSIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIxNTciIHk9IjQ2IiB3aWR0aD0iOSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEwMiIgeT0iNDgiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjIzNSIgeT0iMzEiIHdpZHRoPSI5IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMTI0IiB5PSI0NyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExOCIgeD0iNjciIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIwIiB5PSI1MSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjMxIiB5PSI0OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMTk5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIxNDYiIHk9IjQ2IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIzNiIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI0IiB4PSIwIiB5PSIwIiB3aWR0aD0iNiIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjUiIHg9IjQ1IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjYiIHg9IjEyIiB5PSI2NCIgd2lkdGg9IjExIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjczIj4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjMiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjY1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iOTIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDUiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDAiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgPC9rZXJuaW5ncz4KPC9mb250Pgo"},{ name : "spine/text_effect_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoieGZKSTErVFltVWMiLCJzcGluZSI6IjQuMC42MyIsIngiOi0yMiwieSI6LTE5LjUsIndpZHRoIjo0NCwiaGVpZ2h0IjozOX0sImJvbmVzIjpbeyJuYW1lIjoicm9vdCJ9LHsibmFtZSI6InRleHQiLCJwYXJlbnQiOiJyb290In1dLCJzbG90cyI6W3sibmFtZSI6ImJhY2tncm91bmQiLCJib25lIjoicm9vdCIsImF0dGFjaG1lbnQiOiJwdXJwbGViYWNrIn0seyJuYW1lIjoibnVtYmVyX3Rlc3QiLCJib25lIjoidGV4dCIsImF0dGFjaG1lbnQiOiJudW1iZXJfdGVzdCJ9XSwic2tpbnMiOlt7Im5hbWUiOiJkZWZhdWx0IiwiYXR0YWNobWVudHMiOnsiYmFja2dyb3VuZCI6eyJwdXJwbGViYWNrIjp7IndpZHRoIjo0NCwiaGVpZ2h0IjozOX19LCJudW1iZXJfdGVzdCI6eyJudW1iZXJfdGVzdCI6eyJ3aWR0aCI6MjEsImhlaWdodCI6MTR9fX19XSwiYW5pbWF0aW9ucyI6eyJkb3duX3NsaWRlbGVmdCI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1fSx7InRpbWUiOjEuNSwieCI6LTguNzEsInkiOi01M30seyJ0aW1lIjoxLjY2NjcsIngiOi0zMS4zNywieSI6LTUzfV19fX0sImRvd25fc2xpZGVsZWZ0MiI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjEuNzY2NywieSI6LTUzLjQ1fSx7InRpbWUiOjIuMTY2NywieCI6LTEuNzQsInkiOi01M30seyJ0aW1lIjoyLjMzMzMsIngiOi0zMS4zNywieSI6LTUzfV19fX0sInBvcGluIjp7ImJvbmVzIjp7InRleHQiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjAzMzMsInkiOjE5LjAzfSx7InRpbWUiOjAuMTMzMywieSI6LTE0LjY2LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjAuMiwieSI6LTE0LjY2fSx7InRpbWUiOjAuMjY2NywieSI6Ni41NX0seyJ0aW1lIjowLjMzMzMsImN1cnZlIjoic3RlcHBlZCJ9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "uigen_txt", data : "eyJsaW5lYXJMYXlvdXRzIjpbeyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoyMCwiY2hpbGRQaXZvdFkiOjAsImNoaWxkUGl2b3RYIjowLCJlbGVtZW50Ijp7ImlkIjoibWFpbmJ1dHRvbmdyb3VwIiwieCI6NjUsInkiOjM0MCwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjo3NzAsImhlaWdodCI6LTF9fSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjoyMCwic2VwYXJhdGlvblkiOjIwLCJjaGlsZFBpdm90WSI6MCwiY2hpbGRQaXZvdFgiOjAsImVsZW1lbnQiOnsiaWQiOiJzZXRidXR0b25ncm91cCIsIngiOjY1LCJ5Ijo0NjUsInNjcmVlblBpdm90WSI6MCwic2NyZWVuUGl2b3RYIjowLCJ3aWR0aCI6NzcwLCJoZWlnaHQiOi0xfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6NSwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjAsImVsZW1lbnQiOnsiaWQiOiJ0dXJub3JkZXIiLCJ4Ijo0NTcsInkiOjI4NSwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjoyNzAsImhlaWdodCI6MH19LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjE1LCJzZXBhcmF0aW9uWSI6MTAsImNoaWxkUGl2b3RYIjoxLCJjaGlsZFBpdm90WSI6MSwiZWxlbWVudCI6eyJpZCI6Imxvd2VyYnV0dG9ucyIsIngiOi0zMDAsInkiOi0xMCwic2NyZWVuUGl2b3RZIjoxLCJzY3JlZW5QaXZvdFgiOjEsIndpZHRoIjowLCJoZWlnaHQiOjB9fSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MC41LCJjaGlsZFBpdm90WSI6MCwiZWxlbWVudCI6eyJpZCI6ImRpYWxvZ2J1dHRvbiIsIngiOjAsInkiOjAsInNjcmVlblBpdm90WSI6MC41LCJzY3JlZW5QaXZvdFgiOjAuNSwid2lkdGgiOjI3MCwiaGVpZ2h0IjowfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImVxdWlwYnV0dG9uIiwieCI6MzMwLCJ5IjoxNTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjEwLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJ0YWJidXR0b24iLCJ4Ijo1NiwieSI6MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjoyMn0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJlcXVpcHBlZGJ1dHRvbnMiLCJ4IjoxNywieSI6MTU0LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6Im1pc2NlcXVpcGJ1dHRvbnMiLCJ4IjoxNywieSI6ODIsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjoxMCwic2VwYXJhdGlvblkiOjEwLCJlbGVtZW50Ijp7ImlkIjoic2V0ZXF1aXBidXR0b25zIiwieCI6NzAwLCJ5Ijo4Miwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxvZyIsIngiOjg3NiwieSI6NzUsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImVxdWlwYWN0b3J2aWV3IiwieCI6MjIsInkiOjMyOSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiYWN0b3JzdGF0aG92ZXIiLCJ4IjoyMjIsInkiOjI5NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBjdXJyZW5jeXZpZXciLCJ4IjoyMiwieSI6LTEwMCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImdlbmVyaWNob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InRpdGxlYnV0dG9ucyIsIngiOjUwLCJ5IjoxMDAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MTUwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjMsImVsZW1lbnQiOnsiaWQiOiJ0aXRsZWxvZ28iLCJ4IjoyMDAsInkiOjAsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjAuNSwid2lkdGgiOjE1MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowLjV9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJhcmVhIiwieCI6MjAwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjoyNTAsImhlaWdodCI6MzB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJzdWJidXR0b25zIiwieCI6NTEwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjozMH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjo3LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX3JlZ2lvbnMiLCJ4IjozNSwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MjMwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6NywiZWxlbWVudCI6eyJpZCI6InJlZ2lvbl9hcmVhcyIsIngiOjIzMiwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MzQwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX2VuZW15IiwieCI6NTcyLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjozNDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJyZWdpb25fZW5lbXlfc3RhdCIsIngiOjU3MiwieSI6MTIwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjAsImVsZW1lbnQiOnsiaWQiOiJtZW1vcnlfYnV0dG9ucyIsIngiOjUwLCJ5Ijo2NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2MDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MCwiZWxlbWVudCI6eyJpZCI6InN0b3J5X21haW4iLCJ4IjowLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLjUsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjY2MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJzdG9yeWJ1dHRvbmEiLCJ4IjowLCJ5IjotMjIsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InN0b3J5YnV0dG9uYiIsIngiOi0zNDUsInkiOi0yMiwic2NyZWVuUGl2b3RYIjoxLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxheW91dF9hY2hpZXZlbWVudCIsIngiOjQwLCJ5Ijo5MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2ODAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9XX0"},{ name : "Unnamed_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9IlBpeGVsTXBsdXMxMCIgc2l6ZT0iMTEiIGJvbGQ9IjAiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjAiIGFhPSIxIiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjAiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjExIiBiYXNlPSI5IiBzY2FsZVc9IjI1NiIgc2NhbGVIPSIyNTYiIHBhZ2VzPSIxIiBwYWNrZWQ9IjAiIGFscGhhQ2hubD0iMCIgcmVkQ2hubD0iNCIgZ3JlZW5DaG5sPSI0IiBibHVlQ2hubD0iNCIvPgogIDxwYWdlcz4KICAgIDxwYWdlIGlkPSIwIiBmaWxlPSJVbm5hbWVkXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSIxMjciPgogICAgPGNoYXIgaWQ9IjEiIHg9IjI1IiB5PSIxOSIgd2lkdGg9IjQiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIiIHg9IjE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMiIHg9IjI2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNCIgeD0iMzgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1IiB4PSI0MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYiIHg9IjQ4IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNyIgeD0iMyIgeT0iMjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4IiB4PSIxMjAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5IiB4PSI1MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwIiB4PSIzMiIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExIiB4PSIxNTciIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMiIgeD0iMTYxIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTMiIHg9IjE2OSIgeT0iOCIgd2lkdGg9IjMiIGhlaWdodD0iNiIgeG9mZnNldD0iMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE0IiB4PSIxNjUiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNiIgeD0iNTUiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTciIHg9IjY3IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE4IiB4PSI2MSIgeT0iMTgiIHdpZHRoPSI1IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxOSIgeD0iNDkiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjAiIHg9IjQzIiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iOSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIxIiB4PSI2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iMiIgeW9mZnNldD0iMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIyIiB4PSIxMCIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyMyIgeD0iMTQ1IiB5PSI4IiB3aWR0aD0iNSIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIwIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjQiIHg9IjE1MSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNiIgeG9mZnNldD0iMCIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI1IiB4PSIxNCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyNiIgeD0iMTQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjciIHg9IjE0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI4IiB4PSIyNDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyOSIgeD0iMTU3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzAiIHg9IjE2MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMxIiB4PSI5MSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMiIgeD0iODMiIHk9IjE4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMyIgeD0iMTQzIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjgiIHk9IjIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzUiIHg9IjE3NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSI5NiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIxODIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzkiIHg9IjE1IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSI4NSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI4MSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQyIiB4PSIyNDUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iMTkwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjQwIiB5PSIxOCIgd2lkdGg9IjIiIGhlaWdodD0iMiIgeG9mZnNldD0iMSIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ1IiB4PSI3OCIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NiIgeD0iOTMiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjEwMSIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ4IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjUyIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjIzMiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIyMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMjQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjI0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU0IiB4PSIwIiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSI1IiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSIxMCIgeT0iMTIiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMTUiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTgiIHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSIwIiB5PSIyMCIgd2lkdGg9IjIiIGhlaWdodD0iNSIgeG9mZnNldD0iMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIzMCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMzAiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIzIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjE5NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMjI3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjE1MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIyNSIgeT0iMTEiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMjAiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjIxNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMTIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MCIgeD0iMjA3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjE5MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNzIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MyIgeD0iMTM5IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzQiIHg9IjE2NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSIxMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTMyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzciIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc4IiB4PSIxMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijk1IiB5PSI5IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODEiIHg9IjYzIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODIiIHg9IjM1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSI0MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NCIgeD0iMTEwIiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjQ1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI1MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMTE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjU1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg5IiB4PSIxMzAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MCIgeD0iNjAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijc3IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjkxIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTMiIHg9IjczIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5IiB5PSIyMCIgd2lkdGg9IjUiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk1IiB4PSI3MyIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjkiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NiIgeD0iMTIiIHk9IjIwIiB3aWR0aD0iMiIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjIyMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSI3MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OSIgeD0iMjA1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSI3NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMiIgeD0iODAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAzIiB4PSI4NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDQiIHg9IjkwIiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNSIgeD0iMTA2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA2IiB4PSIyMiIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTAiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjEwMCIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMTM1IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSIxNzMiIHk9IjgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjI1MCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMSIgeD0iMTg1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEyIiB4PSI2NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjEwNSIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMTk1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIyMDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjExMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMjEwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIyMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjE3OSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMjI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIxIiB4PSIxMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjIiIHg9IjIzNSIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMyIgeD0iNjgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9Ijg5IiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSI1OCIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMzUiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI3IiB4PSI4NyIgeT0iMTgiIHdpZHRoPSIzIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogIDwvY2hhcnM+CjwvZm9udD4K"},{ name : "font14_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjAiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIwIiBiYXNlPSIxNiIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE0XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI1MCIgeT0iNDgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNyIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMzIiB4PSIxNyIgeT0iNTMiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM0IiB4PSIzNiIgeT0iNjUiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iOTgiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9Ijg4IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzciIHg9IjEzNyIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMjI2IiB5PSIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSI1NiIgeT0iNjUiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSIzNyIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDEiIHg9IjQ2IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iMTIiIHk9IjY5IiB3aWR0aD0iMTAiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjEyMiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iNDciIHk9IjY1IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjEwNyIgeT0iNjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI5IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDYiIHg9Ijg2IiB5PSI2NCIgd2lkdGg9IjciIGhlaWdodD0iNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjE3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTI0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIxNDgiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjE4NCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MSIgeD0iMjA4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUyIiB4PSIyMTUiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjIyMCIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NCIgeD0iNzYiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTUiIHg9IjIzMiIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iNTIiIHk9IjM2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjY0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIyNDIiIHk9IjQ4IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iNTMiIHdpZHRoPSI4IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSI5NiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMjMiIHk9IjY5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTAiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjEwOSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MyIgeD0iMjQ0IiB5PSIzMiIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY0IiB4PSI1NSIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NSIgeD0iNDIiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjExMSIgeT0iMTkiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMTUwIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY4IiB4PSIxMjQiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjkiIHg9Ijg4IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcwIiB4PSIxMDAiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjAiIHk9IjIxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzIiIHg9IjE3NiIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjkiIHk9IjUzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NCIgeD0iMTM2IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSI4NCIgeT0iMTkiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSIyNDEiIHk9IjAiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjE2MyIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzkiIHg9IjcwIiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMjI4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSI3MyIgeT0iMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iMTg5IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSIwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIzOSIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTM3IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMjgiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODciIHg9IjIwOCIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEyIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OCIgeD0iMTQiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODkiIHg9IjU2IiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMDIiIHk9IjE3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjEyOSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjI3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iMTIwIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NCIgeD0iMCIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iOTQiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjY0IiB5PSI2NSIgd2lkdGg9IjgiIGhlaWdodD0iOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NyIgeD0iMTYwIiB5PSI0OSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSIyNDEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjE5NiIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjE3MiIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIwOCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjE4MSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTU1IiB5PSIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA1IiB4PSIxOTIiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNiIgeD0iNyIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0zIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA3IiB4PSIxNjgiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDgiIHg9IjIwMCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSI1MyIgeT0iNTIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSIxMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEwIiB4PSIxNDgiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI3MCIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjEzIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMjMyIiB5PSI0OCIgd2lkdGg9IjkiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIxNzIiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE2IiB4PSIyNSIgeT0iNTMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTciIHg9IjE4NCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTgiIHg9IjEzNSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjM2IiB5PSI1MiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjgzIiB5PSI1MSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMjYiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyMjAiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIxMDAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNCIgeD0iMCIgeT0iMCIgd2lkdGg9IjYiIGhlaWdodD0iMjAiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSIxMTAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iNzMiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICA8L2NoYXJzPgogIDxrZXJuaW5ncyBjb3VudD0iODUiPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMyIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTEiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTA3IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI4NiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDIiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTgiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEyMiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTEzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAxIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI5MCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI5MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI0MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0MCIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NyIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIxMTYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMTE2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ1IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogIDwva2VybmluZ3M+CjwvZm9udD4K"},{ name : "font16_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjIiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIyIiBiYXNlPSIxOCIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE2XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI0OSIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE5IiB4YWR2YW5jZT0iMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjEwMyIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iMTc2IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSIyNSIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSI4IiB5PSIyMiIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iNDYiIHk9IjIxIiB3aWR0aD0iMTUiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIxMTUiIHk9IjY5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iMTYiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI3IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iNjkiIHk9IjcyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjE3OSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iODEiIHk9IjcyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjE1NCIgeT0iNjgiIHdpZHRoPSI5IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIxNDYiIHk9IjY4IiB3aWR0aD0iNyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NyIgeD0iMzgiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTYzIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIyNSIgeT0iNTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MCIgeD0iMTUwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIxMzciIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTIiIHg9IjcwIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUzIiB4PSIxMjQiIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9IjIyOCIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NSIgeD0iMTExIiB5PSIzOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSI5OCIgeT0iMzgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMjQxIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSI0OCIgeT0iNzIiIHdpZHRoPSI3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSI3MiIgeT0iNTUiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIyMTgiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjkwIiB5PSI2OSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYyIiB4PSIwIiB5PSI3NSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDkiIHk9IjAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMTA4IiB5PSIwIiB3aWR0aD0iMTgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY1IiB4PSIxMzciIHk9IjIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjE4MSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE5NSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjAiIHk9IjQxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMDIiIHk9IjM1IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjEzIiB5PSI1OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcxIiB4PSIyMDkiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIyMjMiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjczIiB4PSI4MSIgeT0iNTUiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIzNyIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NSIgeD0iOTIiIHk9IjIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc2IiB4PSI0OSIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NyIgeD0iMTA3IiB5PSIyMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OCIgeD0iMTY3IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTIyIiB5PSIyMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMTg5IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MSIgeD0iMTI3IiB5PSIwIiB3aWR0aD0iMTUiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgyIiB4PSI4NCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjQyIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIyOCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTQiIHk9IjM5IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI3NyIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMjciIHk9IjIxIiB3aWR0aD0iMTgiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg4IiB4PSI2MiIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTUyIiB5PSIxOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMzciIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijk5IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iNDkiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iOTAiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk0IiB4PSI1NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMTY0IiB5PSI2OCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk2IiB4PSIxMjMiIHk9IjY5IiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk3IiB4PSIxNjYiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTgiIHg9IjE4MyIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk5IiB4PSIyNDQiIHk9IjUyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSIxNzAiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjIyMSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTQzIiB5PSIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxNTciIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjAiIHk9IjIzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjYwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTMiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjE5NiIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMjMyIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDkiIHg9Ijg5IiB5PSI1NSIgd2lkdGg9IjE3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjE5MiIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTEiIHg9IjIwNSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjIxNSIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjAiIHk9IjU4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIzNyIgeT0iNzIiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEzIiB5PSI3NSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNiIgeD0iNjEiIHk9IjU1IiB3aWR0aD0iMTAiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE3IiB4PSIxNTMiIHk9IjU0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIxMjUiIHk9IjU0IiB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIxMDciIHk9IjU1IiB3aWR0aD0iMTciIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iMTMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMTM5IiB5PSI1NCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iNTYiIHk9IjM4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyNSIgeT0iNzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjMiIHg9IjcwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9IjAiIHk9IjAiIHdpZHRoPSI2IiBoZWlnaHQ9IjIyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNSIgeD0iODAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMTMzIiB5PSI2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjEwNiI+CiAgICA8a2VybmluZyBmaXJzdD0iMTIzIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjEiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTgiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE4IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTExIiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MSIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMjIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTE1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODUiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExNSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTExIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjkwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQwIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM5IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjQyIiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9IjkyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIxMTgiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMTE4IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICA8L2tlcm5pbmdzPgo8L2ZvbnQ+Cg"},{ name : "spine/character_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiRFhRcjgwUEZUS2siLCJzcGluZSI6IjQuMC42MyJ9LCJib25lcyI6W3sibmFtZSI6InJvb3QifV0sImFuaW1hdGlvbnMiOnsiYXR0YWNrIjp7ImJvbmVzIjp7InJvb3QiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjA2NjcsIngiOi01NS43OH0seyJ0aW1lIjowLjEzMzMsIngiOjkxLjh9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "storyjson", data : "W3siYWN0aW9uTGFiZWwiOiAiV2FrZSB1cCIsImlkIjogIkEgZmluZSBtb3JuaW5nLiIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJJdCdzIGEgZmluZSBtb3JuaW5nLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBoZWFkIGZvciB0aGUgZG9vciwgcmVhZHkgdG8gZ28gb3V0c2lkZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBZb3UncmUgZ29pbmcgb3V0IHRvZGF5IHRvbz8gV2hlcmUgdG8/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEtpbGwgc29tZSBtb25zdGVycywgbW9tLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaHkgZG8gSSBldmVuIGFzaywgc2hlIGRvZXMgdGhpcyBldmVyeSBkYXkuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9XSwidGl0bGUiOiAiQSBmaW5lIG1vcm5pbmcuIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiAiSSdtIGh1bmdyeS4uLiIsImlkIjogIlRpbWUgZm9yIGRpbm5lciIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJZb3VyIHJ1bWJsaW5nIHN0b21hY2ggbWFkZSB5b3UgZGVjaWRlIHRvIGdvIGJhY2sgaG9tZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBJJ20gYmFjayIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBHb29kLCBpdCdzIHRpbWUgZm9yIGRpbm5lci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgSGV5IG1vbS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaGF0IGlzIHdyb25nLCBkZWFyPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTW9tIn0seyJib2R5IjogIiBJJ20gbGVhdmluZyB0b3duIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEhhaGFoYWhhYSwgb2ggWW91Li4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEFuZCBJJ20gTWJvaSwgR29kIG9mIFdhdGVyd2F5cyEiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEMnbW9uLCBlYXQgdXAuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiWW91IGdvIGJhY2sgdG8gYmVkLCB1bnNhdGlzZmllZCB3aXRoIHdoYXQgeW91ciBtb20gc2FpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaW1lIGZvciBkaW5uZXIiLCJ2aXNpYmlsaXR5U2NyaXB0IjogIiByZXR1cm4gZ2xvYmFsW1wibWF4YXJlYVwiXSA+IDI7ICJ9LHsiYWN0aW9uTGFiZWwiOiAiSG93IGRvIEkgZ2V0IHN0cm9uZ2VyLi4uIiwiaWQiOiAiQmVjb21lIHN0cm9uZ2VyIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIllvdSBzdG9wIG1vdmluZyBhbmQgdGFrZSBhIGRlZXAgYnJlYXRoLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBzdGFyZSBhdCB5b3VyIGhhbmRzLCB3aGljaCBhcmUgc3Ryb25nZXIgdGhhbiBldmVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWWV0LCBzb21ldGhpbmcgY29uY2VybnMgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgZmVlbCBsaWtlIGl0IGJlY29tZXMgaGFyZGVyIGFuZCBoYXJkZXIgdG8gYmVjb21lIHN0cm9uZ2VyLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiQSBzaGFkeSBtYW4gYXBwcm9hY2hlcyB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgSGV5IGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hbiJ9LHsiYm9keSI6ICIgV2hvIGFyZSB5b3U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIE5hbWUncyBDaWQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFuIn0seyJib2R5IjogIiBJIGZlZWwgbGlrZSBJJ3ZlIHNlZW4gdGhhdCBuYW1lIGJlZm9yZS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBZb3Ugd2FubmEgYmVjb21lIHN0cm9uZ2VyPyBIZWguIFNvbWV0aW1lcyB5b3UgZ290dGEgbG9zZSBpdCBhbGwgdG8gcmVhY2ggYSBuZXcgaGVpZ2h0LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIiBBbnl3YXlzLCB0YWtlIHRoaXMuIEl0IHRlYWNoZXMgeW91IGhvdyB0byBTb3VsIENydXNoLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIkhlIGhhbmRzIHlvdSBhbiBvbGQgc2Nyb2xsLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgc2hvdWxkbid0IHJlYWxseSB0YWtlIHRoaW5ncyBmcm9tIHN0cmFuZ2Vycy4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBCdXQgb2ggd2VsbC4gSSdsbCB0YWtlIGEgc2hvdC4gSG9wZSBpdCBkb2Vzbid0IGdldCBtZSBraWxsZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIFlvdSBtYXkgbm90IGJlIGFibGUgdG8gZG8gaXQgbm93LCBidXQgc29tZWRheS4uLiBHb29kIGx1Y2ssIGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIkNpZCJ9LHsiYm9keSI6ICItLS0iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlNvdWwgQ3J1c2ggaXMgbm93IGFjY2Vzc2libGUuIFlvdSBuZWVkIHRvIGJlIGF0IGEgY2VydGFpbiBsZXZlbCB0byB1c2UgaXQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQmVjb21lIHN0cm9uZ2VyIiwidmlzaWJpbGl0eVNjcmlwdCI6ICIgcmV0dXJuIGdsb2JhbFtcImhlcm9sZXZlbFwiXSA+IDg7ICJ9XQ"}];
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = ({ }).toString;
 Achievement.LOCKED = 0;
@@ -46798,6 +47463,7 @@ seedyrng_Xorshift128Plus.SEED_1 = (function($this) {
 	return $r;
 }(this));
 Generation.random = new seedyrng_Random();
+BattleConstants.damageLastTurn = "damage-last-turn";
 Buttons.buttons = new Buttons();
 DefaultButtons.UP = 0;
 DefaultButtons.RIGHT = 1;
@@ -46819,6 +47485,8 @@ GRIButtons.SKILL_BUTTON_4 = 104;
 GRIButtons.SKILL_BUTTON_5 = 105;
 GRIButtons.SKILL_BUTTON_6 = 106;
 GRIButtons.SKILL_BUTTON_7 = 107;
+GRIConfigurer.DIMENSION_ID_LAGRIMA = "LAGRIMA";
+GRIConfigurer.DIMENSION_ID_AMAZONIA = "AMAZONIA";
 GRIControl.key = "save data master";
 GRIControl.keyBackup = "save backup";
 GRIControl.PRIVACY_ACCEPTANCE_KEY = "privacymemory";
@@ -46829,7 +47497,8 @@ GRIControlRegion.dataRegionB = "regionbutton";
 GRIControlRegion.dataAreaB = "areabutton";
 GRIEffects.SPINE_TEXT_EFFECT = "spine/text_effect_json";
 GRIEffects.SPINE_ACTOR = "spine/character_json";
-TurnOrderData.charaSprites = [Sprite.create("heroicon",512,512),Sprite.create("enemyicon",512,512),Sprite.create("boss",512,512),Sprite.create("bossb",512,512)];
+GRISetView.SETVIEWTAG = "setview";
+TurnOrderData.charaSprites = [Sprite.create("heroicon",512,512),Sprite.create("enemyicon",512,512),Sprite.create("boss",512,512),Sprite.create("bossb",512,512),Sprite.create("isabelicon",512,512)];
 GRIView.COLOR_BLACK = 0;
 GRIView.COLOR_ACTIVE_BLUE = 11004149;
 GRIView.COLOR_BACKGROUND = 988450;
@@ -46886,7 +47555,7 @@ GRIView.tagTabRegion = "tabregion";
 GRIView.tagTabTitle = "tabtitle";
 GRIView.tagTabMemory = "tabmemory";
 GRIView.tagTabCharacter = "tabcharacter";
-ActorViewLogic.ignoredStats = ["Life","MP","MPRecharge","MPRechargeCount","","SpeedCount"];
+ActorViewLogic.ignoredStats = ["Life","MP","MPRecharge","MPRechargeCount","","SpeedCount","damage-last-turn"];
 ActorViewLogic.AttributeExplanation = (function($this) {
 	var $r;
 	var _g = new haxe_ds_StringMap();
@@ -46978,17 +47647,18 @@ Keyboard.JOY_BUTTON_D_RIGHT = 100062;
 Keyboard.JOY_BUTTON_START = 100063;
 Keyboard.JOY_BUTTON_SELECT = 100064;
 Keyboard.keyboard = new Keyboard();
-JsonStoryTypes.jsonwriterstory = new JsonWriter_$82();
-JsonStoryTypes.jsonparserstory = new JsonParser_$94();
-JsonStoryTypes.jsonparsercutscenes = new JsonParser_$99();
+JsonStoryTypes.jsonwriterstory = new JsonWriter_$81();
+JsonStoryTypes.jsonparserstory = new JsonParser_$93();
+JsonStoryTypes.jsonparsercutscenes = new JsonParser_$98();
 JsonMainTypes.jsonwriterwdata = new JsonWriter_$1();
 JsonMainTypes.jsonparserwdata = new JsonParser_$1();
-JsonMainTypes.jsonwritergeneral = new JsonWriter_$74();
-JsonMainTypes.jsonparsergeneral = new JsonParser_$86();
+JsonMainTypes.jsonwritergeneral = new JsonWriter_$73();
+JsonMainTypes.jsonparsergeneral = new JsonParser_$85();
 PhaserRenderer.images = new haxe_ds_StringMap();
 PhaserRenderer.z = 0;
 PrototypeItemMaker.itemType_Weapon = 0;
 PrototypeItemMaker.itemType_Armor = 1;
+GameEventTrigger.IGNORE = -99999;
 Renderer.aux = new Rect(0,0,0,0);
 Renderer.aux2 = new Rect(0,0,0,0);
 Renderer.aux3 = new Rect(0,0,0,0);
