@@ -1910,7 +1910,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1380, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1383, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -2988,7 +2988,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2486, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2489, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -3005,7 +3005,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2503, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2506, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -3163,16 +3163,16 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2650, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2653, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
 			HxOverrides.strDate(loadedWdata.retention.gameStartDate);
-			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2655, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2658, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2658, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2661, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -3187,16 +3187,17 @@ BattleManager.prototype = {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 			if(loadedWdata == null) {
 				ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
+				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2676, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				return false;
 			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2675, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2680, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2680, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2681, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2685, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2686, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			ErrorX.exception = e;
 			return false;
 		}
@@ -3632,7 +3633,7 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	var _g = new haxe_ds_StringMap();
 	_g.h["Attack"] = 1.4;
 	_g.h["Speed"] = 0.15;
-	_g.h["LifeMax"] = 5.5;
+	_g.h["LifeMax"] = 5;
 	var _g1 = new haxe_ds_StringMap();
 	_g1.h["Defense"] = 5;
 	var _g2 = new haxe_ds_StringMap();
@@ -3664,10 +3665,10 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	_g.h["LifeMax"] = 0.4;
 	var _g1 = new haxe_ds_StringMap();
 	_g1.h["Defense"] = 0;
-	_g1.h["Speed"] = 1;
+	_g1.h["Speed"] = 1.5;
 	enemySheets.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : null, speciesLevelStats : { attributesBase : _g1}});
 	var _g = new haxe_ds_StringMap();
-	_g.h["Attack"] = 3;
+	_g.h["Attack"] = 2;
 	_g.h["Speed"] = 2;
 	regionPrizes.push({ xpPrize : false, statBonus : _g});
 	var _g = new haxe_ds_StringMap();
@@ -3722,10 +3723,10 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	_g.h["Speed"] = 0.2;
 	_g.h["LifeMax"] = 0.03;
 	var _g1 = new haxe_ds_StringMap();
-	_g1.h["Defense"] = 5;
+	_g1.h["Defense"] = 8;
 	_g1.h["Safeguard"] = 75;
 	var _g2 = new haxe_ds_StringMap();
-	_g2.h["Defense"] = 1.1;
+	_g2.h["Defense"] = 4;
 	_g2.h["Speed"] = 0.05;
 	enemySheets.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
 	var _g = new haxe_ds_StringMap();
@@ -47573,6 +47574,7 @@ ActorViewLogic.AttributeExplanation = (function($this) {
 	_g.h["Life"] = "When it gets to 0, you need to recover";
 	_g.h["LifeMax"] = "When it gets to 0, you need to recover";
 	_g.h["MPMax"] = "Skills consume this. Expend it all to start recovering.";
+	_g.h["Safeguard"] = "Piercing protection";
 	$r = _g;
 	return $r;
 }(this));
