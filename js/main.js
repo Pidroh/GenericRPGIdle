@@ -771,7 +771,7 @@ var BattleManager = function() {
 	_g.h["Speed"] = 20;
 	_g.h["SpeedCount"] = 0;
 	var stats = _g;
-	var w = { worldVersion : 30110, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
+	var w = { worldVersion : 30120, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, regionProgress : []};
 	this.wdata = w;
 	this.counterAttackDatas.push(null);
 	var ctd = new CounterAttackData();
@@ -1960,7 +1960,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1421, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1423, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -2976,6 +2976,30 @@ BattleManager.prototype = {
 					}
 				}
 			}
+			if(actor.conditionalBonus != null) {
+				var _g2_current = 0;
+				var _g2_array = actor.conditionalBonus;
+				while(_g2_current < _g2_array.length) {
+					var _g3_value = _g2_array[_g2_current];
+					var _g3_key = _g2_current++;
+					var index = _g3_key;
+					var value = _g3_value;
+					var condition = value.condition;
+					if(this.testCondition(condition)) {
+						var _g4_current = 0;
+						var _g4_array = value.AttributeBonuses;
+						while(_g4_current < _g4_array.length) {
+							var _g5_value = _g4_array[_g4_current];
+							var _g5_key = _g4_current++;
+							var atpos = _g5_key;
+							var atv = _g5_value;
+							if(atv.attributes != null) {
+								AttributeLogic.Add(actor.attributesCalculated,atv.attributes,1,actor.attributesCalculated);
+							}
+						}
+					}
+				}
+			}
 		}
 		if(buffCalculation) {
 			var _g = 0;
@@ -3011,6 +3035,39 @@ BattleManager.prototype = {
 									var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
 									actor.attributesCalculated.h[a_key] = v;
 								}
+							}
+						}
+					}
+				}
+			}
+			if(actor.conditionalBonus != null) {
+				var _g2_current = 0;
+				var _g2_array = actor.conditionalBonus;
+				while(_g2_current < _g2_array.length) {
+					var _g3_value = _g2_array[_g2_current];
+					var _g3_key = _g2_current++;
+					var index = _g3_key;
+					var value = _g3_value;
+					var condition = value.condition;
+					if(this.testCondition(condition)) {
+						var _g4_current = 0;
+						var _g4_array = value.AttributeBonuses;
+						while(_g4_current < _g4_array.length) {
+							var _g5_value = _g4_array[_g4_current];
+							var _g5_key = _g4_current++;
+							var atpos = _g5_key;
+							var atv = _g5_value;
+							var h = atv.attributeMultiplier.h;
+							var a_h = h;
+							var a_keys = Object.keys(h);
+							var a_length = a_keys.length;
+							var a_current = 0;
+							while(a_current < a_length) {
+								var key = a_keys[a_current++];
+								var a_key = key;
+								var a_value = a_h[key];
+								var v = actor.attributesCalculated.h[a_key] * a_value / 100 | 0;
+								actor.attributesCalculated.h[a_key] = v;
 							}
 						}
 					}
@@ -3056,7 +3113,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2560, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2600, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -3073,7 +3130,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2577, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2617, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -3111,6 +3168,18 @@ BattleManager.prototype = {
 	,CompareEquipmentStrength: function(e1,e2) {
 		var e1Superior = 0;
 		var e2Superior = 0;
+		if(e1.outsideSystems != null && e1.outsideSystems.h["level"] >= 0 == true) {
+			var e1level = this.wdata.equipLevels[e1.outsideSystems.h["level"]].level;
+			if(e1level > 0) {
+				return -1;
+			}
+		}
+		if(e2.outsideSystems != null && e2.outsideSystems.h["level"] >= 0 == true) {
+			var e2level = this.wdata.equipLevels[e1.outsideSystems.h["level"]].level;
+			if(e2level > 0) {
+				return -1;
+			}
+		}
 		var mapAttr1 = e1.attributes;
 		var mapAttr2 = e2.attributes;
 		var h = mapAttr1.h;
@@ -3231,16 +3300,16 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2724, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2777, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
 			HxOverrides.strDate(loadedWdata.retention.gameStartDate);
-			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2729, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2782, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2732, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2785, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -3255,17 +3324,17 @@ BattleManager.prototype = {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 			if(loadedWdata == null) {
 				ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
-				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2746, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2799, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				return false;
 			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2750, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2803, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2755, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2756, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2808, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2809, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			ErrorX.exception = e;
 			return false;
 		}
@@ -3304,6 +3373,21 @@ BattleManager.prototype = {
 		}
 		this.ReinitGameValues();
 		return true;
+	}
+	,testCondition: function(cond) {
+		if(cond.cType == BMConditionType.ITEM_IN_SLOT_IS_OF_ITEM_TYPE) {
+			var ePos = this.wdata.hero.equipmentSets[this.wdata.hero.chosenEquipSet].equipmentSlots[cond.data1];
+			var e = this.wdata.hero.equipment[ePos];
+			if(e == null) {
+				return false;
+			}
+			if(e.generationBaseItem == cond.data2) {
+				return true;
+			}
+			return false;
+		}
+		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2874, className : "BattleManager", methodName : "testCondition"});
+		return false;
 	}
 	,isBattleArea: function() {
 		if(this.config == null) {
@@ -3469,6 +3553,15 @@ CrossTarget.SetLocalStorageItem = function(key,value,updateLatestSave) {
 };
 CrossTarget.resetLocalStorage = function(key) {
 	CrossTarget.SetLocalStorageItem(key,"");
+};
+var CurrencyModel = function() { };
+$hxClasses["CurrencyModel"] = CurrencyModel;
+CurrencyModel.__name__ = "CurrencyModel";
+CurrencyModel.prototype = {
+	spend: function(currencyKey,amount) {
+		this.currencyHolder.currencies.h[currencyKey].value -= amount;
+	}
+	,__class__: CurrencyModel
 };
 var DefaultButtons = function() { };
 $hxClasses["DefaultButtons"] = DefaultButtons;
@@ -3668,6 +3761,7 @@ GRIConfiguration.prototype = {
 	,__class__: GRIConfiguration
 };
 var GRIConfigurer = function() {
+	this.desiredMode = -1;
 	this.enemies = new EnemySheets();
 	this.selectedGRIConfiguration = -1;
 	this.dimensions = [];
@@ -3679,7 +3773,10 @@ var GRIConfigurer = function() {
 $hxClasses["GRIConfigurer"] = GRIConfigurer;
 GRIConfigurer.__name__ = "GRIConfigurer";
 GRIConfigurer.setupLagrimaRegions = function() {
-	var config = new GRIConfiguration("Lagrima Continent");
+	var config = new GRIConfiguration("Play as You");
+	config.description_sprite = new Sprite("main_story",512);
+	config.description_text = "An young girl who adventures across the Lagrima Continent";
+	config.description_title = "You";
 	config.mainCharacterName = "You";
 	config.dimensionId = GRIConfigurer.DIMENSION_ID_LAGRIMA;
 	config.storyDataResource = "storyjson";
@@ -3910,8 +4007,14 @@ GRIConfigurer.setupLagrimaRegions = function() {
 };
 GRIConfigurer.prototype = {
 	update: function() {
+		if(this.desiredMode >= 0) {
+			this.changeGRIConfiguration(this.desiredMode);
+			this.desiredMode = -1;
+			this.griControl.view.loading = false;
+		}
 		if(this.griControl.titleControl.desiredMode != this.selectedGRIConfiguration && this.griControl.titleControl.desiredMode >= 0) {
-			this.changeGRIConfiguration(this.griControl.titleControl.desiredMode);
+			this.desiredMode = this.griControl.titleControl.desiredMode;
+			this.griControl.view.loading = true;
 		}
 	}
 	,changeGRIConfiguration: function(dimension) {
@@ -3928,12 +4031,15 @@ GRIConfigurer.prototype = {
 		this.selectedGRIConfiguration = dimension;
 	}
 	,setupCrystalRoad: function() {
-		var config = new GRIConfiguration("Road of Amazonia");
+		var config = new GRIConfiguration("Play as Isabel");
 		config.heroViewAux = 4;
 		config.mainCharacterName = "Isabel";
 		config.storyDataResource = "story_main_json";
 		config.dimensionSave = 0;
 		config.heroMaxLevel = 20;
+		config.description_text = "A woman who seeks out revenge and will do whatever it takes to get it done";
+		config.description_title = "Isabel";
+		config.description_sprite = new Sprite("isabel_story",512);
 		config.dimensionId = GRIConfigurer.DIMENSION_ID_AMAZONIA;
 		var regionData = RegionData.regionWithPrize(RegionType.SEMIPROCEDURAL,{ statBonus : null, xpPrize : true});
 		var regPos = config.addRegion("5 Days Ago",regionData,"Five days before the events of the first chapter");
@@ -4878,7 +4984,7 @@ GRIControl.prototype = {
 		var bm = this.battleManager;
 		var json = bm.GetJsonPersistentData();
 		var json2 = StoryControlLogic.GetJsonPersistentData(this.storyControl.runtime);
-		var masterPers = { worldVersion : bm.wdata.worldVersion, jsonGameplay : this.previousPersistenceMaster.jsonGameplay, jsonStory : json2, jsonGeneral : this.previousPersistenceMaster.jsonGeneral, jsonGameplayDimensions : this.previousPersistenceMaster.jsonGameplayDimensions};
+		var masterPers = { worldVersion : bm.wdata.worldVersion, jsonGameplay : this.previousPersistenceMaster.jsonGameplay, jsonStory : json2, jsonGeneral : this.previousPersistenceMaster.jsonGeneral, jsonGameplayDimensions : this.previousPersistenceMaster.jsonGameplayDimensions, jsonVillageDimensions : null, jsonVillageShared : null};
 		if(masterPers.jsonGameplayDimensions == null) {
 			masterPers.jsonGameplayDimensions = [];
 		}
@@ -4940,7 +5046,7 @@ GRIControlEquip.GetEquipName = function(e,bm) {
 	var itemBases = bm.itemBases;
 	var modBases = bm.modBases;
 	var skillSets = bm.wdata.skillSets;
-	if(e.generationBaseItem >= 0) {
+	if(e.generationBaseItem != null && e.generationBaseItem >= 0) {
 		var name = itemBases[e.generationBaseItem].name;
 		if(e.generationPrefixMod >= 0) {
 			name = modBases[e.generationPrefixMod].prefix + " " + name;
@@ -5237,7 +5343,7 @@ GRIControlEquip.prototype = {
 				if(value.stringData.indexOf(GRIViewEquip.equippedViewIdPart) != -1) {
 					var index1 = value.intData;
 					if(this.equipTypeVisible != index1) {
-						this.equipView.scroll.offset.y = 0;
+						this.equipView.scroll.offset.y = 10;
 					}
 					this.equipTypeVisible = index1;
 					if(UIElementManager.latestDevice != Device.MOUSE) {
@@ -5402,11 +5508,14 @@ GRIControlRegion.prototype = {
 var TitleMode = $hxEnums["TitleMode"] = { __ename__:true,__constructs__:null
 	,ACCEPT: {_hx_name:"ACCEPT",_hx_index:0,__enum__:"TitleMode",toString:$estr}
 	,NORMAL: {_hx_name:"NORMAL",_hx_index:1,__enum__:"TitleMode",toString:$estr}
+	,DIMENSION_SELECT: {_hx_name:"DIMENSION_SELECT",_hx_index:2,__enum__:"TitleMode",toString:$estr}
 };
-TitleMode.__constructs__ = [TitleMode.ACCEPT,TitleMode.NORMAL];
+TitleMode.__constructs__ = [TitleMode.ACCEPT,TitleMode.NORMAL,TitleMode.DIMENSION_SELECT];
 var GRIControlTitle = function(battleManager) {
 	this.desiredMode = -1;
+	this.characterSelectNeeded = true;
 	this.waitReset = false;
+	this.characterSelectNeeded = CrossTarget.GetLocalStorageItem(GRIControlTitle.CHARACTER_SELECTION_HAPPENED_KEY) == null;
 };
 $hxClasses["GRIControlTitle"] = GRIControlTitle;
 GRIControlTitle.__name__ = "GRIControlTitle";
@@ -5420,23 +5529,38 @@ GRIControlTitle.prototype = {
 		this.titleView = new GRIViewTitle();
 		this.titleView.view = control.view;
 		this.titleView.setupUI();
-		var _g_current = 0;
-		var _g_array = dimensions;
-		while(_g_current < _g_array.length) {
-			var _g1_value = _g_array[_g_current];
-			var _g1_key = _g_current++;
-			var index = _g1_key;
-			var value = _g1_value;
-			this.titleView.addMainButton(GRIViewTitle.DATA_CONTINUE,value.name,index);
+		if(this.characterSelectNeeded) {
+			this.titleView.addMainButton(GRIViewTitle.DATA_GOTOCHARACTER,"START",0,"Start the game");
+			var _g_current = 0;
+			var _g_array = dimensions;
+			while(_g_current < _g_array.length) {
+				var _g1_value = _g_array[_g_current];
+				var _g1_key = _g_current++;
+				var index = _g1_key;
+				var value = _g1_value;
+				this.titleView.addDimensionCharacterWidget(value.description_title,value.description_text,GRIViewTitle.DATA_CONTINUE,value.name,index,value.description_sprite);
+			}
+		} else {
+			var _g_current = 0;
+			var _g_array = dimensions;
+			while(_g_current < _g_array.length) {
+				var _g1_value = _g_array[_g_current];
+				var _g1_key = _g_current++;
+				var index = _g1_key;
+				var value = _g1_value;
+				this.titleView.addMainButton(GRIViewTitle.DATA_CONTINUE,value.name,index,value.description_text);
+			}
 		}
 		this.titleView.setupButtons();
 	}
 	,update: function() {
 		var continueV = this.control.gameStartedAfterTitle == false;
-		if(this.control.config.dimensionSave < 0) {
-			this.control.view.ui.getElementWithDataInt(GRIViewTitle.DATA_CONTINUE,1).enabled = continueV;
-		} else {
-			this.control.view.ui.elementEnabled(GRIViewTitle.DATA_CONTINUE,continueV);
+		if(this.characterSelectNeeded == false) {
+			if(this.control.config.dimensionSave < 0) {
+				this.control.view.ui.getElementWithDataInt(GRIViewTitle.DATA_CONTINUE,1).enabled = continueV;
+			} else {
+				this.control.view.ui.elementEnabled(GRIViewTitle.DATA_CONTINUE,continueV);
+			}
 		}
 		if(continueV == false) {
 			this.titleView.cursorGroup.firstElement = this.control.view.ui.getElement(GRIViewTitle.DATA_DISCORD);
@@ -5461,6 +5585,9 @@ GRIControlTitle.prototype = {
 		while(_g < _g1.length) {
 			var data = _g1[_g];
 			++_g;
+			if(data.stringData == GRIViewTitle.DATA_GOTOCHARACTER) {
+				this.titleView.changeMode(TitleMode.DIMENSION_SELECT);
+			}
 			if(data.stringData == GRIViewTitle.DATA_DISCORD) {
 				CrossTarget.OpenURL("https://discord.gg/AtGrxpM");
 			}
@@ -5477,6 +5604,7 @@ GRIControlTitle.prototype = {
 			}
 			if(data.stringData == GRIViewTitle.DATA_CONTINUE) {
 				this.desiredMode = data.intData;
+				CrossTarget.SetLocalStorageItem(GRIControlTitle.CHARACTER_SELECTION_HAPPENED_KEY,"happen",false);
 			}
 			if(data.stringData == GRIViewTitle.DATA_ACCEPT) {
 				var privacyAcceptance = "accepted";
@@ -5841,7 +5969,7 @@ var GRIView = function() {
 	this.upperCursorGroup = new CursorGroup();
 	this.mainCursorGroup = new CursorGroup();
 	this.cursorTransform = new XTransform();
-	this.ui = new UIElementManager(5);
+	this.ui = new UIElementManager(6);
 	this.uiCreation = new UICreation(this.ui);
 	this.equipView = new GRIViewEquip(this);
 	var v = this.upperCursorGroup;
@@ -5883,6 +6011,9 @@ GRIView.prototype = {
 		var biggest = this.ui.biggestHoveredElement;
 		if(biggest != null) {
 			var speed = 2.5;
+			if(UIElementManager.latestDeviceThatHovered == Device.MOUSE) {
+				speed = 300;
+			}
 			var this1 = this.cursorTransform.position;
 			var targetX = biggest.transform.position.x - 1;
 			var targetY = biggest.transform.position.y - 1;
@@ -5931,8 +6062,16 @@ GRIView.prototype = {
 		this.ui.elementVisibility(tab,access);
 	}
 	,render: function(buttonBindings) {
+		if(this.loading) {
+			XTextRender.drawTextSingleLine("LOADING","main16",Renderer.width / 2,Renderer.height / 2,0.5,0.5,GRIView.COLOR_TEXT_NORMAL,null,0,-1);
+			return;
+		}
 		this.ui.renderElementsInLayer(0);
 		this.ui.renderElementsInLayer(1);
+		var biggest = this.ui.biggestHoveredElement;
+		if(biggest != null) {
+			Renderer.drawRect(this.cursorTransform,GRIView.COLOR_TEXT_NORMAL,1,null);
+		}
 		var map = this.ui.keyboardManager.buttonPressToElementTrigger;
 		var _g_map = map;
 		var _g_keys = map.keys();
@@ -5966,10 +6105,6 @@ GRIView.prototype = {
 		this.ui.renderElementsInLayer(2);
 		this.ui.renderElementsInLayer(3);
 		this.ui.renderElementsInLayer(4);
-		var biggest = this.ui.biggestHoveredElement;
-		if(biggest != null) {
-			Renderer.drawRect(this.cursorTransform,GRIView.COLOR_TEXT_NORMAL,1,null);
-		}
 	}
 	,backgroundElement: function(layoutId,archetype,tag,fitChildren) {
 		if(fitChildren == null) {
@@ -6127,7 +6262,7 @@ GRIView.prototype = {
 		if(this.ui.invisibleTags.indexOf("dialog") != -1 == false) {
 			this.ui.invisibleTags.push("dialog");
 		}
-		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI/GRIView.hx", lineNumber : 447, className : "GRIView", methodName : "endDialog"});
+		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI/GRIView.hx", lineNumber : 461, className : "GRIView", methodName : "endDialog"});
 		if(this.ui.keyboardManager.currentCursorGroup == this.dialogCursorGroup) {
 			this.ui.returnCursorGroup();
 		}
@@ -6146,6 +6281,9 @@ GRIView.prototype = {
 			var self = text.textPivot;
 			self.x = 0;
 			self.y = 0.5;
+		}
+		if(archetype == GRIView.ARCHETYPE_SIMPLE_LARGE) {
+			text.textFont = "main16";
 		}
 		text.style.color = GRIView.COLOR_TEXT_NORMAL;
 		if(archetype == GRIView.ARCHETYPE_HEADER) {
@@ -6371,6 +6509,14 @@ GRIView.prototype = {
 		}
 		if(tag != null) {
 			button.tags.push(tag);
+		}
+		if(button.stylePressed == null) {
+			button.stylePressed = new Style();
+			button.stylePressed.borderColor = button.style.borderColor;
+			button.stylePressed.border = button.style.border;
+			button.stylePressed.fill = true;
+			button.stylePressed.color = button.style.colorText;
+			button.stylePressed.colorText = GRIView.COLOR_BACKGROUND;
 		}
 		if(layoutId != null) {
 			this.uiCreation.addElementInLayoutId(button,layoutId);
@@ -6759,6 +6905,7 @@ GRIViewEquip.prototype = {
 				var specialHeaderText;
 				var specialHeaderIcon;
 				this.view.uiCreation.tags.push(GRIViewEquip.TAG_EQUIPBUTTON_SPECIALWIDGET);
+				this.view.uiCreation.activeLayer = GRIView.LAYER_DEFAULT + 1;
 				var e = new UIElement();
 				e.style.fill = true;
 				e.style.color = GRIView.COLOR_BACKGROUND_GRAY;
@@ -6800,6 +6947,7 @@ GRIViewEquip.prototype = {
 				e3.style.color = 11184810;
 				this.view.uiCreation.addWithOffset(e3,element,0,0,217,-8);
 				specialHeaderIcon = e3;
+				this.view.uiCreation.activeLayer = GRIView.LAYER_DEFAULT;
 				this.equipmentViews.push({ mainName : element, mainButton : element, specialElementIcon : specialHeaderIcon, specialElementText : specialHeaderText, specialHeader : specialHeader, tag : viewTag});
 				this.equipmentTags();
 			}
@@ -6880,18 +7028,23 @@ GRIViewMemoryTab.prototype = {
 			mw.parent = parent;
 			view.uiCreation.addElementInLayoutId(parent,GRIViewMemoryTab.LAYOUT_MEMORY_BUTTONS,true);
 			mw.button1 = view.addButton("","Button1",GRIView.ARCHETYPE_BUTTON_REGION,null,null,this.cursorGroup);
-			view.uiCreation.offsetElement(mw.button1,parent,0,0.5,440,0);
+			view.uiCreation.offsetElement(mw.button1,parent,0,0.5,440,0,false,false);
 			mw.button2 = view.addButton("","Resume",GRIView.ARCHETYPE_BUTTON_REGION,null,null,this.cursorGroup);
-			view.uiCreation.offsetElement(mw.button2,parent,0,0.5,280,0);
+			view.uiCreation.offsetElement(mw.button2,parent,0,0.5,280,0,false,false);
 			mw.cutsceneTitle = view.addText("","Cutscene",GRIView.ARCHETYPE_HEADER_TIMID,null);
 			var self1 = mw.cutsceneTitle.textPivot;
 			self1.x = 0;
 			self1.y = 0.5;
 			view.uiCreation.addWithOffset(mw.cutsceneTitle,parent,0,0.5,20,0);
+			mw.button1.mask = this.scroll.viewport.transform;
+			mw.button2.mask = this.scroll.viewport.transform;
+			mw.cutsceneTitle.mask = this.scroll.viewport.transform;
+			mw.button2.visible = false;
 			this.memoryWidgets.push(mw);
 		}
 		this.memoryWidgets[buttonPos].cutsceneTitle.text = label;
 		this.memoryWidgets[buttonPos].button2.visible = resumable;
+		this.memoryWidgets[buttonPos].button2.enabled = resumable;
 		this.memoryWidgets[buttonPos].button2.data.stringData = GRIViewMemoryTab.DATA_RESUME;
 		this.memoryWidgets[buttonPos].button2.data.intData = storyId;
 		this.memoryWidgets[buttonPos].button1.data.intData = storyId;
@@ -7159,6 +7312,9 @@ GRIViewTitle.prototype = {
 	changeMode: function(mode) {
 		this.view.ui.tagVisibility(GRIViewTitle.TAG_TITLE_MAIN,mode == TitleMode.NORMAL);
 		this.view.ui.tagVisibility(GRIViewTitle.TAG_TITLE_ACCEPT,mode == TitleMode.ACCEPT);
+		this.view.ui.tagVisibility(GRIViewTitle.TAG_TITLE_DIMENSION,mode == TitleMode.DIMENSION_SELECT);
+		this.view.ui.tagVisibility(GRIViewTitle.TAG_TITLE_LOGO,mode != TitleMode.DIMENSION_SELECT);
+		this.view.ui.genUI.updateAll();
 	}
 	,addMainButtonToTop: function(id,label) {
 	}
@@ -7168,18 +7324,49 @@ GRIViewTitle.prototype = {
 		var v = this.view.tabCursorGroup;
 		this.cursorGroup.noElementActivateGroup.set(Direction.NORTH,v);
 		this.view.uiCreation.singleTag(GRIView.tagTabTitle);
+		this.view.uiCreation.tags.push(GRIViewTitle.TAG_TITLE_LOGO);
 		var logo = this.view.uiCreation.createImageElement(Sprite.create("logo",420,360),420,360);
 		this.view.uiCreation.addElementInLayoutId(logo,"titlelogo");
-		var e = this.view.addText("","Version: 0.11r",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		var e = this.view.addText("","Version: 0.12r",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-130);
 		var e = this.view.addText("","Developed by Pedro Gabriel Fonteles Furtado",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-110);
+		HxOverrides.remove(this.view.uiCreation.tags,GRIViewTitle.TAG_TITLE_LOGO);
 	}
-	,addMainButton: function(id,label,intData) {
+	,addMainButton: function(id,label,intData,description) {
 		this.view.uiCreation.singleTag(GRIView.tagTabTitle);
 		this.view.uiCreation.tags.push(GRIViewTitle.TAG_TITLE_MAIN);
 		var a = this.view.addButton(id,label,null,GRIViewTitle.LAYOUT_BUTTON_TITLE,null,this.cursorGroup);
 		a.data.intData = intData;
+	}
+	,addDimensionCharacterWidget: function(desc_title,desc_text,button_id,button_text,button_data1,sprite) {
+		this.view.uiCreation.singleTag(GRIViewTitle.TAG_TITLE_DIMENSION);
+		var e = new UIElement();
+		var self = e.transform.size;
+		self.x = 550;
+		self.y = 130;
+		this.view.uiCreation.addElementInLayoutId(e,GRIViewTitle.LAYOUT_CHARACTER_SELECTION);
+		var icon = this.view.uiCreation.createImageElement(sprite,94,94);
+		this.view.uiCreation.addWithOffset(icon,e,0,0,0,0);
+		var description_t = this.view.addText("",desc_title,GRIView.ARCHETYPE_SIMPLE_LARGE,null);
+		var self = description_t.textPivot;
+		self.x = 0;
+		self.y = 0;
+		var self = description_t.transform.size;
+		self.x = 432;
+		self.y = 44;
+		this.view.uiCreation.addWithOffset(description_t,e,0,0,108,-4);
+		var description_tex = this.view.addText("",desc_text,GRIView.ARCHETYPE_SIMPLE_MEDIUM,null);
+		var self = description_tex.textPivot;
+		self.x = 0;
+		self.y = 0;
+		var self = description_tex.transform.size;
+		self.x = 432;
+		self.y = 44;
+		this.view.uiCreation.addWithOffset(description_tex,e,0,0,108,19);
+		var b = this.view.addButton(button_id,button_text,null,null,null,this.cursorGroup);
+		b.data.intData = button_data1;
+		this.view.uiCreation.offsetElement(b,e,0,0,405,80);
 	}
 	,setupButtons: function() {
 		this.view.uiCreation.singleTag(GRIView.tagTabTitle);
@@ -7215,7 +7402,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild(("0.11r" + platform));
+            gameanalytics.GameAnalytics.configureBuild(("0.12r" + platform));
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -7325,6 +7512,9 @@ GenUIIntegration.prototype = {
 			var _g1_key = _g_current++;
 			var index = _g1_key;
 			var value = _g1_value;
+			if(this.ui.isVisible(value) == false) {
+				continue;
+			}
 			if(value.visible == false) {
 				continue;
 			}
@@ -8018,16 +8208,205 @@ JsonParser_$1.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,__class__: JsonParser_$1
 });
-var JsonParser_$100 = function(errors,putils,errorType) {
+var JsonParser_$101 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_100"] = JsonParser_$100;
-JsonParser_$100.__name__ = "JsonParser_100";
-JsonParser_$100.__super__ = json2object_reader_BaseParser;
-JsonParser_$100.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_101"] = JsonParser_$101;
+JsonParser_$101.__name__ = "JsonParser_101";
+JsonParser_$101.__super__ = json2object_reader_BaseParser;
+JsonParser_$101.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ worldVersion : Int, progressionData : Map<String, StoryProgress>, currentStoryId : String }",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["currentStoryId","progressionData","worldVersion"],[false,false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "currentStoryId":
+				this.value.currentStoryId = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currentStoryId",assigned,this.value.currentStoryId,pos);
+				break;
+			case "progressionData":
+				this.value.progressionData = this.loadObjectField(($_=new JsonParser_$103(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"progressionData",assigned,this.value.progressionData,pos);
+				break;
+			case "worldVersion":
+				this.value.worldVersion = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"worldVersion",assigned,this.value.worldVersion,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		return { currentStoryId : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), progressionData : new JsonParser_$103([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+	}
+	,__class__: JsonParser_$101
+});
+var JsonParser_$103 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_103"] = JsonParser_$103;
+JsonParser_$103.__name__ = "JsonParser_103";
+JsonParser_$103.__super__ = json2object_reader_BaseParser;
+JsonParser_$103.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, StoryProgress>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		this.value = new haxe_ds_StringMap();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			var this1 = this.value;
+			var key;
+			try {
+				var key1 = new JsonParser_$35(this.errors,this.putils,2);
+				var _this = this.putils;
+				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
+			} catch( _g1 ) {
+				haxe_NativeStackTrace.lastError = _g1;
+				var _g2 = haxe_Exception.caught(_g1).unwrap();
+				if(js_Boot.__instanceof(_g2,json2object_InternalError)) {
+					var e = _g2;
+					if(e != json2object_InternalError.ParsingThrow) {
+						throw haxe_Exception.thrown(e);
+					}
+					continue;
+				} else {
+					throw _g1;
+				}
+			}
+			var value;
+			try {
+				value = new JsonParser_$105(this.errors,this.putils,2).loadJson(field.value,field.name);
+			} catch( _g3 ) {
+				haxe_NativeStackTrace.lastError = _g3;
+				var _g4 = haxe_Exception.caught(_g3).unwrap();
+				if(js_Boot.__instanceof(_g4,json2object_InternalError)) {
+					var e1 = _g4;
+					if(e1 != json2object_InternalError.ParsingThrow) {
+						throw haxe_Exception.thrown(e1);
+					}
+					continue;
+				} else {
+					throw _g3;
+				}
+			}
+			this1.h[key] = value;
+		}
+	}
+	,getAuto: function() {
+		return new JsonParser_$103([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$103
+});
+var JsonParser_$105 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_105"] = JsonParser_$105;
+JsonParser_$105.__name__ = "JsonParser_105";
+JsonParser_$105.__super__ = json2object_reader_BaseParser;
+JsonParser_$105.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ wantToWatch : Bool, visibleSeen : Bool, visible : Bool, timesCompleted : Int, index : Int }",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["index","timesCompleted","visible","visibleSeen","wantToWatch"],[false,false,false,false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "index":
+				this.value.index = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"index",assigned,this.value.index,pos);
+				break;
+			case "timesCompleted":
+				this.value.timesCompleted = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timesCompleted",assigned,this.value.timesCompleted,pos);
+				break;
+			case "visible":
+				this.value.visible = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visible",assigned,this.value.visible,pos);
+				break;
+			case "visibleSeen":
+				this.value.visibleSeen = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visibleSeen",assigned,this.value.visibleSeen,pos);
+				break;
+			case "wantToWatch":
+				this.value.wantToWatch = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"wantToWatch",assigned,this.value.wantToWatch,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		return { index : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesCompleted : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibleSeen : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), wantToWatch : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+	}
+	,__class__: JsonParser_$105
+});
+var JsonParser_$106 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_106"] = JsonParser_$106;
+JsonParser_$106.__name__ = "JsonParser_106";
+JsonParser_$106.__super__ = json2object_reader_BaseParser;
+JsonParser_$106.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Cutscene>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$108(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$106([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$106
+});
+var JsonParser_$108 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_108"] = JsonParser_$108;
+JsonParser_$108.__name__ = "JsonParser_108";
+JsonParser_$108.__super__ = json2object_reader_BaseParser;
+JsonParser_$108.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ visibilityScript : String, title : String, messages : Array<Message>, id : String, actionLabel : String }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8051,7 +8430,7 @@ JsonParser_$100.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.id = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"id",assigned,this.value.id,pos);
 				break;
 			case "messages":
-				this.value.messages = this.loadObjectField(($_=new JsonParser_$101(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"messages",assigned,this.value.messages,pos);
+				this.value.messages = this.loadObjectField(($_=new JsonParser_$109(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"messages",assigned,this.value.messages,pos);
 				break;
 			case "title":
 				this.value.title = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"title",assigned,this.value.title,pos);
@@ -8066,20 +8445,20 @@ JsonParser_$100.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { actionLabel : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), id : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), messages : new JsonParser_$101([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), title : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibilityScript : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { actionLabel : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), id : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), messages : new JsonParser_$109([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), title : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibilityScript : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$100
+	,__class__: JsonParser_$108
 });
-var JsonParser_$101 = function(errors,putils,errorType) {
+var JsonParser_$109 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_101"] = JsonParser_$101;
-JsonParser_$101.__name__ = "JsonParser_101";
-JsonParser_$101.__super__ = json2object_reader_BaseParser;
-JsonParser_$101.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_109"] = JsonParser_$109;
+JsonParser_$109.__name__ = "JsonParser_109";
+JsonParser_$109.__super__ = json2object_reader_BaseParser;
+JsonParser_$109.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Message>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8088,23 +8467,48 @@ JsonParser_$101.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$103(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$111(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$101([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$109([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$101
+	,__class__: JsonParser_$109
 });
-var JsonParser_$103 = function(errors,putils,errorType) {
+var JsonParser_$11 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_103"] = JsonParser_$103;
-JsonParser_$103.__name__ = "JsonParser_103";
-JsonParser_$103.__super__ = json2object_reader_BaseParser;
-JsonParser_$103.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_11"] = JsonParser_$11;
+JsonParser_$11.__name__ = "JsonParser_11";
+JsonParser_$11.__super__ = json2object_reader_BaseParser;
+JsonParser_$11.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<EquipmentLevel>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$41(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$11([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$11
+});
+var JsonParser_$111 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_111"] = JsonParser_$111;
+JsonParser_$111.__name__ = "JsonParser_111";
+JsonParser_$111.__super__ = json2object_reader_BaseParser;
+JsonParser_$111.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ speaker : String, script : String, body : String }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8139,32 +8543,7 @@ JsonParser_$103.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { body : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), script : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), speaker : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$103
-});
-var JsonParser_$11 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_11"] = JsonParser_$11;
-JsonParser_$11.__name__ = "JsonParser_11";
-JsonParser_$11.__super__ = json2object_reader_BaseParser;
-JsonParser_$11.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<EquipmentLevel>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$41(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
-	}
-	,getAuto: function() {
-		return new JsonParser_$11([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$11
+	,__class__: JsonParser_$111
 });
 var JsonParser_$12 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -8842,37 +9221,37 @@ JsonParser_$45.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$79(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$87(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
 		return new JsonParser_$45([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
 	,__class__: JsonParser_$45
 });
-var JsonParser_$46 = function(errors,putils,errorType) {
+var JsonParser_$47 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_46"] = JsonParser_$46;
-JsonParser_$46.__name__ = "JsonParser_46";
-JsonParser_$46.__super__ = json2object_reader_BaseParser;
-JsonParser_$46.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_47"] = JsonParser_$47;
+JsonParser_$47.__name__ = "JsonParser_47";
+JsonParser_$47.__super__ = json2object_reader_BaseParser;
+JsonParser_$47.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Equipment>",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<ConditionalAttributeBonus>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$61(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$80(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$47([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$46
+	,__class__: JsonParser_$47
 });
 var JsonParser_$48 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -8885,6 +9264,31 @@ JsonParser_$48.__name__ = "JsonParser_48";
 JsonParser_$48.__super__ = json2object_reader_BaseParser;
 JsonParser_$48.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Equipment>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$63(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$48
+});
+var JsonParser_$50 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_50"] = JsonParser_$50;
+JsonParser_$50.__name__ = "JsonParser_50";
+JsonParser_$50.__super__ = json2object_reader_BaseParser;
+JsonParser_$50.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"Array<EquipmentSet>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
@@ -8892,23 +9296,23 @@ JsonParser_$48.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$59(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$61(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
-		return new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$50([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$48
+	,__class__: JsonParser_$50
 });
-var JsonParser_$49 = function(errors,putils,errorType) {
+var JsonParser_$51 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_49"] = JsonParser_$49;
-JsonParser_$49.__name__ = "JsonParser_49";
-JsonParser_$49.__super__ = json2object_reader_BaseParser;
-JsonParser_$49.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_51"] = JsonParser_$51;
+JsonParser_$51.__name__ = "JsonParser_51";
+JsonParser_$51.__super__ = json2object_reader_BaseParser;
+JsonParser_$51.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"ActorReference",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -8943,31 +9347,6 @@ JsonParser_$49.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		value.pos = new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 		return value;
 	}
-	,__class__: JsonParser_$49
-});
-var JsonParser_$51 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_51"] = JsonParser_$51;
-JsonParser_$51.__name__ = "JsonParser_51";
-JsonParser_$51.__super__ = json2object_reader_BaseParser;
-JsonParser_$51.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Int>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$4(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
-	}
-	,getAuto: function() {
-		return new JsonParser_$51([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
 	,__class__: JsonParser_$51
 });
 var JsonParser_$53 = function(errors,putils,errorType) {
@@ -8981,14 +9360,14 @@ JsonParser_$53.__name__ = "JsonParser_53";
 JsonParser_$53.__super__ = json2object_reader_BaseParser;
 JsonParser_$53.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<SkillUsable>",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Int>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
 		this.value = null;
 	}
 	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$34(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$4(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
 	}
 	,getAuto: function() {
 		return new JsonParser_$53([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
@@ -9005,6 +9384,31 @@ $hxClasses["JsonParser_55"] = JsonParser_$55;
 JsonParser_$55.__name__ = "JsonParser_55";
 JsonParser_$55.__super__ = json2object_reader_BaseParser;
 JsonParser_$55.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<SkillUsable>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$34(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$55([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$55
+});
+var JsonParser_$57 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_57"] = JsonParser_$57;
+JsonParser_$57.__name__ = "JsonParser_57";
+JsonParser_$57.__super__ = json2object_reader_BaseParser;
+JsonParser_$57.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ value : Int, scaling : Scaling, lastUsedBaseAttribute : Int, cap : Int, calculatedMax : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -9031,7 +9435,7 @@ JsonParser_$55.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				this.value.lastUsedBaseAttribute = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"lastUsedBaseAttribute",assigned,this.value.lastUsedBaseAttribute,pos);
 				break;
 			case "scaling":
-				this.value.scaling = this.loadObjectField(($_=new JsonParser_$57(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"scaling",assigned,this.value.scaling,pos);
+				this.value.scaling = this.loadObjectField(($_=new JsonParser_$59(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"scaling",assigned,this.value.scaling,pos);
 				break;
 			case "value":
 				this.value.value = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"value",assigned,this.value.value,pos);
@@ -9043,20 +9447,20 @@ JsonParser_$55.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { calculatedMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), cap : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), lastUsedBaseAttribute : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), scaling : new JsonParser_$57([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { calculatedMax : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), cap : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), lastUsedBaseAttribute : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), scaling : new JsonParser_$59([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$55
+	,__class__: JsonParser_$57
 });
-var JsonParser_$57 = function(errors,putils,errorType) {
+var JsonParser_$59 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_57"] = JsonParser_$57;
-JsonParser_$57.__name__ = "JsonParser_57";
-JsonParser_$57.__super__ = json2object_reader_BaseParser;
-JsonParser_$57.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_59"] = JsonParser_$59;
+JsonParser_$59.__name__ = "JsonParser_59";
+JsonParser_$59.__super__ = json2object_reader_BaseParser;
+JsonParser_$59.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ minimumIncrement : Int, initialMultiplication : Bool, initial : Int, exponential : Bool, data1 : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -9097,18 +9501,18 @@ JsonParser_$57.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { data1 : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), exponential : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initial : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), initialMultiplication : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), minimumIncrement : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$57
+	,__class__: JsonParser_$59
 });
-var JsonParser_$59 = function(errors,putils,errorType) {
+var JsonParser_$61 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_59"] = JsonParser_$59;
-JsonParser_$59.__name__ = "JsonParser_59";
-JsonParser_$59.__super__ = json2object_reader_BaseParser;
-JsonParser_$59.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_61"] = JsonParser_$61;
+JsonParser_$61.__name__ = "JsonParser_61";
+JsonParser_$61.__super__ = json2object_reader_BaseParser;
+JsonParser_$61.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ equipmentSlots : Array<Int> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -9135,18 +9539,18 @@ JsonParser_$59.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { equipmentSlots : new JsonParser_$12([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$59
+	,__class__: JsonParser_$61
 });
-var JsonParser_$61 = function(errors,putils,errorType) {
+var JsonParser_$63 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_61"] = JsonParser_$61;
-JsonParser_$61.__name__ = "JsonParser_61";
-JsonParser_$61.__super__ = json2object_reader_BaseParser;
-JsonParser_$61.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_63"] = JsonParser_$63;
+JsonParser_$63.__name__ = "JsonParser_63";
+JsonParser_$63.__super__ = json2object_reader_BaseParser;
+JsonParser_$63.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ type : Int, seen : Int, requiredAttributes : Map<String, Int>, ?outsideSystems : Null<Map<String, Int>>, ?generationVariationsMultiplier : Null<Map<String, Int>>, ?generationVariations : Null<Map<String, Int>>, ?generationSuffixModSeed : Null<Int>, ?generationSuffixMod : Null<Int>, ?generationPrefixModSeed : Null<Int>, ?generationPrefixMod : Null<Int>, ?generationLevel : Null<Int>, ?generationBaseItem : Null<Int>, attributes : Map<String, Int>, ?attributeMultiplier : Null<Map<String, Int>> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -9214,7 +9618,7 @@ JsonParser_$61.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { attributeMultiplier : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributes : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationBaseItem : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationLevel : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixMod : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationPrefixModSeed : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixMod : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationSuffixModSeed : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariations : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), generationVariationsMultiplier : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), outsideSystems : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), requiredAttributes : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), seen : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), type : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$61
+	,__class__: JsonParser_$63
 });
 var JsonParser_$7 = function(errors,putils,errorType) {
 	if(errorType == null) {
@@ -9242,7 +9646,7 @@ JsonParser_$7.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			var field = o[_g];
 			++_g;
 			if(field.name == "currencies") {
-				this.value.currencies = this.loadObjectField(($_=new JsonParser_$81(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currencies",assigned,this.value.currencies,pos);
+				this.value.currencies = this.loadObjectField(($_=new JsonParser_$89(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currencies",assigned,this.value.currencies,pos);
 			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
@@ -9250,20 +9654,259 @@ JsonParser_$7.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { currencies : new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { currencies : new JsonParser_$89([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$7
 });
-var JsonParser_$79 = function(errors,putils,errorType) {
+var JsonParser_$80 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_79"] = JsonParser_$79;
-JsonParser_$79.__name__ = "JsonParser_79";
-JsonParser_$79.__super__ = json2object_reader_BaseParser;
-JsonParser_$79.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_80"] = JsonParser_$80;
+JsonParser_$80.__name__ = "JsonParser_80";
+JsonParser_$80.__super__ = json2object_reader_BaseParser;
+JsonParser_$80.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"ConditionalAttributeBonus",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["AttributeBonuses","condition"],[false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "AttributeBonuses":
+				this.value.AttributeBonuses = this.loadObjectField(($_=new JsonParser_$81(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"AttributeBonuses",assigned,this.value.AttributeBonuses,pos);
+				break;
+			case "condition":
+				this.value.condition = this.loadObjectField(($_=new JsonParser_$82(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"condition",assigned,this.value.condition,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		var value = Object.create(ConditionalAttributeBonus.prototype);
+		value.AttributeBonuses = new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.condition = new JsonParser_$82([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return value;
+	}
+	,__class__: JsonParser_$80
+});
+var JsonParser_$81 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_81"] = JsonParser_$81;
+JsonParser_$81.__name__ = "JsonParser_81";
+JsonParser_$81.__super__ = json2object_reader_BaseParser;
+JsonParser_$81.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"Array<AttributeBonus>",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonArray: function(a,pos,variable) {
+		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$85(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	}
+	,getAuto: function() {
+		return new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$81
+});
+var JsonParser_$82 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_82"] = JsonParser_$82;
+JsonParser_$82.__name__ = "JsonParser_82";
+JsonParser_$82.__super__ = json2object_reader_BaseParser;
+JsonParser_$82.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"BMCondition",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["cType","data1","data2","data3","dataS1","dataS2","dataS3"],[false,false,false,false,false,false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "cType":
+				this.value.cType = this.loadObjectField(($_=new JsonParser_$83(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"cType",assigned,this.value.cType,pos);
+				break;
+			case "data1":
+				this.value.data1 = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"data1",assigned,this.value.data1,pos);
+				break;
+			case "data2":
+				this.value.data2 = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"data2",assigned,this.value.data2,pos);
+				break;
+			case "data3":
+				this.value.data3 = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"data3",assigned,this.value.data3,pos);
+				break;
+			case "dataS1":
+				this.value.dataS1 = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"dataS1",assigned,this.value.dataS1,pos);
+				break;
+			case "dataS2":
+				this.value.dataS2 = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"dataS2",assigned,this.value.dataS2,pos);
+				break;
+			case "dataS3":
+				this.value.dataS3 = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"dataS3",assigned,this.value.dataS3,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		var value = Object.create(BMCondition.prototype);
+		value.cType = new JsonParser_$83([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.data1 = new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.data2 = new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.data3 = new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.dataS1 = new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.dataS2 = new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		value.dataS3 = new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return value;
+	}
+	,__class__: JsonParser_$82
+});
+var JsonParser_$83 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_83"] = JsonParser_$83;
+JsonParser_$83.__name__ = "JsonParser_83";
+JsonParser_$83.__super__ = json2object_reader_BaseParser;
+JsonParser_$83.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"BMConditionType",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonString: function(s,pos,variable) {
+		if(s == "ITEM_IN_SLOT_IS_OF_ITEM_TYPE") {
+			this.value = BMConditionType.ITEM_IN_SLOT_IS_OF_ITEM_TYPE;
+		} else {
+			this.errors.push(json2object_Error.IncorrectEnumValue(variable,"BMConditionType",pos));
+			this.parsingThrow();
+		}
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		if(o.length != 1) {
+			this.errors.push(json2object_Error.IncorrectType(variable,"BMConditionType",pos));
+			this.parsingThrow();
+		} else {
+			var field = o[0];
+			var _g = o[0].value.value;
+			if(_g._hx_index == 2) {
+				var s0 = _g.fields;
+				if(field.name == "ITEM_IN_SLOT_IS_OF_ITEM_TYPE") {
+					if(s0.length == 0) {
+						this.value = BMConditionType.ITEM_IN_SLOT_IS_OF_ITEM_TYPE;
+					} else {
+						this.errors.push(json2object_Error.InvalidEnumConstructor(field.name,"BMConditionType",pos));
+						this.parsingThrow();
+					}
+				} else {
+					this.errors.push(json2object_Error.IncorrectEnumValue(variable,"BMConditionType",pos));
+					this.parsingThrow();
+				}
+			} else {
+				this.errors.push(json2object_Error.IncorrectType(field.name,"BMConditionType",this.putils.convertPosition(field.value.pos)));
+				this.parsingThrow();
+			}
+		}
+	}
+	,getAuto: function() {
+		return new JsonParser_$83([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	}
+	,__class__: JsonParser_$83
+});
+var JsonParser_$85 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_85"] = JsonParser_$85;
+JsonParser_$85.__name__ = "JsonParser_85";
+JsonParser_$85.__super__ = json2object_reader_BaseParser;
+JsonParser_$85.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ rank : Int, attributes : Map<String, Int>, attributeMultiplier : Map<String, Int> }",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["attributeMultiplier","attributes","rank"],[false,false,false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			switch(field.name) {
+			case "attributeMultiplier":
+				this.value.attributeMultiplier = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributeMultiplier",assigned,this.value.attributeMultiplier,pos);
+				break;
+			case "attributes":
+				this.value.attributes = this.loadObjectField(($_=new JsonParser_$43(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"attributes",assigned,this.value.attributes,pos);
+				break;
+			case "rank":
+				this.value.rank = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"rank",assigned,this.value.rank,pos);
+				break;
+			default:
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		return { attributeMultiplier : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributes : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), rank : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+	}
+	,__class__: JsonParser_$85
+});
+var JsonParser_$87 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_87"] = JsonParser_$87;
+JsonParser_$87.__name__ = "JsonParser_87";
+JsonParser_$87.__super__ = json2object_reader_BaseParser;
+JsonParser_$87.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
 		this.errors.push(json2object_Error.IncorrectType(variable,"{ uniqueId : String, strength : Int, ?noble : Null<Bool>, mulStats : Map<String, Int>, duration : Int, ?debuff : Null<Bool>, addStats : Map<String, Int> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
@@ -9310,191 +9953,6 @@ JsonParser_$79.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	,getAuto: function() {
 		return { addStats : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), debuff : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), duration : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mulStats : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), noble : new JsonParser_$3([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), strength : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), uniqueId : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$79
-});
-var JsonParser_$81 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_81"] = JsonParser_$81;
-JsonParser_$81.__name__ = "JsonParser_81";
-JsonParser_$81.__super__ = json2object_reader_BaseParser;
-JsonParser_$81.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, CurrencyPersistent>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		this.value = new haxe_ds_StringMap();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			var this1 = this.value;
-			var key;
-			try {
-				var key1 = new JsonParser_$35(this.errors,this.putils,2);
-				var _this = this.putils;
-				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
-			} catch( _g1 ) {
-				haxe_NativeStackTrace.lastError = _g1;
-				var _g2 = haxe_Exception.caught(_g1).unwrap();
-				if(js_Boot.__instanceof(_g2,json2object_InternalError)) {
-					var e = _g2;
-					if(e != json2object_InternalError.ParsingThrow) {
-						throw haxe_Exception.thrown(e);
-					}
-					continue;
-				} else {
-					throw _g1;
-				}
-			}
-			var value;
-			try {
-				value = new JsonParser_$83(this.errors,this.putils,2).loadJson(field.value,field.name);
-			} catch( _g3 ) {
-				haxe_NativeStackTrace.lastError = _g3;
-				var _g4 = haxe_Exception.caught(_g3).unwrap();
-				if(js_Boot.__instanceof(_g4,json2object_InternalError)) {
-					var e1 = _g4;
-					if(e1 != json2object_InternalError.ParsingThrow) {
-						throw haxe_Exception.thrown(e1);
-					}
-					continue;
-				} else {
-					throw _g3;
-				}
-			}
-			this1.h[key] = value;
-		}
-	}
-	,getAuto: function() {
-		return new JsonParser_$81([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
-	}
-	,__class__: JsonParser_$81
-});
-var JsonParser_$83 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_83"] = JsonParser_$83;
-JsonParser_$83.__name__ = "JsonParser_83";
-JsonParser_$83.__super__ = json2object_reader_BaseParser;
-JsonParser_$83.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ visible : Bool, value : Int }",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["value","visible"],[false,false]);
-		this.value = this.getAuto();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			switch(field.name) {
-			case "value":
-				this.value.value = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"value",assigned,this.value.value,pos);
-				break;
-			case "visible":
-				this.value.visible = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visible",assigned,this.value.visible,pos);
-				break;
-			default:
-				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
-			}
-		}
-		this.objectErrors(assigned,pos);
-	}
-	,getAuto: function() {
-		return { value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
-	}
-	,__class__: JsonParser_$83
-});
-var JsonParser_$85 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_85"] = JsonParser_$85;
-JsonParser_$85.__name__ = "JsonParser_85";
-JsonParser_$85.__super__ = json2object_reader_BaseParser;
-JsonParser_$85.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievementData : AchievementsPersistence }",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["achievementData"],[false]);
-		this.value = this.getAuto();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			if(field.name == "achievementData") {
-				this.value.achievementData = this.loadObjectField(($_=new JsonParser_$87(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievementData",assigned,this.value.achievementData,pos);
-			} else {
-				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
-			}
-		}
-		this.objectErrors(assigned,pos);
-	}
-	,getAuto: function() {
-		return { achievementData : new JsonParser_$87([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
-	}
-	,__class__: JsonParser_$85
-});
-var JsonParser_$87 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
-	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
-};
-$hxClasses["JsonParser_87"] = JsonParser_$87;
-JsonParser_$87.__name__ = "JsonParser_87";
-JsonParser_$87.__super__ = json2object_reader_BaseParser;
-JsonParser_$87.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievs : Map<String, AchievementPersistence> }",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
-	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
-	}
-	,loadJsonObject: function(o,pos,variable) {
-		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["achievs"],[false]);
-		this.value = this.getAuto();
-		var _g = 0;
-		while(_g < o.length) {
-			var field = o[_g];
-			++_g;
-			if(field.name == "achievs") {
-				this.value.achievs = this.loadObjectField(($_=new JsonParser_$89(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievs",assigned,this.value.achievs,pos);
-			} else {
-				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
-			}
-		}
-		this.objectErrors(assigned,pos);
-	}
-	,getAuto: function() {
-		return { achievs : new JsonParser_$89([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
-	}
 	,__class__: JsonParser_$87
 });
 var JsonParser_$89 = function(errors,putils,errorType) {
@@ -9508,7 +9966,7 @@ JsonParser_$89.__name__ = "JsonParser_89";
 JsonParser_$89.__super__ = json2object_reader_BaseParser;
 JsonParser_$89.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, AchievementPersistence>",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, CurrencyPersistent>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9574,7 +10032,7 @@ JsonParser_$9.__name__ = "JsonParser_9";
 JsonParser_$9.__super__ = json2object_reader_BaseParser;
 JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ xp : ScalingResource, viewAux : Int, ?usableSkills : Null<Array<SkillUsable>>, ?turnRecharge : Null<Array<Int>>, reference : ActorReference, level : Int, ?equipmentSets : Null<Array<EquipmentSet>>, equipment : Array<Equipment>, ?chosenEquipSet : Null<Int>, ?buffs : Null<Array<Buff>>, attributesCalculated : Map<String, Int>, attributesBase : Map<String, Int> }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ xp : ScalingResource, viewAux : Int, ?usableSkills : Null<Array<SkillUsable>>, ?turnRecharge : Null<Array<Int>>, reference : ActorReference, level : Int, ?equipmentSets : Null<Array<EquipmentSet>>, equipment : Array<Equipment>, ?conditionalBonus : Null<Array<ConditionalAttributeBonus>>, ?chosenEquipSet : Null<Int>, ?buffs : Null<Array<Buff>>, attributesCalculated : Map<String, Int>, attributesBase : Map<String, Int> }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9582,7 +10040,7 @@ JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,loadJsonObject: function(o,pos,variable) {
 		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["attributesBase","attributesCalculated","buffs","chosenEquipSet","equipment","equipmentSets","level","reference","turnRecharge","usableSkills","viewAux","xp"],[false,false,true,true,false,true,false,false,true,true,false,false]);
+		this.objectSetupAssign(assigned,["attributesBase","attributesCalculated","buffs","chosenEquipSet","conditionalBonus","equipment","equipmentSets","level","reference","turnRecharge","usableSkills","viewAux","xp"],[false,false,true,true,true,false,true,false,false,true,true,false,false]);
 		this.value = this.getAuto();
 		var _g = 0;
 		while(_g < o.length) {
@@ -9601,29 +10059,32 @@ JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			case "chosenEquipSet":
 				this.value.chosenEquipSet = this.loadObjectField(($_=new JsonParser_$23(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"chosenEquipSet",assigned,this.value.chosenEquipSet,pos);
 				break;
+			case "conditionalBonus":
+				this.value.conditionalBonus = this.loadObjectField(($_=new JsonParser_$47(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"conditionalBonus",assigned,this.value.conditionalBonus,pos);
+				break;
 			case "equipment":
-				this.value.equipment = this.loadObjectField(($_=new JsonParser_$46(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipment",assigned,this.value.equipment,pos);
+				this.value.equipment = this.loadObjectField(($_=new JsonParser_$48(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipment",assigned,this.value.equipment,pos);
 				break;
 			case "equipmentSets":
-				this.value.equipmentSets = this.loadObjectField(($_=new JsonParser_$48(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipmentSets",assigned,this.value.equipmentSets,pos);
+				this.value.equipmentSets = this.loadObjectField(($_=new JsonParser_$50(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"equipmentSets",assigned,this.value.equipmentSets,pos);
 				break;
 			case "level":
 				this.value.level = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"level",assigned,this.value.level,pos);
 				break;
 			case "reference":
-				this.value.reference = this.loadObjectField(($_=new JsonParser_$49(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"reference",assigned,this.value.reference,pos);
+				this.value.reference = this.loadObjectField(($_=new JsonParser_$51(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"reference",assigned,this.value.reference,pos);
 				break;
 			case "turnRecharge":
-				this.value.turnRecharge = this.loadObjectField(($_=new JsonParser_$51(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"turnRecharge",assigned,this.value.turnRecharge,pos);
+				this.value.turnRecharge = this.loadObjectField(($_=new JsonParser_$53(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"turnRecharge",assigned,this.value.turnRecharge,pos);
 				break;
 			case "usableSkills":
-				this.value.usableSkills = this.loadObjectField(($_=new JsonParser_$53(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"usableSkills",assigned,this.value.usableSkills,pos);
+				this.value.usableSkills = this.loadObjectField(($_=new JsonParser_$55(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"usableSkills",assigned,this.value.usableSkills,pos);
 				break;
 			case "viewAux":
 				this.value.viewAux = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"viewAux",assigned,this.value.viewAux,pos);
 				break;
 			case "xp":
-				this.value.xp = this.loadObjectField(($_=new JsonParser_$55(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"xp",assigned,this.value.xp,pos);
+				this.value.xp = this.loadObjectField(($_=new JsonParser_$57(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"xp",assigned,this.value.xp,pos);
 				break;
 			default:
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
@@ -9632,7 +10093,7 @@ JsonParser_$9.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { attributesBase : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributesCalculated : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), buffs : new JsonParser_$45([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), chosenEquipSet : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipment : new JsonParser_$46([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipmentSets : new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reference : new JsonParser_$49([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), turnRecharge : new JsonParser_$51([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), usableSkills : new JsonParser_$53([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), viewAux : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), xp : new JsonParser_$55([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { attributesBase : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), attributesCalculated : new JsonParser_$43([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), buffs : new JsonParser_$45([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), chosenEquipSet : new JsonParser_$23([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), conditionalBonus : new JsonParser_$47([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipment : new JsonParser_$48([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), equipmentSets : new JsonParser_$50([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), level : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), reference : new JsonParser_$51([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), turnRecharge : new JsonParser_$53([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), usableSkills : new JsonParser_$55([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), viewAux : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), xp : new JsonParser_$57([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$9
 });
@@ -9647,7 +10108,7 @@ JsonParser_$91.__name__ = "JsonParser_91";
 JsonParser_$91.__super__ = json2object_reader_BaseParser;
 JsonParser_$91.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ state : Int }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ visible : Bool, value : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9655,22 +10116,27 @@ JsonParser_$91.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,loadJsonObject: function(o,pos,variable) {
 		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["state"],[false]);
+		this.objectSetupAssign(assigned,["value","visible"],[false,false]);
 		this.value = this.getAuto();
 		var _g = 0;
 		while(_g < o.length) {
 			var field = o[_g];
 			++_g;
-			if(field.name == "state") {
-				this.value.state = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"state",assigned,this.value.state,pos);
-			} else {
+			switch(field.name) {
+			case "value":
+				this.value.value = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"value",assigned,this.value.value,pos);
+				break;
+			case "visible":
+				this.value.visible = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visible",assigned,this.value.visible,pos);
+				break;
+			default:
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
 		}
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { state : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { value : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$91
 });
@@ -9685,7 +10151,7 @@ JsonParser_$93.__name__ = "JsonParser_93";
 JsonParser_$93.__super__ = json2object_reader_BaseParser;
 JsonParser_$93.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ worldVersion : Int, progressionData : Map<String, StoryProgress>, currentStoryId : String }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievementData : AchievementsPersistence }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9693,30 +10159,22 @@ JsonParser_$93.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,loadJsonObject: function(o,pos,variable) {
 		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["currentStoryId","progressionData","worldVersion"],[false,false,false]);
+		this.objectSetupAssign(assigned,["achievementData"],[false]);
 		this.value = this.getAuto();
 		var _g = 0;
 		while(_g < o.length) {
 			var field = o[_g];
 			++_g;
-			switch(field.name) {
-			case "currentStoryId":
-				this.value.currentStoryId = this.loadObjectField(($_=new JsonParser_$35(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"currentStoryId",assigned,this.value.currentStoryId,pos);
-				break;
-			case "progressionData":
-				this.value.progressionData = this.loadObjectField(($_=new JsonParser_$95(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"progressionData",assigned,this.value.progressionData,pos);
-				break;
-			case "worldVersion":
-				this.value.worldVersion = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"worldVersion",assigned,this.value.worldVersion,pos);
-				break;
-			default:
+			if(field.name == "achievementData") {
+				this.value.achievementData = this.loadObjectField(($_=new JsonParser_$95(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievementData",assigned,this.value.achievementData,pos);
+			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
 		}
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { currentStoryId : new JsonParser_$35([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), progressionData : new JsonParser_$95([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), worldVersion : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { achievementData : new JsonParser_$95([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$93
 });
@@ -9731,7 +10189,45 @@ JsonParser_$95.__name__ = "JsonParser_95";
 JsonParser_$95.__super__ = json2object_reader_BaseParser;
 JsonParser_$95.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, StoryProgress>",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ achievs : Map<String, AchievementPersistence> }",pos));
+		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+	}
+	,loadJsonNull: function(pos,variable) {
+		this.value = null;
+	}
+	,loadJsonObject: function(o,pos,variable) {
+		var assigned = new haxe_ds_StringMap();
+		this.objectSetupAssign(assigned,["achievs"],[false]);
+		this.value = this.getAuto();
+		var _g = 0;
+		while(_g < o.length) {
+			var field = o[_g];
+			++_g;
+			if(field.name == "achievs") {
+				this.value.achievs = this.loadObjectField(($_=new JsonParser_$97(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievs",assigned,this.value.achievs,pos);
+			} else {
+				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
+			}
+		}
+		this.objectErrors(assigned,pos);
+	}
+	,getAuto: function() {
+		return { achievs : new JsonParser_$97([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+	}
+	,__class__: JsonParser_$95
+});
+var JsonParser_$97 = function(errors,putils,errorType) {
+	if(errorType == null) {
+		errorType = 0;
+	}
+	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+};
+$hxClasses["JsonParser_97"] = JsonParser_$97;
+JsonParser_$97.__name__ = "JsonParser_97";
+JsonParser_$97.__super__ = json2object_reader_BaseParser;
+JsonParser_$97.prototype = $extend(json2object_reader_BaseParser.prototype,{
+	onIncorrectType: function(pos,variable) {
+		this.errors.push(json2object_Error.IncorrectType(variable,"haxe.ds.Map<String, AchievementPersistence>",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9764,7 +10260,7 @@ JsonParser_$95.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			}
 			var value;
 			try {
-				value = new JsonParser_$97(this.errors,this.putils,2).loadJson(field.value,field.name);
+				value = new JsonParser_$99(this.errors,this.putils,2).loadJson(field.value,field.name);
 			} catch( _g3 ) {
 				haxe_NativeStackTrace.lastError = _g3;
 				var _g4 = haxe_Exception.caught(_g3).unwrap();
@@ -9782,22 +10278,22 @@ JsonParser_$95.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		}
 	}
 	,getAuto: function() {
-		return new JsonParser_$95([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+		return new JsonParser_$97([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
 	}
-	,__class__: JsonParser_$95
+	,__class__: JsonParser_$97
 });
-var JsonParser_$97 = function(errors,putils,errorType) {
+var JsonParser_$99 = function(errors,putils,errorType) {
 	if(errorType == null) {
 		errorType = 0;
 	}
 	json2object_reader_BaseParser.call(this,errors,putils,errorType);
 };
-$hxClasses["JsonParser_97"] = JsonParser_$97;
-JsonParser_$97.__name__ = "JsonParser_97";
-JsonParser_$97.__super__ = json2object_reader_BaseParser;
-JsonParser_$97.prototype = $extend(json2object_reader_BaseParser.prototype,{
+$hxClasses["JsonParser_99"] = JsonParser_$99;
+JsonParser_$99.__name__ = "JsonParser_99";
+JsonParser_$99.__super__ = json2object_reader_BaseParser;
+JsonParser_$99.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ wantToWatch : Bool, visibleSeen : Bool, visible : Bool, timesCompleted : Int, index : Int }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ state : Int }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -9805,64 +10301,113 @@ JsonParser_$97.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,loadJsonObject: function(o,pos,variable) {
 		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["index","timesCompleted","visible","visibleSeen","wantToWatch"],[false,false,false,false,false]);
+		this.objectSetupAssign(assigned,["state"],[false]);
 		this.value = this.getAuto();
 		var _g = 0;
 		while(_g < o.length) {
 			var field = o[_g];
 			++_g;
-			switch(field.name) {
-			case "index":
-				this.value.index = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"index",assigned,this.value.index,pos);
-				break;
-			case "timesCompleted":
-				this.value.timesCompleted = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"timesCompleted",assigned,this.value.timesCompleted,pos);
-				break;
-			case "visible":
-				this.value.visible = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visible",assigned,this.value.visible,pos);
-				break;
-			case "visibleSeen":
-				this.value.visibleSeen = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"visibleSeen",assigned,this.value.visibleSeen,pos);
-				break;
-			case "wantToWatch":
-				this.value.wantToWatch = this.loadObjectField(($_=new JsonParser_$15(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"wantToWatch",assigned,this.value.wantToWatch,pos);
-				break;
-			default:
+			if(field.name == "state") {
+				this.value.state = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"state",assigned,this.value.state,pos);
+			} else {
 				this.errors.push(json2object_Error.UnknownVariable(field.name,this.putils.convertPosition(field.namePos)));
 			}
 		}
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { index : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), timesCompleted : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visible : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), visibleSeen : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), wantToWatch : new JsonParser_$15([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { state : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
-	,__class__: JsonParser_$97
+	,__class__: JsonParser_$99
 });
-var JsonParser_$98 = function(errors,putils,errorType) {
-	if(errorType == null) {
-		errorType = 0;
+var JsonWriter_$89 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
 	}
-	json2object_reader_BaseParser.call(this,errors,putils,errorType);
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonParser_98"] = JsonParser_$98;
-JsonParser_$98.__name__ = "JsonParser_98";
-JsonParser_$98.__super__ = json2object_reader_BaseParser;
-JsonParser_$98.prototype = $extend(json2object_reader_BaseParser.prototype,{
-	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"Array<Cutscene>",pos));
-		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
+$hxClasses["JsonWriter_89"] = JsonWriter_$89;
+JsonWriter_$89.__name__ = "JsonWriter_89";
+JsonWriter_$89.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
 	}
-	,loadJsonNull: function(pos,variable) {
-		this.value = null;
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
 	}
-	,loadJsonArray: function(a,pos,variable) {
-		this.value = this.loadJsonArrayValue(a,($_=new JsonParser_$100(this.errors,this.putils,2),$bind($_,$_.loadJson)),variable);
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
 	}
-	,getAuto: function() {
-		return new JsonParser_$98([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)));
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"currentStoryId\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.currentStoryId,space,level + 1,false,onAllOptionalNull),indent + space + "\"progressionData\": " + new JsonWriter_$91(this.ignoreNullOptionals)._write(o.progressionData,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
 	}
-	,__class__: JsonParser_$98
-});
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$89
+};
+var JsonStoryTypes = function() { };
+$hxClasses["JsonStoryTypes"] = JsonStoryTypes;
+JsonStoryTypes.__name__ = "JsonStoryTypes";
 var JsonWriter_$81 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
@@ -9912,95 +10457,7 @@ JsonWriter_$81.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"currentStoryId\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.currentStoryId,space,level + 1,false,onAllOptionalNull),indent + space + "\"progressionData\": " + new JsonWriter_$83(this.ignoreNullOptionals)._write(o.progressionData,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$81
-};
-var JsonStoryTypes = function() { };
-$hxClasses["JsonStoryTypes"] = JsonStoryTypes;
-JsonStoryTypes.__name__ = "JsonStoryTypes";
-var JsonWriter_$73 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_73"] = JsonWriter_$73;
-JsonWriter_$73.__name__ = "JsonWriter_73";
-JsonWriter_$73.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$75(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$83(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false];
 			if(skips.indexOf(false) == -1) {
@@ -10034,7 +10491,7 @@ JsonWriter_$73.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$73
+	,__class__: JsonWriter_$81
 };
 var JsonWriter_$1 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -10085,7 +10542,7 @@ JsonWriter_$1.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"autoAdvance\": " + new JsonWriter_$3(this.ignoreNullOptionals)._write(o.autoAdvance,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegion,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegionMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegionMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"currency\": " + new JsonWriter_$7(this.ignoreNullOptionals)._write(o.currency,space,level + 1,false,onAllOptionalNull),indent + space + "\"enemy\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.enemy,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipLevels\": " + new JsonWriter_$52(this.ignoreNullOptionals)._write(o.equipLevels,space,level + 1,false,onAllOptionalNull),indent + space + "\"hero\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.hero,space,level + 1,false,onAllOptionalNull),indent + space + "\"killedInArea\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.killedInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"necessaryToKillInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.necessaryToKillInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerActions\": " + new JsonWriter_$56(this.ignoreNullOptionals)._write(o.playerActions,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerTimesKilled\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.playerTimesKilled,space,level + 1,false,onAllOptionalNull),indent + space + "\"prestigeTimes\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.prestigeTimes,space,level + 1,false,onAllOptionalNull),indent + space + "\"recovering\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.recovering,space,level + 1,false,onAllOptionalNull),indent + space + "\"regionProgress\": " + new JsonWriter_$59(this.ignoreNullOptionals)._write(o.regionProgress,space,level + 1,false,onAllOptionalNull),indent + space + "\"retention\": " + new JsonWriter_$64(this.ignoreNullOptionals)._write(o.retention,space,level + 1,false,onAllOptionalNull),indent + space + "\"skillSets\": " + new JsonWriter_$66(this.ignoreNullOptionals)._write(o.skillSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"sleeping\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.sleeping,space,level + 1,false,onAllOptionalNull),indent + space + "\"timeCount\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.timeCount,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesReviewed\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.timesReviewed,space,level + 1,false,onAllOptionalNull),indent + space + "\"userId\": " + new JsonWriter_$71(this.ignoreNullOptionals)._write(o.userId,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"autoAdvance\": " + new JsonWriter_$3(this.ignoreNullOptionals)._write(o.autoAdvance,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegion,space,level + 1,false,onAllOptionalNull),indent + space + "\"battleAreaRegionMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.battleAreaRegionMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"currency\": " + new JsonWriter_$7(this.ignoreNullOptionals)._write(o.currency,space,level + 1,false,onAllOptionalNull),indent + space + "\"enemy\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.enemy,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipLevels\": " + new JsonWriter_$60(this.ignoreNullOptionals)._write(o.equipLevels,space,level + 1,false,onAllOptionalNull),indent + space + "\"hero\": " + new JsonWriter_$14(this.ignoreNullOptionals)._write(o.hero,space,level + 1,false,onAllOptionalNull),indent + space + "\"killedInArea\": " + new JsonWriter_$47(this.ignoreNullOptionals)._write(o.killedInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"necessaryToKillInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.necessaryToKillInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerActions\": " + new JsonWriter_$64(this.ignoreNullOptionals)._write(o.playerActions,space,level + 1,false,onAllOptionalNull),indent + space + "\"playerTimesKilled\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.playerTimesKilled,space,level + 1,false,onAllOptionalNull),indent + space + "\"prestigeTimes\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.prestigeTimes,space,level + 1,false,onAllOptionalNull),indent + space + "\"recovering\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.recovering,space,level + 1,false,onAllOptionalNull),indent + space + "\"regionProgress\": " + new JsonWriter_$67(this.ignoreNullOptionals)._write(o.regionProgress,space,level + 1,false,onAllOptionalNull),indent + space + "\"retention\": " + new JsonWriter_$72(this.ignoreNullOptionals)._write(o.retention,space,level + 1,false,onAllOptionalNull),indent + space + "\"skillSets\": " + new JsonWriter_$74(this.ignoreNullOptionals)._write(o.skillSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"sleeping\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.sleeping,space,level + 1,false,onAllOptionalNull),indent + space + "\"timeCount\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.timeCount,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesReviewed\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.timesReviewed,space,level + 1,false,onAllOptionalNull),indent + space + "\"userId\": " + new JsonWriter_$79(this.ignoreNullOptionals)._write(o.userId,space,level + 1,false,onAllOptionalNull),indent + space + "\"worldVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.worldVersion,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [o.autoAdvance == null,false,false,false,o.currency == null,false,o.equipLevels == null,false,false,false,false,false,false,false,false,false,o.retention == null,o.skillSets == null,false,false,o.timesReviewed == null,o.userId == null,false];
 			if(skips.indexOf(false) == -1) {
@@ -10312,9 +10769,9 @@ JsonWriter_$14.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"attributesBase\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributesBase,space,level + 1,false,onAllOptionalNull),indent + space + "\"attributesCalculated\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributesCalculated,space,level + 1,false,onAllOptionalNull),indent + space + "\"buffs\": " + new JsonWriter_$18(this.ignoreNullOptionals)._write(o.buffs,space,level + 1,false,onAllOptionalNull),indent + space + "\"chosenEquipSet\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.chosenEquipSet,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipment\": " + new JsonWriter_$24(this.ignoreNullOptionals)._write(o.equipment,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipmentSets\": " + new JsonWriter_$36(this.ignoreNullOptionals)._write(o.equipmentSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull),indent + space + "\"reference\": " + new JsonWriter_$40(this.ignoreNullOptionals)._write(o.reference,space,level + 1,false,onAllOptionalNull),indent + space + "\"turnRecharge\": " + new JsonWriter_$42(this.ignoreNullOptionals)._write(o.turnRecharge,space,level + 1,false,onAllOptionalNull),indent + space + "\"usableSkills\": " + new JsonWriter_$44(this.ignoreNullOptionals)._write(o.usableSkills,space,level + 1,false,onAllOptionalNull),indent + space + "\"viewAux\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.viewAux,space,level + 1,false,onAllOptionalNull),indent + space + "\"xp\": " + new JsonWriter_$48(this.ignoreNullOptionals)._write(o.xp,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"attributesBase\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributesBase,space,level + 1,false,onAllOptionalNull),indent + space + "\"attributesCalculated\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributesCalculated,space,level + 1,false,onAllOptionalNull),indent + space + "\"buffs\": " + new JsonWriter_$18(this.ignoreNullOptionals)._write(o.buffs,space,level + 1,false,onAllOptionalNull),indent + space + "\"chosenEquipSet\": " + new JsonWriter_$23(this.ignoreNullOptionals)._write(o.chosenEquipSet,space,level + 1,false,onAllOptionalNull),indent + space + "\"conditionalBonus\": " + new JsonWriter_$25(this.ignoreNullOptionals)._write(o.conditionalBonus,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipment\": " + new JsonWriter_$32(this.ignoreNullOptionals)._write(o.equipment,space,level + 1,false,onAllOptionalNull),indent + space + "\"equipmentSets\": " + new JsonWriter_$44(this.ignoreNullOptionals)._write(o.equipmentSets,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull),indent + space + "\"reference\": " + new JsonWriter_$48(this.ignoreNullOptionals)._write(o.reference,space,level + 1,false,onAllOptionalNull),indent + space + "\"turnRecharge\": " + new JsonWriter_$50(this.ignoreNullOptionals)._write(o.turnRecharge,space,level + 1,false,onAllOptionalNull),indent + space + "\"usableSkills\": " + new JsonWriter_$52(this.ignoreNullOptionals)._write(o.usableSkills,space,level + 1,false,onAllOptionalNull),indent + space + "\"viewAux\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.viewAux,space,level + 1,false,onAllOptionalNull),indent + space + "\"xp\": " + new JsonWriter_$56(this.ignoreNullOptionals)._write(o.xp,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
-			var skips = [false,false,o.buffs == null,o.chosenEquipSet == null,false,o.equipmentSets == null,false,false,o.turnRecharge == null,o.usableSkills == null,false,false];
+			var skips = [false,false,o.buffs == null,o.chosenEquipSet == null,o.conditionalBonus == null,false,o.equipmentSets == null,false,false,o.turnRecharge == null,o.usableSkills == null,false,false];
 			if(skips.indexOf(false) == -1) {
 				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
 			} else {
@@ -10688,16 +11145,16 @@ JsonWriter_$23.prototype = {
 	}
 	,__class__: JsonWriter_$23
 };
-var JsonWriter_$24 = function(ignoreNullOptionals) {
+var JsonWriter_$25 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_24"] = JsonWriter_$24;
-JsonWriter_$24.__name__ = "JsonWriter_24";
-JsonWriter_$24.prototype = {
+$hxClasses["JsonWriter_25"] = JsonWriter_$25;
+JsonWriter_$25.__name__ = "JsonWriter_25";
+JsonWriter_$25.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -10758,7 +11215,7 @@ JsonWriter_$24.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$24
+	,__class__: JsonWriter_$25
 };
 var JsonWriter_$26 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -10770,6 +11227,518 @@ var JsonWriter_$26 = function(ignoreNullOptionals) {
 $hxClasses["JsonWriter_26"] = JsonWriter_$26;
 JsonWriter_$26.__name__ = "JsonWriter_26";
 JsonWriter_$26.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"AttributeBonuses\": " + new JsonWriter_$27(this.ignoreNullOptionals)._write(o.AttributeBonuses,space,level + 1,false,onAllOptionalNull),indent + space + "\"condition\": " + new JsonWriter_$30(this.ignoreNullOptionals)._write(o.condition,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$26
+};
+var JsonWriter_$27 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_27"] = JsonWriter_$27;
+JsonWriter_$27.__name__ = "JsonWriter_27";
+JsonWriter_$27.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$29(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$27
+};
+var JsonWriter_$29 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_29"] = JsonWriter_$29;
+JsonWriter_$29.__name__ = "JsonWriter_29";
+JsonWriter_$29.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"attributeMultiplier\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributeMultiplier,space,level + 1,false,onAllOptionalNull),indent + space + "\"attributes\": " + new JsonWriter_$16(this.ignoreNullOptionals)._write(o.attributes,space,level + 1,false,onAllOptionalNull),indent + space + "\"rank\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.rank,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$29
+};
+var JsonWriter_$3 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_3"] = JsonWriter_$3;
+JsonWriter_$3.__name__ = "JsonWriter_3";
+JsonWriter_$3.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		return (indentFirst ? this.buildIndent(space,level) : "") + (o == null ? "null" : (o == null ? "null" : "" + o) + "");
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$3
+};
+var JsonWriter_$30 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_30"] = JsonWriter_$30;
+JsonWriter_$30.__name__ = "JsonWriter_30";
+JsonWriter_$30.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"cType\": " + new JsonWriter_$31(this.ignoreNullOptionals)._write(o.cType,space,level + 1,false,onAllOptionalNull),indent + space + "\"data1\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data1,space,level + 1,false,onAllOptionalNull),indent + space + "\"data2\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data2,space,level + 1,false,onAllOptionalNull),indent + space + "\"data3\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data3,space,level + 1,false,onAllOptionalNull),indent + space + "\"dataS1\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.dataS1,space,level + 1,false,onAllOptionalNull),indent + space + "\"dataS2\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.dataS2,space,level + 1,false,onAllOptionalNull),indent + space + "\"dataS3\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.dataS3,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$30
+};
+var JsonWriter_$31 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_31"] = JsonWriter_$31;
+JsonWriter_$31.__name__ = "JsonWriter_31";
+JsonWriter_$31.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		return firstIndent + "\"ITEM_IN_SLOT_IS_OF_ITEM_TYPE\"";
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$31
+};
+var JsonWriter_$32 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_32"] = JsonWriter_$32;
+JsonWriter_$32.__name__ = "JsonWriter_32";
+JsonWriter_$32.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$34(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$32
+};
+var JsonWriter_$34 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_34"] = JsonWriter_$34;
+JsonWriter_$34.__name__ = "JsonWriter_34";
+JsonWriter_$34.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -10843,290 +11812,7 @@ JsonWriter_$26.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$26
-};
-var JsonWriter_$3 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_3"] = JsonWriter_$3;
-JsonWriter_$3.__name__ = "JsonWriter_3";
-JsonWriter_$3.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		return (indentFirst ? this.buildIndent(space,level) : "") + (o == null ? "null" : (o == null ? "null" : "" + o) + "");
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$3
-};
-var JsonWriter_$36 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_36"] = JsonWriter_$36;
-JsonWriter_$36.__name__ = "JsonWriter_36";
-JsonWriter_$36.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$38(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$36
-};
-var JsonWriter_$38 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_38"] = JsonWriter_$38;
-JsonWriter_$38.__name__ = "JsonWriter_38";
-JsonWriter_$38.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"equipmentSlots\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.equipmentSlots,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$38
-};
-var JsonWriter_$39 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_39"] = JsonWriter_$39;
-JsonWriter_$39.__name__ = "JsonWriter_39";
-JsonWriter_$39.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$4(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$39
+	,__class__: JsonWriter_$34
 };
 var JsonWriter_$4 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -11181,163 +11867,6 @@ JsonWriter_$4.prototype = {
 		return this._write(o,space,0,false);
 	}
 	,__class__: JsonWriter_$4
-};
-var JsonWriter_$40 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_40"] = JsonWriter_$40;
-JsonWriter_$40.__name__ = "JsonWriter_40";
-JsonWriter_$40.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"type\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.type,space,level + 1,false,onAllOptionalNull),indent + space + "\"pos\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.pos,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$40
-};
-var JsonWriter_$42 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_42"] = JsonWriter_$42;
-JsonWriter_$42.__name__ = "JsonWriter_42";
-JsonWriter_$42.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$4(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$42
 };
 var JsonWriter_$44 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -11460,9 +11989,9 @@ JsonWriter_$46.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"id\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.id,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"equipmentSlots\": " + new JsonWriter_$47(this.ignoreNullOptionals)._write(o.equipmentSlots,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
-			var skips = [false,false];
+			var skips = [false];
 			if(skips.indexOf(false) == -1) {
 				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
 			} else {
@@ -11495,6 +12024,78 @@ JsonWriter_$46.prototype = {
 		return this._write(o,space,0,false);
 	}
 	,__class__: JsonWriter_$46
+};
+var JsonWriter_$47 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_47"] = JsonWriter_$47;
+JsonWriter_$47.__name__ = "JsonWriter_47";
+JsonWriter_$47.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$4(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$47
 };
 var JsonWriter_$48 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -11545,9 +12146,9 @@ JsonWriter_$48.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"calculatedMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.calculatedMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"cap\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.cap,space,level + 1,false,onAllOptionalNull),indent + space + "\"lastUsedBaseAttribute\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.lastUsedBaseAttribute,space,level + 1,false,onAllOptionalNull),indent + space + "\"scaling\": " + new JsonWriter_$50(this.ignoreNullOptionals)._write(o.scaling,space,level + 1,false,onAllOptionalNull),indent + space + "\"value\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.value,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"type\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.type,space,level + 1,false,onAllOptionalNull),indent + space + "\"pos\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.pos,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false,false,false];
+			var skips = [false,false];
 			if(skips.indexOf(false) == -1) {
 				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
 			} else {
@@ -11630,32 +12231,19 @@ JsonWriter_$50.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"data1\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data1,space,level + 1,false,onAllOptionalNull),indent + space + "\"exponential\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.exponential,space,level + 1,false,onAllOptionalNull),indent + space + "\"initial\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.initial,space,level + 1,false,onAllOptionalNull),indent + space + "\"initialMultiplication\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.initialMultiplication,space,level + 1,false,onAllOptionalNull),indent + space + "\"minimumIncrement\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.minimumIncrement,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false,false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
+		var valueWriter = new JsonWriter_$4(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
 		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
 		return json;
 	}
 	,write: function(o,space) {
@@ -11787,9 +12375,9 @@ JsonWriter_$54.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"ascension\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.ascension,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull),indent + space + "\"limitbreak\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.limitbreak,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"id\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.id,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false];
+			var skips = [false,false];
 			if(skips.indexOf(false) == -1) {
 				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
 			} else {
@@ -11872,7 +12460,334 @@ JsonWriter_$56.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$58(this.ignoreNullOptionals);
+		var decl = [indent + space + "\"calculatedMax\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.calculatedMax,space,level + 1,false,onAllOptionalNull),indent + space + "\"cap\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.cap,space,level + 1,false,onAllOptionalNull),indent + space + "\"lastUsedBaseAttribute\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.lastUsedBaseAttribute,space,level + 1,false,onAllOptionalNull),indent + space + "\"scaling\": " + new JsonWriter_$58(this.ignoreNullOptionals)._write(o.scaling,space,level + 1,false,onAllOptionalNull),indent + space + "\"value\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.value,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$56
+};
+var JsonWriter_$58 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_58"] = JsonWriter_$58;
+JsonWriter_$58.__name__ = "JsonWriter_58";
+JsonWriter_$58.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"data1\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.data1,space,level + 1,false,onAllOptionalNull),indent + space + "\"exponential\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.exponential,space,level + 1,false,onAllOptionalNull),indent + space + "\"initial\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.initial,space,level + 1,false,onAllOptionalNull),indent + space + "\"initialMultiplication\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.initialMultiplication,space,level + 1,false,onAllOptionalNull),indent + space + "\"minimumIncrement\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.minimumIncrement,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$58
+};
+var JsonWriter_$60 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_60"] = JsonWriter_$60;
+JsonWriter_$60.__name__ = "JsonWriter_60";
+JsonWriter_$60.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$62(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$60
+};
+var JsonWriter_$62 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_62"] = JsonWriter_$62;
+JsonWriter_$62.__name__ = "JsonWriter_62";
+JsonWriter_$62.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"ascension\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.ascension,space,level + 1,false,onAllOptionalNull),indent + space + "\"level\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.level,space,level + 1,false,onAllOptionalNull),indent + space + "\"limitbreak\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.limitbreak,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$62
+};
+var JsonWriter_$64 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_64"] = JsonWriter_$64;
+JsonWriter_$64.__name__ = "JsonWriter_64";
+JsonWriter_$64.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$66(this.ignoreNullOptionals);
 		var _g = [];
 		var h = o.h;
 		var key_h = h;
@@ -11896,18 +12811,18 @@ JsonWriter_$56.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$56
+	,__class__: JsonWriter_$64
 };
-var JsonWriter_$58 = function(ignoreNullOptionals) {
+var JsonWriter_$66 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_58"] = JsonWriter_$58;
-JsonWriter_$58.__name__ = "JsonWriter_58";
-JsonWriter_$58.prototype = {
+$hxClasses["JsonWriter_66"] = JsonWriter_$66;
+JsonWriter_$66.__name__ = "JsonWriter_66";
+JsonWriter_$66.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -11981,332 +12896,18 @@ JsonWriter_$58.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$58
-};
-var JsonWriter_$59 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_59"] = JsonWriter_$59;
-JsonWriter_$59.__name__ = "JsonWriter_59";
-JsonWriter_$59.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$61(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$59
-};
-var JsonWriter_$61 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_61"] = JsonWriter_$61;
-JsonWriter_$61.__name__ = "JsonWriter_61";
-JsonWriter_$61.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"amountEnemyKilledInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.amountEnemyKilledInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"area\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.area,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxAreaOnPrestigeRecord\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.maxAreaOnPrestigeRecord,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxAreaRecord\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxAreaRecord,space,level + 1,false,onAllOptionalNull),indent + space + "\"seen\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.seen,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false,false,false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$61
-};
-var JsonWriter_$64 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_64"] = JsonWriter_$64;
-JsonWriter_$64.__name__ = "JsonWriter_64";
-JsonWriter_$64.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"gameStartDate\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.gameStartDate,space,level + 1,false,onAllOptionalNull),indent + space + "\"gameStartVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.gameStartVersion,space,level + 1,false,onAllOptionalNull),indent + space + "\"latestDayRetention\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.latestDayRetention,space,level + 1,false,onAllOptionalNull),indent + space + "\"reportedRollingRetention\": " + new JsonWriter_$39(this.ignoreNullOptionals)._write(o.reportedRollingRetention,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$64
-};
-var JsonWriter_$66 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_66"] = JsonWriter_$66;
-JsonWriter_$66.__name__ = "JsonWriter_66";
-JsonWriter_$66.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$68(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
 	,__class__: JsonWriter_$66
 };
-var JsonWriter_$68 = function(ignoreNullOptionals) {
+var JsonWriter_$67 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_68"] = JsonWriter_$68;
-JsonWriter_$68.__name__ = "JsonWriter_68";
-JsonWriter_$68.prototype = {
+$hxClasses["JsonWriter_67"] = JsonWriter_$67;
+JsonWriter_$67.__name__ = "JsonWriter_67";
+JsonWriter_$67.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12346,32 +12947,19 @@ JsonWriter_$68.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"skills\": " + new JsonWriter_$69(this.ignoreNullOptionals)._write(o.skills,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
+		var valueWriter = new JsonWriter_$69(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
 		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
 		return json;
 	}
 	,write: function(o,space) {
@@ -12380,7 +12968,7 @@ JsonWriter_$68.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$68
+	,__class__: JsonWriter_$67
 };
 var JsonWriter_$69 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -12431,19 +13019,32 @@ JsonWriter_$69.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$46(this.ignoreNullOptionals);
-		var _g = [];
-		var _g1 = 0;
-		while(_g1 < o.length) {
-			var element = o[_g1];
-			++_g1;
-			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		var decl = [indent + space + "\"amountEnemyKilledInArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.amountEnemyKilledInArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"area\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.area,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxArea\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxArea,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxAreaOnPrestigeRecord\": " + new JsonWriter_$47(this.ignoreNullOptionals)._write(o.maxAreaOnPrestigeRecord,space,level + 1,false,onAllOptionalNull),indent + space + "\"maxAreaRecord\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.maxAreaRecord,space,level + 1,false,onAllOptionalNull),indent + space + "\"seen\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.seen,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
 		}
-		var values = _g;
-		var newLine = space != "" && o.length > 0 ? "\n" : "";
-		var json = firstIndent + "[" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "]";
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
 		return json;
 	}
 	,write: function(o,space) {
@@ -12539,78 +13140,16 @@ JsonWriter_$7.prototype = {
 	}
 	,__class__: JsonWriter_$7
 };
-var JsonWriter_$71 = function(ignoreNullOptionals) {
+var JsonWriter_$72 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_71"] = JsonWriter_$71;
-JsonWriter_$71.__name__ = "JsonWriter_71";
-JsonWriter_$71.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var tmp = indentFirst ? this.buildIndent(space,level) : "";
-		var tmp1;
-		if(o == null) {
-			tmp1 = "null";
-		} else {
-			var str = o;
-			tmp1 = this.shouldQuote ? json2object_writer_StringUtils.quote(str) : str;
-		}
-		return tmp + tmp1;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$71
-};
-var JsonWriter_$75 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_75"] = JsonWriter_$75;
-JsonWriter_$75.__name__ = "JsonWriter_75";
-JsonWriter_$75.prototype = {
+$hxClasses["JsonWriter_72"] = JsonWriter_$72;
+JsonWriter_$72.__name__ = "JsonWriter_72";
+JsonWriter_$72.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12650,7 +13189,164 @@ JsonWriter_$75.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"achievs\": " + new JsonWriter_$77(this.ignoreNullOptionals)._write(o.achievs,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"gameStartDate\": " + new JsonWriter_$21(this.ignoreNullOptionals)._write(o.gameStartDate,space,level + 1,false,onAllOptionalNull),indent + space + "\"gameStartVersion\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.gameStartVersion,space,level + 1,false,onAllOptionalNull),indent + space + "\"latestDayRetention\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.latestDayRetention,space,level + 1,false,onAllOptionalNull),indent + space + "\"reportedRollingRetention\": " + new JsonWriter_$47(this.ignoreNullOptionals)._write(o.reportedRollingRetention,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$72
+};
+var JsonWriter_$74 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_74"] = JsonWriter_$74;
+JsonWriter_$74.__name__ = "JsonWriter_74";
+JsonWriter_$74.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$76(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$74
+};
+var JsonWriter_$76 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_76"] = JsonWriter_$76;
+JsonWriter_$76.__name__ = "JsonWriter_76";
+JsonWriter_$76.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"skills\": " + new JsonWriter_$77(this.ignoreNullOptionals)._write(o.skills,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
 			var skips = [false];
 			if(skips.indexOf(false) == -1) {
@@ -12684,7 +13380,7 @@ JsonWriter_$75.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$75
+	,__class__: JsonWriter_$76
 };
 var JsonWriter_$77 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -12735,7 +13431,226 @@ JsonWriter_$77.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var valueWriter = new JsonWriter_$79(this.ignoreNullOptionals);
+		var valueWriter = new JsonWriter_$54(this.ignoreNullOptionals);
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < o.length) {
+			var element = o[_g1];
+			++_g1;
+			_g.push(valueWriter._write(element,space,level + 1,true,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && o.length > 0 ? "\n" : "";
+		var json = firstIndent + "[" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "]";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$77
+};
+var JsonWriter_$79 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_79"] = JsonWriter_$79;
+JsonWriter_$79.__name__ = "JsonWriter_79";
+JsonWriter_$79.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var tmp = indentFirst ? this.buildIndent(space,level) : "";
+		var tmp1;
+		if(o == null) {
+			tmp1 = "null";
+		} else {
+			var str = o;
+			tmp1 = this.shouldQuote ? json2object_writer_StringUtils.quote(str) : str;
+		}
+		return tmp + tmp1;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$79
+};
+var JsonWriter_$83 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_83"] = JsonWriter_$83;
+JsonWriter_$83.__name__ = "JsonWriter_83";
+JsonWriter_$83.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"achievs\": " + new JsonWriter_$85(this.ignoreNullOptionals)._write(o.achievs,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$83
+};
+var JsonWriter_$85 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_85"] = JsonWriter_$85;
+JsonWriter_$85.__name__ = "JsonWriter_85";
+JsonWriter_$85.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$87(this.ignoreNullOptionals);
 		var _g = [];
 		var h = o.h;
 		var key_h = h;
@@ -12759,18 +13674,18 @@ JsonWriter_$77.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$77
+	,__class__: JsonWriter_$85
 };
-var JsonWriter_$79 = function(ignoreNullOptionals) {
+var JsonWriter_$87 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
 		ignoreNullOptionals = false;
 	}
 	this.shouldQuote = true;
 	this.ignoreNullOptionals = ignoreNullOptionals;
 };
-$hxClasses["JsonWriter_79"] = JsonWriter_$79;
-JsonWriter_$79.__name__ = "JsonWriter_79";
-JsonWriter_$79.prototype = {
+$hxClasses["JsonWriter_87"] = JsonWriter_$87;
+JsonWriter_$87.__name__ = "JsonWriter_87";
+JsonWriter_$87.prototype = {
 	quote: function(str) {
 		if(this.shouldQuote) {
 			return json2object_writer_StringUtils.quote(str);
@@ -12844,167 +13759,7 @@ JsonWriter_$79.prototype = {
 		}
 		return this._write(o,space,0,false);
 	}
-	,__class__: JsonWriter_$79
-};
-var JsonWriter_$83 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_83"] = JsonWriter_$83;
-JsonWriter_$83.__name__ = "JsonWriter_83";
-JsonWriter_$83.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var valueWriter = new JsonWriter_$85(this.ignoreNullOptionals);
-		var _g = [];
-		var h = o.h;
-		var key_h = h;
-		var key_keys = Object.keys(h);
-		var key_length = key_keys.length;
-		var key_current = 0;
-		while(key_current < key_length) {
-			var key = key_keys[key_current++];
-			_g.push(indent + space + "\"" + key + "\": " + valueWriter._write(o.h[key],space,level + 1,false,onAllOptionalNull));
-		}
-		var values = _g;
-		var newLine = space != "" && values.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += values.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$83
-};
-var JsonWriter_$85 = function(ignoreNullOptionals) {
-	if(ignoreNullOptionals == null) {
-		ignoreNullOptionals = false;
-	}
-	this.shouldQuote = true;
-	this.ignoreNullOptionals = ignoreNullOptionals;
-};
-$hxClasses["JsonWriter_85"] = JsonWriter_$85;
-JsonWriter_$85.__name__ = "JsonWriter_85";
-JsonWriter_$85.prototype = {
-	quote: function(str) {
-		if(this.shouldQuote) {
-			return json2object_writer_StringUtils.quote(str);
-		} else {
-			return str;
-		}
-	}
-	,dontQuote: function() {
-		this.shouldQuote = false;
-		return this;
-	}
-	,buildIndent: function(space,level) {
-		if(level == 0) {
-			return "";
-		}
-		var buff_b = "";
-		var _g = 0;
-		var _g1 = level;
-		while(_g < _g1) {
-			var i = _g++;
-			buff_b += space == null ? "null" : "" + space;
-		}
-		return buff_b;
-	}
-	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
-		if(indentFirst == null) {
-			indentFirst = false;
-		}
-		if(level == null) {
-			level = 0;
-		}
-		if(space == null) {
-			space = "";
-		}
-		var indent = this.buildIndent(space,level);
-		var firstIndent = indentFirst ? indent : "";
-		if(o == null) {
-			return firstIndent + "null";
-		}
-		var decl = [indent + space + "\"index\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.index,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesCompleted\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.timesCompleted,space,level + 1,false,onAllOptionalNull),indent + space + "\"visible\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.visible,space,level + 1,false,onAllOptionalNull),indent + space + "\"visibleSeen\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.visibleSeen,space,level + 1,false,onAllOptionalNull),indent + space + "\"wantToWatch\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.wantToWatch,space,level + 1,false,onAllOptionalNull)];
-		if(this.ignoreNullOptionals) {
-			var skips = [false,false,false,false,false];
-			if(skips.indexOf(false) == -1) {
-				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
-			} else {
-				var _g = [];
-				var _g1 = 0;
-				var _g2 = decl.length;
-				while(_g1 < _g2) {
-					var i = _g1++;
-					var decl1;
-					if(skips[i]) {
-						continue;
-					} else {
-						decl1 = decl[i];
-					}
-					_g.push(decl1);
-				}
-				decl = _g;
-			}
-		}
-		var newLine = space != "" && decl.length > 0 ? "\n" : "";
-		var json = firstIndent + "{" + newLine;
-		json += decl.join("," + newLine) + newLine;
-		json += indent + "}";
-		return json;
-	}
-	,write: function(o,space) {
-		if(space == null) {
-			space = "";
-		}
-		return this._write(o,space,0,false);
-	}
-	,__class__: JsonWriter_$85
+	,__class__: JsonWriter_$87
 };
 var JsonWriter_$9 = function(ignoreNullOptionals) {
 	if(ignoreNullOptionals == null) {
@@ -13080,6 +13835,166 @@ JsonWriter_$9.prototype = {
 		return this._write(o,space,0,false);
 	}
 	,__class__: JsonWriter_$9
+};
+var JsonWriter_$91 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_91"] = JsonWriter_$91;
+JsonWriter_$91.__name__ = "JsonWriter_91";
+JsonWriter_$91.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var valueWriter = new JsonWriter_$93(this.ignoreNullOptionals);
+		var _g = [];
+		var h = o.h;
+		var key_h = h;
+		var key_keys = Object.keys(h);
+		var key_length = key_keys.length;
+		var key_current = 0;
+		while(key_current < key_length) {
+			var key = key_keys[key_current++];
+			_g.push(indent + space + "\"" + key + "\": " + valueWriter._write(o.h[key],space,level + 1,false,onAllOptionalNull));
+		}
+		var values = _g;
+		var newLine = space != "" && values.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += values.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$91
+};
+var JsonWriter_$93 = function(ignoreNullOptionals) {
+	if(ignoreNullOptionals == null) {
+		ignoreNullOptionals = false;
+	}
+	this.shouldQuote = true;
+	this.ignoreNullOptionals = ignoreNullOptionals;
+};
+$hxClasses["JsonWriter_93"] = JsonWriter_$93;
+JsonWriter_$93.__name__ = "JsonWriter_93";
+JsonWriter_$93.prototype = {
+	quote: function(str) {
+		if(this.shouldQuote) {
+			return json2object_writer_StringUtils.quote(str);
+		} else {
+			return str;
+		}
+	}
+	,dontQuote: function() {
+		this.shouldQuote = false;
+		return this;
+	}
+	,buildIndent: function(space,level) {
+		if(level == 0) {
+			return "";
+		}
+		var buff_b = "";
+		var _g = 0;
+		var _g1 = level;
+		while(_g < _g1) {
+			var i = _g++;
+			buff_b += space == null ? "null" : "" + space;
+		}
+		return buff_b;
+	}
+	,_write: function(o,space,level,indentFirst,onAllOptionalNull) {
+		if(indentFirst == null) {
+			indentFirst = false;
+		}
+		if(level == null) {
+			level = 0;
+		}
+		if(space == null) {
+			space = "";
+		}
+		var indent = this.buildIndent(space,level);
+		var firstIndent = indentFirst ? indent : "";
+		if(o == null) {
+			return firstIndent + "null";
+		}
+		var decl = [indent + space + "\"index\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.index,space,level + 1,false,onAllOptionalNull),indent + space + "\"timesCompleted\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.timesCompleted,space,level + 1,false,onAllOptionalNull),indent + space + "\"visible\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.visible,space,level + 1,false,onAllOptionalNull),indent + space + "\"visibleSeen\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.visibleSeen,space,level + 1,false,onAllOptionalNull),indent + space + "\"wantToWatch\": " + new JsonWriter_$12(this.ignoreNullOptionals)._write(o.wantToWatch,space,level + 1,false,onAllOptionalNull)];
+		if(this.ignoreNullOptionals) {
+			var skips = [false,false,false,false,false];
+			if(skips.indexOf(false) == -1) {
+				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
+			} else {
+				var _g = [];
+				var _g1 = 0;
+				var _g2 = decl.length;
+				while(_g1 < _g2) {
+					var i = _g1++;
+					var decl1;
+					if(skips[i]) {
+						continue;
+					} else {
+						decl1 = decl[i];
+					}
+					_g.push(decl1);
+				}
+				decl = _g;
+			}
+		}
+		var newLine = space != "" && decl.length > 0 ? "\n" : "";
+		var json = firstIndent + "{" + newLine;
+		json += decl.join("," + newLine) + newLine;
+		json += indent + "}";
+		return json;
+	}
+	,write: function(o,space) {
+		if(space == null) {
+			space = "";
+		}
+		return this._write(o,space,0,false);
+	}
+	,__class__: JsonWriter_$93
 };
 var JsonX = function() { };
 $hxClasses["JsonX"] = JsonX;
@@ -13622,11 +14537,23 @@ PrototypeItemMaker.prototype = {
 	}
 	,__class__: PrototypeItemMaker
 };
+var RangeUtils = function() { };
+$hxClasses["RangeUtils"] = RangeUtils;
+RangeUtils.__name__ = "RangeUtils";
+RangeUtils.R = function(min,max) {
+	return { min : min, max : max};
+};
 var RandomExtender = function() { };
 $hxClasses["RandomExtender"] = RandomExtender;
 RandomExtender.__name__ = "RandomExtender";
 RandomExtender.Range = function(random,range) {
 	return random.randomInt(range.min,range.max);
+};
+var ModBaseUtils = function() { };
+$hxClasses["ModBaseUtils"] = ModBaseUtils;
+ModBaseUtils.__name__ = "ModBaseUtils";
+ModBaseUtils.pureMod = function(statAdds,statMultipliers) {
+	return { prefix : null, suffix : null, statMultipliers : statMultipliers, statAdds : statAdds, dropRequirement : null};
 };
 var PrototypeSkillMaker = function() {
 	this.skills = [];
@@ -13816,6 +14743,27 @@ AttributeLogic.Add = function(attributes,attributeAddition,quantityOfAddition,re
 			result.h[key1] = value;
 		}
 	}
+};
+var BMConditionType = $hxEnums["BMConditionType"] = { __ename__:true,__constructs__:null
+	,ITEM_IN_SLOT_IS_OF_ITEM_TYPE: {_hx_name:"ITEM_IN_SLOT_IS_OF_ITEM_TYPE",_hx_index:0,__enum__:"BMConditionType",toString:$estr}
+};
+BMConditionType.__constructs__ = [BMConditionType.ITEM_IN_SLOT_IS_OF_ITEM_TYPE];
+var BMCondition = function(ctype) {
+	this.cType = ctype;
+};
+$hxClasses["BMCondition"] = BMCondition;
+BMCondition.__name__ = "BMCondition";
+BMCondition.prototype = {
+	__class__: BMCondition
+};
+var ConditionalAttributeBonus = function() {
+	this.condition = null;
+	this.AttributeBonuses = [];
+};
+$hxClasses["ConditionalAttributeBonus"] = ConditionalAttributeBonus;
+ConditionalAttributeBonus.__name__ = "ConditionalAttributeBonus";
+ConditionalAttributeBonus.prototype = {
+	__class__: ConditionalAttributeBonus
 };
 var EventTypes = $hxEnums["EventTypes"] = { __ename__:true,__constructs__:null
 	,GameStart: {_hx_name:"GameStart",_hx_index:0,__enum__:"EventTypes",toString:$estr}
@@ -14428,12 +15376,15 @@ SaveAssistant.GetPersistenceMaster = function(jsonData) {
 				persistenceMaster.jsonGameplay = jsonData;
 			}
 		} else {
-			return { worldVersion : -1, jsonStory : null, jsonGameplay : null, jsonGeneral : null, jsonGameplayDimensions : null};
+			return SaveAssistant.EmptyPersistence();
 		}
 		return persistenceMaster;
 	} else {
-		return { worldVersion : -1, jsonStory : null, jsonGameplay : null, jsonGeneral : null, jsonGameplayDimensions : null};
+		return SaveAssistant.EmptyPersistence();
 	}
+};
+SaveAssistant.EmptyPersistence = function() {
+	return { worldVersion : -1, jsonStory : null, jsonGameplay : null, jsonGeneral : null, jsonGameplayDimensions : null, jsonVillageDimensions : null, jsonVillageShared : null};
 };
 var SkelDataUnit = function() {
 };
@@ -15224,14 +16175,14 @@ StoryControlLogic.startStory = function(controlData) {
 };
 StoryControlLogic.update = function(update,controlData,executer) {
 	var viewGRI = controlData.view;
-	viewGRI.ui.extendElementHeight(controlData.viewTab.scroll.viewport,95);
+	viewGRI.ui.extendElementHeight(controlData.viewTab.scroll.viewport,5);
 	viewGRI.ui.extendElementHeight(controlData.viewStory.scroll.viewport,95);
-	viewGRI.ui.genUI.updateAll();
 	viewGRI.uiCreation.singleTag(GRIView.tagTabMemory);
 	viewGRI.uiCreation.tags.push(StoryControlLogic.TAG_MEMORY_BUTTON_SCREEN);
 	controlData.runtime.cutsceneStartable = null;
 	StoryControlLogic.updateStoryButtons(controlData.runtime,controlData.view,controlData.viewTab);
 	var runtime = controlData.runtime;
+	viewGRI.ui.genUI.updateAll();
 	if(runtime.cutsceneStartable != null && runtime.cutscene == null) {
 		StoryLogic.StartStory(runtime.cutsceneStartable.id,runtime);
 		StoryControlLogic.startStory(controlData);
@@ -15516,6 +16467,134 @@ StringTools.trim = function(s) {
 };
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
+};
+var TalentData = function() {
+	this.setData = null;
+	this.spendCurrencyOnReroll = 50;
+	this.getCurrencyOnTrain_valuePerLevel = 25;
+	this.getCurrencyOnTrain_valueBase = 50;
+	this.getCurrencyOnTrain_key = null;
+};
+$hxClasses["TalentData"] = TalentData;
+TalentData.__name__ = "TalentData";
+TalentData.prototype = {
+	__class__: TalentData
+};
+var TalentToSetData = function() {
+};
+$hxClasses["TalentToSetData"] = TalentToSetData;
+TalentToSetData.__name__ = "TalentToSetData";
+TalentToSetData.prototype = {
+	__class__: TalentToSetData
+};
+var TalentModel = function() {
+	this.random = new seedyrng_Random();
+	this.rerollabeModsForEquipTalents = [];
+	this.talents = [];
+	var tmp = this.rerollabeModsForEquipTalents;
+	var _g = new haxe_ds_StringMap();
+	var value = RangeUtils.R(103,105);
+	_g.h["Attack"] = value;
+	tmp.push(ModBaseUtils.pureMod(null,_g));
+	var tmp = this.rerollabeModsForEquipTalents;
+	var _g = new haxe_ds_StringMap();
+	var value = RangeUtils.R(103,105);
+	_g.h["Defense"] = value;
+	tmp.push(ModBaseUtils.pureMod(null,_g));
+	var tmp = this.rerollabeModsForEquipTalents;
+	var _g = new haxe_ds_StringMap();
+	var value = RangeUtils.R(103,105);
+	_g.h[BattleConstants.MAGICATTACK] = value;
+	tmp.push(ModBaseUtils.pureMod(null,_g));
+	var tmp = this.rerollabeModsForEquipTalents;
+	var _g = new haxe_ds_StringMap();
+	var value = RangeUtils.R(103,105);
+	_g.h[BattleConstants.MAGICDEFENSE] = value;
+	tmp.push(ModBaseUtils.pureMod(null,_g));
+	var tmp = this.rerollabeModsForEquipTalents;
+	var _g = new haxe_ds_StringMap();
+	var value = RangeUtils.R(103,105);
+	_g.h["Speed"] = value;
+	tmp.push(ModBaseUtils.pureMod(null,_g));
+};
+$hxClasses["TalentModel"] = TalentModel;
+TalentModel.__name__ = "TalentModel";
+TalentModel.prototype = {
+	rerollAndTrain: function(talentPos,set) {
+	}
+	,train: function(talentPos,set) {
+		var currencyKey = this.talents[talentPos].getCurrencyOnTrain_key;
+		var p = this.talents[talentPos].spendCurrencyOnReroll;
+		this.currency.spend(currencyKey,p);
+		this.talentPers.talentToSet[talentPos].sets[set].pointXP += p;
+	}
+	,rerollTalent: function(talentPos,set) {
+		var talentBase = this.talentSharedPers.talents[talentPos];
+		var level = talentBase.level;
+		var talent = this.talentPers.talentToSet[talentPos];
+		var talentSet = talent.sets[set];
+		var mod = this.rerollabeModsForEquipTalents[this.random.randomInt(0,this.rerollabeModsForEquipTalents.length - 1)];
+		talentSet.rollBonus.attributes.h = Object.create(null);
+		var h = mod.statAdds.h;
+		var _g_h = h;
+		var _g_keys = Object.keys(h);
+		var _g_length = _g_keys.length;
+		var _g_current = 0;
+		while(_g_current < _g_length) {
+			var key = _g_keys[_g_current++];
+			var _g1_key = key;
+			var _g1_value = _g_h[key];
+			var key1 = _g1_key;
+			var value = _g1_value;
+			var v = RandomExtender.Range(this.random,value);
+			talentSet.rollBonus.attributes.h[key1] = v;
+		}
+		var h = mod.statMultipliers.h;
+		var _g_h = h;
+		var _g_keys = Object.keys(h);
+		var _g_length = _g_keys.length;
+		var _g_current = 0;
+		while(_g_current < _g_length) {
+			var key = _g_keys[_g_current++];
+			var _g1_key = key;
+			var _g1_value = _g_h[key];
+			var key1 = _g1_key;
+			var value = _g1_value;
+			var v = RandomExtender.Range(this.random,value);
+			talentSet.rollBonus.attributeMultiplier.h[key1] = v;
+		}
+	}
+	,recalculateConditionalBonuses: function() {
+		var hero = this.battleManager.wdata.hero;
+		hero.conditionalBonus.length = 0;
+		var _g_current = 0;
+		var _g_array = this.talentPers.talentToSet;
+		while(_g_current < _g_array.length) {
+			var _g1_value = _g_array[_g_current];
+			var _g1_key = _g_current++;
+			var index = _g1_key;
+			var tSets = _g1_value;
+			var tData = this.talents[index];
+			var _g2_current = 0;
+			var _g2_array = tSets.sets;
+			while(_g2_current < _g2_array.length) {
+				var _g3_value = _g2_array[_g2_current];
+				var _g3_key = _g2_current++;
+				var set = _g3_key;
+				var tSet = _g3_value;
+				if(tSet.rollBonus != null) {
+					var cab = new ConditionalAttributeBonus();
+					cab.AttributeBonuses = [tSet.rollBonus];
+					if(tSet.grandBonus != null) {
+						cab.AttributeBonuses.push(tSet.grandBonus);
+					}
+					cab.condition = tData.setData.battleCondition;
+					hero.conditionalBonus.push(cab);
+				}
+			}
+		}
+	}
+	,__class__: TalentModel
 };
 var Type = function() { };
 $hxClasses["Type"] = Type;
@@ -15819,8 +16898,9 @@ UIElementManager.prototype = {
 						if(tmp) {
 							this.keyboardManager.deselect();
 						}
+						UIElementManager.latestDeviceThatHovered = UIElementManager.latestDevice;
 					}
-					if(e.hovered.state) {
+					if(e.hovered.state && e.visible) {
 						if(e.style.sprite != null || e.style.border > 0 || e.style.fill == true) {
 							if(this.biggestHoveredElement == null) {
 								this.biggestHoveredElement = e;
@@ -15861,6 +16941,9 @@ UIElementManager.prototype = {
 			if(this.keyboardManager.cursoredElement != null && UIElementManager.latestDevice != Device.MOUSE) {
 				UIScrollLogic.acertainVisibility(s,this.keyboardManager.cursoredElement);
 			}
+			if(this.biggestHoveredElement != null && this.biggestHoveredElement.mask == s.viewport.transform) {
+				UIScrollLogic.acertainVisibility(s,this.biggestHoveredElement);
+			}
 		}
 	}
 	,enterCursorGroup: function(cursorGroup) {
@@ -15868,7 +16951,7 @@ UIElementManager.prototype = {
 	}
 	,returnCursorGroup: function() {
 		if(this.keyboardManager.previousCursorGroup != null) {
-			haxe_Log.trace("RETURN",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 172, className : "UIElementManager", methodName : "returnCursorGroup"});
+			haxe_Log.trace("RETURN",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 176, className : "UIElementManager", methodName : "returnCursorGroup"});
 			this.keyboardManager.enterCursorGroup(this.keyboardManager.previousCursorGroup,this);
 		}
 	}
@@ -15901,7 +16984,9 @@ UIElementManager.prototype = {
 				}
 				var style = element.style;
 				if(element.enabled || element.styleDisabled == null) {
-					if(element.selected && element.styleSelected != null) {
+					if((element.touch.state || element.buttonActivator.state) && element.stylePressed != null) {
+						style = element.stylePressed;
+					} else if(element.selected && element.styleSelected != null) {
 						style = element.styleSelected;
 						if(element.styleSelectedHover != null && element.hovered.state) {
 							style = element.styleSelectedHover;
@@ -16142,7 +17227,9 @@ var UIElement = function() {
 	this.styleSelectedHover = null;
 	this.styleSelected = null;
 	this.styleHover = null;
+	this.stylePressed = null;
 	this.style = new Style();
+	this.buttonActivator = new BoolProperty();
 	this.touch = new BoolProperty();
 	this.clickedThisFrame = false;
 	this.hovered = new BoolProperty();
@@ -16504,6 +17591,7 @@ UIKeyboardManager.prototype = {
 	cursorThisElement: function(e) {
 		if(this.cursoredElement != null) {
 			this.cursoredElement.hovered.state = false;
+			this.cursoredElement.buttonActivator.state = false;
 		}
 		this.cursoredElement = e;
 		if(this.currentCursorGroup.updateFirstElementToCurrentElement) {
@@ -16575,11 +17663,11 @@ UIKeyboardManager.prototype = {
 					if(yStrong && yPortion == 0) {
 						weight = 0;
 					}
-					haxe_Log.trace(weight + "w",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 77, className : "UIKeyboardManager", methodName : "moveCursor"});
+					haxe_Log.trace(weight + "w",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 78, className : "UIKeyboardManager", methodName : "moveCursor"});
 					if(weight > 0 && weight < currentWeight) {
 						currentWeight = weight;
 						foundElement = value;
-						haxe_Log.trace("gotcha!",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 81, className : "UIKeyboardManager", methodName : "moveCursor"});
+						haxe_Log.trace("gotcha!",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 82, className : "UIKeyboardManager", methodName : "moveCursor"});
 					}
 				}
 			}
@@ -16596,9 +17684,11 @@ UIKeyboardManager.prototype = {
 			var _g1_key = key;
 			var button = _g1_key;
 			var element = _g1_value;
+			element.buttonActivator.startFrame();
 			if(Buttons.buttons.buttonsDown.indexOf(button) != -1) {
 				ui.attemptElementTrigger(element);
 			}
+			element.buttonActivator.state = Buttons.buttons.buttonsPressed.indexOf(button) != -1;
 		}
 		if(this.currentCursorGroup != null) {
 			if(this.currentCursorGroup.cancelGroup != null && Buttons.buttons.buttonsDown.indexOf(DefaultButtons.CANCEL) != -1) {
@@ -16634,7 +17724,7 @@ UIKeyboardManager.prototype = {
 				if(xWeight != 0 && yWeight != 0) {
 					var newElement = this.moveCursor(xWeight,yWeight,ui);
 					if(newElement != null) {
-						haxe_Log.trace("CURSOR!",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 129, className : "UIKeyboardManager", methodName : "update"});
+						haxe_Log.trace("CURSOR!",{ fileName : "Sources\\UIElements/UIKeyboardManager.hx", lineNumber : 132, className : "UIKeyboardManager", methodName : "update"});
 						this.cursorThisElement(newElement);
 					} else {
 						var noElementGroup = this.currentCursorGroup.noElementActivateGroup.get(d);
@@ -16658,9 +17748,14 @@ UIKeyboardManager.prototype = {
 				}
 			}
 		}
+		var cursoredElementReal = this.cursoredElement != null && this.cursoredElement.hovered.state == true && this.cursoredElement.enabled && ui.isVisible(this.cursoredElement);
+		if(cursoredElementReal) {
+			this.cursoredElement.buttonActivator.state = Buttons.buttons.buttonsPressed.indexOf(DefaultButtons.CONFIRM) != -1;
+		}
 		if(Buttons.buttons.buttonsDown.indexOf(DefaultButtons.CONFIRM) != -1) {
-			if(this.cursoredElement != null && this.cursoredElement.hovered.state == true && this.cursoredElement.enabled && ui.isVisible(this.cursoredElement)) {
+			if(cursoredElementReal) {
 				ui.elementTrigger(this.cursoredElement);
+				this.cursoredElement.touch.state = true;
 			}
 		}
 	}
@@ -16751,7 +17846,7 @@ UIScrollLogic.update = function(scroll,deltaMouseMove) {
 	}
 };
 UIScrollLogic.acertainVisibility = function(scroll,element) {
-	if(scroll.elements.indexOf(element) != -1) {
+	if(scroll.elements.indexOf(element) != -1 || scroll.viewport.transform == element.mask) {
 		var bottomY = element.transform.position.y;
 		if(scroll.viewport.transform.position.y > bottomY) {
 			UIScrollLogic.moveScroll(scroll,scroll.viewport.transform.position.y - bottomY);
@@ -47884,7 +48979,7 @@ $hxClasses["Math"] = Math;
 if(typeof(performance) != "undefined" ? typeof(performance.now) == "function" : false) {
 	HxOverrides.now = performance.now.bind(performance);
 }
-haxe_Resource.content = [{ name : "font12_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMTgiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjE4IiBiYXNlPSIxNSIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDEyXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjUzIiB5PSI2MSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MyIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjIyMSIgeT0iNDYiIHdpZHRoPSI5IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM1IiB4PSIxMzIiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9IjExNiIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIyNCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzgiIHg9IjcwIiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIyMzkiIHk9IjQ2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iNzgiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI1NCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDIiIHg9IjIxMCIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iNzkiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjIzMSIgeT0iNDYiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NSIgeD0iNDQiIHk9IjYxIiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIyNCIgeT0iNjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ3IiB4PSIyNiIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDgiIHg9IjIxNSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjEzIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUwIiB4PSIyMjciIHk9IjE2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTEiIHg9IjIzOSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMCIgeT0iMzYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MyIgeD0iMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9Ijk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSIyNCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iMzYiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjQ4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIxNjciIHk9IjQ2IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iMjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIxODciIHk9IjQ2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjAiIHk9IjY0IiB3aWR0aD0iMTEiIGhlaWdodD0iOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MiIgeD0iMTc1IiB5PSI0NiIgd2lkdGg9IjExIiBoZWlnaHQ9IjExIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMTEiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iODYiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjU2IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIxMDgiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE3NyIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2OCIgeD0iMTU2IiB5PSIzMSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMjQiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjE5MSIgeT0iMzEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MSIgeD0iMTkwIiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNDQiIHk9IjMxIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjI0NSIgeT0iMzEiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIxODAiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzUiIHg9IjE2NCIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMjAyIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSI5OCIgeT0iMTciIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjIwMyIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iODQiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijg0IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSIxMDIiIHk9IjAiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iNzIiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIxNTEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjE2OCIgeT0iMzEiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMTM4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg3IiB4PSI0MCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjEyNSIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTEyIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIxMjAiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjYyIiB5PSIwIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iMTYiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkzIiB4PSI3MCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5OSIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMzIiIHk9IjYxIiB3aWR0aD0iMTEiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjI0NiIgeT0iNDYiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjExMyIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OCIgeD0iMTM5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjEzNSIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMSIgeD0iNDMiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAyIiB4PSIyMzMiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTUxIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjgiIHk9IjE5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjciIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNyIgeD0iMTYzIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA4IiB4PSIxNiIgeT0iMTgiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOSIgeD0iMTYiIHk9IjUwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iMTIiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMCIgeD0iOTEiIHk9IjQ4IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI1NSIgeT0iNDgiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjE3NSIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIxNTciIHk9IjQ2IiB3aWR0aD0iOSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEwMiIgeT0iNDgiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjIzNSIgeT0iMzEiIHdpZHRoPSI5IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMTI0IiB5PSI0NyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExOCIgeD0iNjciIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIwIiB5PSI1MSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjMxIiB5PSI0OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMTk5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIxNDYiIHk9IjQ2IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIzNiIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI0IiB4PSIwIiB5PSIwIiB3aWR0aD0iNiIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjUiIHg9IjQ1IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjYiIHg9IjEyIiB5PSI2NCIgd2lkdGg9IjExIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjczIj4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjMiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjY1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iOTIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDUiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDAiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgPC9rZXJuaW5ncz4KPC9mb250Pgo"},{ name : "spine/text_effect_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiUHpjQVl4NjJBcU0iLCJzcGluZSI6IjQuMC42NCIsIngiOi0yMiwieSI6LTE5LjUsIndpZHRoIjo0NCwiaGVpZ2h0IjozOX0sImJvbmVzIjpbeyJuYW1lIjoicm9vdCJ9LHsibmFtZSI6InRleHQiLCJwYXJlbnQiOiJyb290In1dLCJzbG90cyI6W3sibmFtZSI6ImJhY2tncm91bmQiLCJib25lIjoicm9vdCIsImF0dGFjaG1lbnQiOiJwdXJwbGViYWNrIn0seyJuYW1lIjoibnVtYmVyX3Rlc3QiLCJib25lIjoidGV4dCIsImF0dGFjaG1lbnQiOiJudW1iZXJfdGVzdCJ9XSwic2tpbnMiOlt7Im5hbWUiOiJkZWZhdWx0IiwiYXR0YWNobWVudHMiOnsiYmFja2dyb3VuZCI6eyJwdXJwbGViYWNrIjp7IndpZHRoIjo0NCwiaGVpZ2h0IjozOX19LCJudW1iZXJfdGVzdCI6eyJudW1iZXJfdGVzdCI6eyJ3aWR0aCI6MjEsImhlaWdodCI6MTR9fX19XSwiYW5pbWF0aW9ucyI6eyJkb3duX3NsaWRlbGVmdCI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1fSx7InRpbWUiOjEuNSwieCI6LTguNzEsInkiOi01M30seyJ0aW1lIjoxLjY2NjcsIngiOi0zMS4zNywieSI6LTUzfV19fX0sImRvd25fc2xpZGVsZWZ0MiI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjEuNzY2NywieSI6LTUzLjQ1fSx7InRpbWUiOjIuMTY2NywieCI6LTEuNzQsInkiOi01M30seyJ0aW1lIjoyLjMzMzMsIngiOi0zMS4zNywieSI6LTUzfV19fX0sInBvcGluIjp7ImJvbmVzIjp7InRleHQiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjAzMzMsInkiOjE5LjAzfSx7InRpbWUiOjAuMTMzMywieSI6LTE0LjY2LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjAuMiwieSI6LTE0LjY2fSx7InRpbWUiOjAuMjY2NywieSI6Ni41NX0seyJ0aW1lIjowLjMzMzMsImN1cnZlIjoic3RlcHBlZCJ9LHsidGltZSI6MC42NjY3fV19fX0sInBvcGluZmFzdCI6eyJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTI2LjUyfSx7InRpbWUiOjAuMTMzMywiY3VydmUiOiJzdGVwcGVkIn0seyJ0aW1lIjowLjY2Njd9XX19fX19"},{ name : "story_main_json", data : "W3siYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIxX2VwaWxvZ3VlX3N0YXJ0IiwibWVzc2FnZXMiOiBbeyJib2R5IjogIlRoZSBzdW4gaXMgc2V0dGluZy4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJOb3Qgd2FudGluZyB0byBiZSBsYXRlLCB5b3UgaGVhZCBvdXQgZm9yIHRoZSByb2FkLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfV0sInRpdGxlIjogIlN0YXJ0IiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIyX2dvbGRlbl9zdGF0dWUiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiWW91IHJldHVybiBob21lLCBhIGZhbWlsaWFyIG1hbiB3ZWxjb21lcyB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgSGV5LCBob3BlIHlvdSBkaWRuJ3Qgd2FpdC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICJUaGUgbWFuIHNtaWxlcyB3aGVuIGhlIHNlZXMgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEZvciBhIG1pc2NoaWVmLW1ha2VyLCB5b3UgYXJlIGdvb2QgYXQga2VlcGluZyB0aW1lLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIiBUaGUgbWVldGluZyBwbGFjZSBpcyBiZWhpbmQgdGhlIGNodXJjaCwgcmlnaHQ/IFN0LiBJc2FiZWwuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIG1hbiBwaWNrcyB1cCBhIGdvbGRlbiBzdGF0dWUgb2YgYSB3b21hbi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBKdXN0IGdldCB0aGUgcGFja2FnZSBhbmQgZ2l2ZSB0aGVtIHRoZSBzdGF0dWUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIlRoZSBtYW4gZ2l2ZXMgeW91IGEgc2V2ZXJlIGxvb2sgYXMgeW91IHBpY2sgdXAgdGhlIHN0YXR1ZSwgYWxtb3N0IGFuZ3J5LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoYXQgc3RhdHVlIGlzIGEgYmVhdXRpZnVsIHdvcmsgb2YgYXJ0LiBUYWtlIGdvb2QgY2FyZSBvZiBpdC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgQW5kIGRvIG5vdCBjYXVzZSB0cm91YmxlLiBBcmUgd2UgY2xlYXI/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiWW91IG5vZCBhc3N1cmluZ2x5IGFuZCBoZWFkIG91dCBvZiB0aGUgaG91c2UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQSBnb2xkZW4gc3RhdHVlIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIzX3RoZV9kZWFsIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIkluIHRoZSBiYWNrIG9mIHRoZSBjaHVyY2ggdGhyZWUgbWFuIGluIGFybW9yIGFyZSB3YWl0aW5nIGZvciB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgWW91IGhhdmUgdGhlIHBhY2thZ2U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIG1hbiBwb2ludHMgaGlzIGhhbmQgdG8gYSBsYXJnZSB3b29kZW4gYm94LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoYXQgdGhpbmcgaXMgaHVnZS4gSG93IGFtIEkgZ29ubmEgY2FycnkgdGhhdC4uLj8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgWW91IHdpbGwgdXNlIG15IHBlcnNvbmFsIGNhcnJpYWdlLiBUaGUgcmlkZXIgaXMgYSBtYW4gb2YgdHJ1c3QuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJLbmlnaHQifSx7ImJvZHkiOiAiWW91IG5vZCByZXBlYXRlZGx5LCBjb252aW5jZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJZb3UgdGFrZSBvdXQgdGhlIGdvbGRlbiBzdGF0dWUsIGZvciB0aGUgbWFuIHRvIHNlZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlRoZSBtYW4gbm9kcyBhdCB5b3UgYW5kIGNvbWVzIGNsb3NlciB0byB0YWtlIHRoZSBzdGF0dWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIi4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICI1IGRheXMgbGF0ZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJZb3Ugd2FrZSB1cCBhcyB0aGUgc3VuIGxpZ2h0IGhpdHMgeW91ciBmYWNlLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWW91IHdlcmUgc2xlZXBpbmcgcGVhY2VmdWxseSBpbiB5b3VyIGJlZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaGUgZGVhbCIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfSx7ImFjdGlvbkxhYmVsIjogbnVsbCwiaWQiOiAiNV90aGVfY291cnQiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiWW91IHdhbGsgaW50byB0aGUgY291cnRyb29tLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoaXMgaXMgSXNhYmVsLiBUaGVyZSBpcyBubyBvbmUgYmV0dGVyIHN1aXRlZCBmb3IgdGhlIGpvYiwgeW91ciBtYWplc3R5LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIlRoZSBLaW5nLCBEb20gUGVkcm8gSVYsIGxvb2tzIGF0IHlvdSB3aXRoIGEgbWl4IG9mIGRpc2d1c3QgYW5kIGRpc3RydXN0LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIE1hcmlubywgYXJlIHlvdSBzdXJlIHdlIGNhbiB0cnVzdCB0aGlzLi4uIENyZWF0dXJlPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBTaGUgSVMgaHVtYW4sIHlvdXIgbWFqZXN0eS4gVGhlIENoaWxkcmVuIG9mIFNhaGkgbWF5IGJlIG15c3RpY2FsLCBidXQgdGhleSBhcmUgYXMgaHVtYW4gYXMgSSBhbS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgLi4uSXNhYmVsLiBJIGRvIG5vdCB0cnVzdCB5b3Ugb3IgeW91ciBraW5kLiBCdXQgSSB0cnVzdCBNYXJpbm8uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBJIHdhbnQgeW91IHRvIGhlYXIgbXkgcmVxdWVzdC4gTXkgZGF1Z2h0ZXIgaGFzIGJlZW4gY2FwdHVyZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIFJlc2N1ZSBoZXIuIEFuZCBtYWtlIG5vIG1pc3Rha2UsIEkgc3RyaXZlIHRvIGJlIGZhaXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIENvbXBsZXRlIHRoaXMgam9iIGFuZCB5b3UnbGwgYmUgcmV3YXJkZWQgYWNjb3JkaW5nbHkuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIEl0IHdvdWxkIGJlIG15IGhvbm9yLCB5b3VyIG1hamVzdHkuIEknbGwgZG8gd2hhdGV2ZXIgaXQgdGFrZXMgdG8gc2F2ZSBvdXIgcm95YWwgcHJpbmNlc3MuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIEtpbmcgbG9va2VkIHN1cnByaXNlZCBhdCB5b3VyIHdvcmRzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFNoZSBoYXMgbWFubmVycy4gWW91IGhhdmUgcmFpc2VkIGhlciB3ZWxsLCBNYXJpbm8uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBHbyB0byB0aGUgZWFzdCBnYXRlIGFuZCBhc2sgZm9yIFZpY3Rvci4gSGUgd2lsbCB0ZWxsIHlvdSB3aGF0IHlvdSBuZWVkIHRvIGtub3cuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifV0sInRpdGxlIjogIlRoZSBDb3VydCIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfSx7ImFjdGlvbkxhYmVsIjogbnVsbCwiaWQiOiAiNl92aWN0b3IiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiIFlvdSBtdXN0IGJlIElzYWJlbC4gSSdtIFZpY3RvciBvZiB0aGUgUm95YWwgR3VhcmQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIlRoZSBtYW4gZG9lcyBub3Qgc2VlbiBoYXBweSB0byBtZWV0IHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBUaGUgcHJpbmNlc3MgaXMgYmVsaWV2ZWQgdG8gYmUgaGVsZCBhdCBTYW4gTWFyY2VsbyBGb3J0LiBJIHdpbGwgYWNjb21wYW55IHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgUGxlYXN1cmUgdG8gbWVldCB5b3UsIHNpciBWaWN0b3IuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFdobyBjYXB0dXJlZCB0aGUgcHJpbmNlc3M/IEFyZSB0aGV5IGFza2luZyBmb3IgcmFuc29tPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBZb3UgZG8gbm90IG5lZWQgdG8ga25vdy4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIC4uLkxpc3RlbiwgVmljdG9yLiBXZSB3YW50IHRoZSBzYW1lIHRoaW5nLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBUbyBzYXZlIHRoZSBwcmluY2Vzcy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgLi4uQXBvbG9naWVzLiBUaGV5IGJlbGlldmUgaXQgd2FzIHRoZSBsZWFkZXIgb2YgdGhlIFJveWFsIEd1YXJkIHdobyBjYXB0dXJlZCBoZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIE9oLi4uIEd1ZXNzIHdlJ2xsIGtub3cgd2hlbiB3ZSBnZXQgdGhlcmUuIExldCdzIGdvLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn1dLCJ0aXRsZSI6ICJWaWN0b3Igb2YgdGhlIFJveWFsIEd1YXJkIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI3X2ZpcnN0X3RpbWUiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiVmljdG9yIG9mIHRoZSBSb3lhbCBHdWFyZCBkb2VzIG5vdCBzZWVtIHRvIHN0b3Agc3RhcmluZyBhdCB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgRmlyc3QgdGltZSBzZWVpbmcgYSBjaGlsZCBvZiBTYWhpPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBBaCwgbXkgYXBvbG9naWVzLiBEaWQgbm90IG1lYW4gdG8gc3RhcmUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZZXMsIGl0IGlzLiBUaGUgYmx1ZSBpcyBhIGJlYXV0aWZ1bCBjb2xvci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgWW91IGRvbid0IHRoaW5rIG9mIHVzIGFzIG1vbnN0ZXJzPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBJIGFtIGEga25pZ2h0LCBpdCBpcyBub3QgZm9yIG1lIHRvIHRoaW5rIG9yIG5vdCB0aGluayBzdWNoIHRoaW5ncy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgU3BlYWtpbmcgYXMgVmljdG9yLCB0aGUgbWFuLCBJIHdvdWxkIHNheSB3ZSBoYXZlIGxpdHRsZSB0byBnYWluIGFuZCBhIGxvdCB0byBsb3NlIGZyb20gbGFiZWxpbmcgd2hvIGlzIGh1bWFuIGFuZCB3aG8gaXMgbm90LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBMb3ZlbHkgdGhvdWdodHMsIFZpY3Rvci4gS2VlcCB0aGVtIHRvIHlvdXIgaGVhcnQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIEJ1dCBiZXN0IG5vdCB0byB2b2ljZSB0aGVtLiBVbmxlc3MgeW91IGFyZSByZWFkeSB0byBmaWdodCBmb3IgYSBjYXVzZSB3aGljaCBkb2Vzbid0IHJlYWxseSBjb25jZXJuIHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICJZb3UgYW5kIFZpY3RvciBjb250aW51ZSBvbiB0aGUgcm9hZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJGaXJzdCB0aW1lIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI4X3JveWFsX2d1YXJkIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIiBJZiB5b3UgZG9uJ3QgY2FyZSB0aGF0IGFib3V0IG15IGhhaXIgY29sb3IsIHRoZW4gd2h5IGRvIHlvdSBsb29rIGFuZ3J5PyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBUaGlzIGR1dHkgc2hvdWxkIGhhdmUgYmVlbiBnaXZlbiB0byB0aGUgbWVtYmVycyBvZiB0aGUgUm95YWwgR3VhcmQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBUaGV5IGNvdWxkIGhhdmUgZXZlbiBzZW50IG1lIGFsb25lLiBJdCBpcyBteSBkdXR5IHRvIHByb3RlY3QgdGhlIHByaW5jZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZb3UgYXJlIG5vdCBuZWNlc3NhcnksIGFuZCB5ZXQuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSBzZWUuIFRoZXkgc3VzcGVjdCB0aGUgUm95YWwgR3VhcmQgaXMgaW52b2x2ZWQsIHNvIHRoYXQgaXMgd2h5IEkgd2FzIGNhbGxlZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgVGhlcmUgaXMgbm8gd2F5IGFueSBtZW1iZXIgb2YgdGhlIFJveWFsIEd1YXJkIGlzIGludm9sdmVkIGluIHRoaXMuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIFRoZSBlbmVteSBwbGFucyB0byBzcHJlYWQgZGlzdHJ1c3QgYW5kIGh1cnQgb3VyIGhvbm9yLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZb3UsIElzYWJlbCwgaGFzIGJlY29tZSBhIHN0YWluIG9mIGRpcnQgaW4gb3VyIG5hbWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIC4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBJIGFncmVlIHdpdGggeW91LiBJIGRvbid0IHRoaW5rIHRoZSBSb3lhbCBHdWFyZCBpcyBiZWhpbmQgdGhpcyBlaXRoZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVmljdG9yIGxvb2tzIHN1cnByaXNlZCBhdCB5b3VyIHdvcmRzLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBMZXQgdXMgaHVycnkuIFRoZSBmYXN0ZXIgd2UgY2FuIHNhdmUgdGhlIHByaW5jZXNzIGFuZCBmaW5kIG91dCB3aG8gdGhlIHJlYWwgZW5lbXkgaXMsIHRoZSBmYXN0ZXIgdGhlIFJveWFsIEd1YXJkIG5hbWUgY2FuIGJlIGNsZWFuZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifV0sInRpdGxlIjogIlJveWFsIEd1YXJkIEhvbm9yIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIxMV9hcnJlc3QiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiIFByaW5jZXNzISBZb3UgYXJlIHNhZmUhISIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBWaWN0b3IsIGdvb2Qgb2YgeW91IHRvIGNvbWUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiVGhlIHByaW5jZXNzIGxvb2tzIGF0IHlvdSwgd2l0aCBzZXJpb3VzLCBjYWxtIGV5ZXMuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgQW5kIHlvdSBhcmU/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgSXNhYmVsLCB5b3VyIGhpZ2huZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBBcnJlc3QgSXNhYmVsLCBWaWN0b3IuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgLi4uSSdtIHNvcnJ5PyBZb3UgbWlzdW5kZXJzdGFuZCwgUHJpbmNlc3MsIElzYWJlbCBoZWxwZWQgcmVzY3VlIHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSBhbSBhd2FyZS4gQnV0IHNoZSBpcyBhbHNvIGEgY3JpbWluYWwuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgTWF5IEkgYXNrIHdoYXQgbXkgY3JpbWVzIGFyZSwgeW91ciBoaWdobmVzcz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgUm95YWx0eSBhYmR1Y3Rpb24gYW5kIGFzc2Fzc2luYXRpb24gb2YgdGhlIFJveWFsIEd1YXJkLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiSXNhYmVsIGRyYXdzIGhlciB3ZWFwb24uIFZpY3RvciBkb2VzIHRoZSBzYW1lIGFuZCBtb3ZlcyBjbG9zZXIgdG8gdGhlIHByaW5jZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgY2FuIGtpbGwgeW91IGJvdGggd2l0aG91dCBwcm9ibGVtLCB5b3Uga25vdz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgWW91IGNvdWxkLiBCdXQgd2hhdCB3b3VsZCB5b3UgZG8gbmV4dD8gR28gYmFjayB0byB0aGUgY2FzdGxlIGFuZCByZXBvcnQgb3VyIGRlYXRocz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBPciBwZXJoYXBzIHlvdSB3b3VsZCBydW4gYXdheSBhZnRlciBraWxsaW5nIHVzLCBiZWNvbWluZyBhIHdhbnRlZCBjcmltaW5hbC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBFaXRoZXIgd2F5LCBNYXJpbm8gd291bGQgbG9zZSBoaXMgam9iIGFuZCB5b3UgZG9uJ3Qgd2FudCB0aGF0LCBkbyB5b3U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgWW91IGFyZSB3YXksIHdheSBzbWFydGVyIHRoYW4gSSB0aG91Z2h0LCBQcmluY2Vzcy4gQnJhdm8uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFdlbGwsIGlmIEkgZ2V0IGFycmVzdGVkLCBNYXJpbm8gd291bGQgbG9zZSBoaXMgam9iIHRoZSBzYW1lIHdheSwgc28uLi4gTWlnaHQgYXMgd2VsbCBraWxsIHlvdSBib3RoIGFuZCBrZWVwIG15IGZyZWVkb20uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIENhbiBzb21lb25lIGV4cGxhaW4gbWUgd2hhdCBpcyBoYXBwZW5pbmcgaGVyZS4uLj8gV2h5IHdvdWxkIElzYWJlbCBhYmR1Y3QgdGhlIFByaW5jZXNzIGFuZCB0aGVuIGhlbHAgcmVzY3VlIGhlcj8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSXQgaXMgYWxsIE1hcmlubydzIHBsb3QuIEhlIHBsYW5zIHRvIGluY3JlYXNlIGhpcyBpbmZsdWVuY2Ugb3ZlciB0aGUga2luZ2RvbS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBJIGd1ZXNzIGhlIGFsc28gd2FudHMgdG8gcHV0IGhpcyBwYXduLCBJc2FiZWwgaGVyZSwgaW4gYSBtb3JlIGFkdmFudGFnZW91cyBwb3NpdGlvbi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIlRoZSB0ZW5zaW9uIGJ1aWxkcyB1cCBpbiB0aGUgcm9vbSBhcyBWaWN0b3IgYW5kIElzYWJlbCBzdGFyZSBhdCBlYWNoIG90aGVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFJ1biBQcmluY2VzcywgSSBjYW4gYXQgbGVhc3Qgc2F2ZSB0aW1lLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBQdXQgZG93biB5b3VyIHN3b3JkLCBWaWN0b3IuIFlvdSBhcmUgbm90IGFycmVzdGluZyBoZXIuIEFuZCBJc2FiZWwgd29uJ3QgZmlnaHQgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiIEkgd29uJ3Q/IFdoeT8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgVGhlcmUgaXMgYSB3YXkgd2UgY2FuIGJvdGggZ2V0IHdoYXQgd2Ugd2FudC4gQW5kIG1vcmUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiIFdoeSBkb24ndCB5b3UgbGlzdGVuIHRvIG15IG9mZmVyPyBJJ20gc3VyZSBpdCB3aWxsIGJlIHRvIHlvdXIgbGlraW5nLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiVG8gYmUgY29udGludWVkIGluIHRoZSBuZXh0IHVwZGF0ZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJBcnJlc3QgSXNhYmVsIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI0X2JyZWFrZmFzdCIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJZb3UgY29vayBlZ2dzIHdoaWxlIE1hcmlubyBtYWtlcyBvcmFuZ2UgdGVhLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWW91IGJvdGggc2l0IGRvd24gZm9yIGJyZWFrZmFzdC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBUaGUgdGVhIHRhc3RlcyB3ZWlyZCB0b2RheS4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFNvcnJ5LCBjb3VsZG4ndCBzbGVlcCB3ZWxsIGxhc3QgbmlnaHQuIE11c3QgaGF2ZSBzY3Jld2VkIGl0IHVwLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiIFdvcnJpZWQgYWJvdXQgdGhlIHBsYW4/ICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiAuLi5ZZXMuIEFzIHNob3VsZCBiZSB5b3UuIFJlcGVhdCB0aGUgcGxhbi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgV2UgbWVldCB0aGUgS2luZy4gSGUgYXNrcyBtZSB0byByZXNjdWUgdGhlIHByaW5jZXNzLiBJIHJlc2N1ZSB0aGUgcHJpbmNlc3MuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBJIGJlY29tZSBhIGhlcm8uIFZpc2NvbmRlIE1hcmlubyBiZWNvbWVzIENvbmRlIE1hcmlubywgYSBuaWNlIHByb21vdGlvbi4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIEFtIEkgbWlzc2luZyBhbnl0aGluZz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgUGVyZmVjdC4gRXhjZXB0IGZvciB3aGF0IHlvdSBkaWQgNSBkYXlzIGFnby4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgSSBtYWRlIHlvdXIgcGxhbiBldmVuIGJldHRlci4gWW91IHNob3VsZCB0aGFuayBtZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgWW91IGRpZCwgYnV0IGF0IHRoZSBjb3N0IG9mIGJsb29kLiBVbm5lY2Vzc2FyeS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICJUaGUgcm9vbSBiZWNvbWVzIHNpbGVudCBhcyB5b3UgYm90aCBmaW5pc2ggeW91ciBtZWFsLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIExldCB1cyBnby4gRG9uJ3Qgd2FubmEga2VlcCB0aGUgS2luZyB3YWl0aW5nLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn1dLCJ0aXRsZSI6ICJCcmVha2Zhc3QiLCJ2aXNpYmlsaXR5U2NyaXB0IjogbnVsbH0seyJhY3Rpb25MYWJlbCI6IG51bGwsImlkIjogIjlfdHJvbGwiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiQSB0cm9sbCBzdGFuZHMgaW4gdGhlIGdhdGVzIG9mIHRoZSBGb3J0IFNhbiBNYXJjZWxvLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBTdGFuZCBiYWNrLCBWaWN0b3IuIEknbGwgaGFuZGxlIGhpbS4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVmljdG9yIGxvb2tzIGRpc2FwcG9pbnRlZCBhdCBoaW1zZWxmLCBidXQgbm9kcywgbGVhdmluZyB0aGUgYmF0dGxlIHRvIHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaGUgVHJvbGwiLCJ2aXNpYmlsaXR5U2NyaXB0IjogbnVsbH0seyJhY3Rpb25MYWJlbCI6IG51bGwsImlkIjogIjEwX3N0cmVuZ3RoIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIiBJIGhhdmUgaGVhcmQgdGhlIGNoaWxkcmVuIG9mIFNhaGkgd2VyZSBzdHJvbmcsIGJ1dCBkaWRuJ3Qga25vdyBpdCB3YXMgc3VjaCBwb3dlci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSB3aXNoIEkgaGFkIHN1Y2ggc3RyZW5ndGguLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgQmUgY2FyZWZ1bCB3aXRoIHdoYXQgeW91IHdpc2ggZm9yLiBJdCBjb21lcyBhdCBhIGNvc3QuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiAuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgWW91IGFsc28gZG9uJ3QgdGhpbmsgdGhlIFJveWFsIEd1YXJkIGlzIGJlaGluZCB0aGUgYWJkdWN0aW9uIG9mIHRoZSBwcmluY2Vzcz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSBkb24ndC4gU29tZXRoaW5nIGVsc2UgaXMgYXQgd29yayBoZXJlLiBNb3JlIHNpbmlzdGVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIlZpY3RvciBzbWlsZXMgYXQgeW91IGFuZCBub2RzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgZmVlbCB0aGUgc2FtZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICJZb3UgYm90aCBsb29rIG92ZXIgdG8gRm9ydCBTYW4gTWFyY2Vsby4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBMZXQgdXMgaHVycnkhIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifV0sInRpdGxlIjogIlRoZSBzdHJlbmd0aCBvZiB0aGUgQ2hpbGRyZW4gb2YgU2FoaSIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfV0"},{ name : "uigen_txt", data : "eyJsaW5lYXJMYXlvdXRzIjpbeyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoyMCwiY2hpbGRQaXZvdFkiOjAsImNoaWxkUGl2b3RYIjowLCJlbGVtZW50Ijp7ImlkIjoibWFpbmJ1dHRvbmdyb3VwIiwieCI6NjUsInkiOjM0MCwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjo3NzAsImhlaWdodCI6LTF9fSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjoyMCwic2VwYXJhdGlvblkiOjIwLCJjaGlsZFBpdm90WSI6MCwiY2hpbGRQaXZvdFgiOjAsImVsZW1lbnQiOnsiaWQiOiJzZXRidXR0b25ncm91cCIsIngiOjY1LCJ5Ijo0NjUsInNjcmVlblBpdm90WSI6MCwic2NyZWVuUGl2b3RYIjowLCJ3aWR0aCI6NzcwLCJoZWlnaHQiOi0xfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6NSwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjAsImVsZW1lbnQiOnsiaWQiOiJ0dXJub3JkZXIiLCJ4Ijo0NTcsInkiOjI4NSwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjoyNzAsImhlaWdodCI6MH19LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjE1LCJzZXBhcmF0aW9uWSI6MTAsImNoaWxkUGl2b3RYIjoxLCJjaGlsZFBpdm90WSI6MSwiZWxlbWVudCI6eyJpZCI6Imxvd2VyYnV0dG9ucyIsIngiOi0zMDAsInkiOi0xMCwic2NyZWVuUGl2b3RZIjoxLCJzY3JlZW5QaXZvdFgiOjEsIndpZHRoIjowLCJoZWlnaHQiOjB9fSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MC41LCJjaGlsZFBpdm90WSI6MCwiZWxlbWVudCI6eyJpZCI6ImRpYWxvZ2J1dHRvbiIsIngiOjAsInkiOjAsInNjcmVlblBpdm90WSI6MC41LCJzY3JlZW5QaXZvdFgiOjAuNSwid2lkdGgiOjI3MCwiaGVpZ2h0IjowfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImVxdWlwYnV0dG9uIiwieCI6MzMwLCJ5IjoxNTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjEwLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJ0YWJidXR0b24iLCJ4Ijo1NiwieSI6MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjoyMn0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJlcXVpcHBlZGJ1dHRvbnMiLCJ4IjoxNywieSI6MTU0LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6Im1pc2NlcXVpcGJ1dHRvbnMiLCJ4IjoxNywieSI6ODIsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjoxMCwic2VwYXJhdGlvblkiOjEwLCJlbGVtZW50Ijp7ImlkIjoic2V0ZXF1aXBidXR0b25zIiwieCI6NzAwLCJ5Ijo4Miwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxvZyIsIngiOjg3NiwieSI6NzUsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImVxdWlwYWN0b3J2aWV3IiwieCI6MjIsInkiOjMyOSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiYWN0b3JzdGF0aG92ZXIiLCJ4IjoyMjIsInkiOjI5NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBjdXJyZW5jeXZpZXciLCJ4IjoyMiwieSI6LTEwMCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImdlbmVyaWNob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InRpdGxlYnV0dG9ucyIsIngiOjUwLCJ5IjoxMDAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MTUwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjMsImVsZW1lbnQiOnsiaWQiOiJ0aXRsZWxvZ28iLCJ4IjoyMDAsInkiOjAsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjAuNSwid2lkdGgiOjE1MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowLjV9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJhcmVhIiwieCI6MjAwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjoyNTAsImhlaWdodCI6MzB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJzdWJidXR0b25zIiwieCI6NTEwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjozMH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjo3LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX3JlZ2lvbnMiLCJ4IjozNSwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MjMwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6NywiZWxlbWVudCI6eyJpZCI6InJlZ2lvbl9hcmVhcyIsIngiOjIzMiwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MzQwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX2VuZW15IiwieCI6NTcyLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjozNDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJyZWdpb25fZW5lbXlfc3RhdCIsIngiOjU3MiwieSI6MTIwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjAsImVsZW1lbnQiOnsiaWQiOiJtZW1vcnlfYnV0dG9ucyIsIngiOjUwLCJ5Ijo2NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2MDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MCwiZWxlbWVudCI6eyJpZCI6InN0b3J5X21haW4iLCJ4IjowLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLjUsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjY2MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJzdG9yeWJ1dHRvbmEiLCJ4IjowLCJ5IjotMjIsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InN0b3J5YnV0dG9uYiIsIngiOi0zNDUsInkiOi0yMiwic2NyZWVuUGl2b3RYIjoxLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxheW91dF9hY2hpZXZlbWVudCIsIngiOjQwLCJ5Ijo5MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2ODAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9XX0"},{ name : "Unnamed_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9IlBpeGVsTXBsdXMxMCIgc2l6ZT0iMTEiIGJvbGQ9IjAiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjAiIGFhPSIxIiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjAiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjExIiBiYXNlPSI5IiBzY2FsZVc9IjI1NiIgc2NhbGVIPSIyNTYiIHBhZ2VzPSIxIiBwYWNrZWQ9IjAiIGFscGhhQ2hubD0iMCIgcmVkQ2hubD0iNCIgZ3JlZW5DaG5sPSI0IiBibHVlQ2hubD0iNCIvPgogIDxwYWdlcz4KICAgIDxwYWdlIGlkPSIwIiBmaWxlPSJVbm5hbWVkXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSIxMjciPgogICAgPGNoYXIgaWQ9IjEiIHg9IjI1IiB5PSIxOSIgd2lkdGg9IjQiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIiIHg9IjE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMiIHg9IjI2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNCIgeD0iMzgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1IiB4PSI0MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYiIHg9IjQ4IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNyIgeD0iMyIgeT0iMjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4IiB4PSIxMjAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5IiB4PSI1MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwIiB4PSIzMiIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExIiB4PSIxNTciIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMiIgeD0iMTYxIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTMiIHg9IjE2OSIgeT0iOCIgd2lkdGg9IjMiIGhlaWdodD0iNiIgeG9mZnNldD0iMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE0IiB4PSIxNjUiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNiIgeD0iNTUiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTciIHg9IjY3IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE4IiB4PSI2MSIgeT0iMTgiIHdpZHRoPSI1IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxOSIgeD0iNDkiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjAiIHg9IjQzIiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iOSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIxIiB4PSI2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iMiIgeW9mZnNldD0iMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIyIiB4PSIxMCIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyMyIgeD0iMTQ1IiB5PSI4IiB3aWR0aD0iNSIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIwIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjQiIHg9IjE1MSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNiIgeG9mZnNldD0iMCIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI1IiB4PSIxNCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyNiIgeD0iMTQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjciIHg9IjE0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI4IiB4PSIyNDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyOSIgeD0iMTU3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzAiIHg9IjE2MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMxIiB4PSI5MSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMiIgeD0iODMiIHk9IjE4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMyIgeD0iMTQzIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjgiIHk9IjIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzUiIHg9IjE3NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSI5NiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIxODIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzkiIHg9IjE1IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSI4NSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI4MSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQyIiB4PSIyNDUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iMTkwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjQwIiB5PSIxOCIgd2lkdGg9IjIiIGhlaWdodD0iMiIgeG9mZnNldD0iMSIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ1IiB4PSI3OCIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NiIgeD0iOTMiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjEwMSIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ4IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjUyIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjIzMiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIyMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMjQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjI0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU0IiB4PSIwIiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSI1IiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSIxMCIgeT0iMTIiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMTUiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTgiIHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSIwIiB5PSIyMCIgd2lkdGg9IjIiIGhlaWdodD0iNSIgeG9mZnNldD0iMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIzMCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMzAiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIzIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjE5NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMjI3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjE1MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIyNSIgeT0iMTEiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMjAiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjIxNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMTIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MCIgeD0iMjA3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjE5MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNzIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MyIgeD0iMTM5IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzQiIHg9IjE2NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSIxMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTMyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzciIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc4IiB4PSIxMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijk1IiB5PSI5IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODEiIHg9IjYzIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODIiIHg9IjM1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSI0MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NCIgeD0iMTEwIiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjQ1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI1MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMTE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjU1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg5IiB4PSIxMzAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MCIgeD0iNjAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijc3IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjkxIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTMiIHg9IjczIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5IiB5PSIyMCIgd2lkdGg9IjUiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk1IiB4PSI3MyIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjkiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NiIgeD0iMTIiIHk9IjIwIiB3aWR0aD0iMiIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjIyMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSI3MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OSIgeD0iMjA1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSI3NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMiIgeD0iODAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAzIiB4PSI4NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDQiIHg9IjkwIiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNSIgeD0iMTA2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA2IiB4PSIyMiIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTAiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjEwMCIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMTM1IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSIxNzMiIHk9IjgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjI1MCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMSIgeD0iMTg1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEyIiB4PSI2NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjEwNSIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMTk1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIyMDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjExMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMjEwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIyMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjE3OSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMjI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIxIiB4PSIxMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjIiIHg9IjIzNSIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMyIgeD0iNjgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9Ijg5IiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSI1OCIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMzUiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI3IiB4PSI4NyIgeT0iMTgiIHdpZHRoPSIzIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogIDwvY2hhcnM+CjwvZm9udD4K"},{ name : "font14_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjAiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIwIiBiYXNlPSIxNiIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE0XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI1MCIgeT0iNDgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNyIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMzIiB4PSIxNyIgeT0iNTMiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM0IiB4PSIzNiIgeT0iNjUiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iOTgiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9Ijg4IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzciIHg9IjEzNyIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMjI2IiB5PSIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSI1NiIgeT0iNjUiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSIzNyIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDEiIHg9IjQ2IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iMTIiIHk9IjY5IiB3aWR0aD0iMTAiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjEyMiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iNDciIHk9IjY1IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjEwNyIgeT0iNjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI5IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDYiIHg9Ijg2IiB5PSI2NCIgd2lkdGg9IjciIGhlaWdodD0iNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjE3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTI0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIxNDgiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjE4NCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MSIgeD0iMjA4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUyIiB4PSIyMTUiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjIyMCIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NCIgeD0iNzYiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTUiIHg9IjIzMiIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iNTIiIHk9IjM2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjY0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIyNDIiIHk9IjQ4IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iNTMiIHdpZHRoPSI4IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSI5NiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMjMiIHk9IjY5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTAiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjEwOSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MyIgeD0iMjQ0IiB5PSIzMiIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY0IiB4PSI1NSIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NSIgeD0iNDIiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjExMSIgeT0iMTkiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMTUwIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY4IiB4PSIxMjQiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjkiIHg9Ijg4IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcwIiB4PSIxMDAiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjAiIHk9IjIxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzIiIHg9IjE3NiIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjkiIHk9IjUzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NCIgeD0iMTM2IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSI4NCIgeT0iMTkiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSIyNDEiIHk9IjAiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjE2MyIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzkiIHg9IjcwIiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMjI4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSI3MyIgeT0iMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iMTg5IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSIwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIzOSIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTM3IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMjgiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODciIHg9IjIwOCIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEyIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OCIgeD0iMTQiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODkiIHg9IjU2IiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMDIiIHk9IjE3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjEyOSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjI3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iMTIwIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NCIgeD0iMCIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iOTQiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjY0IiB5PSI2NSIgd2lkdGg9IjgiIGhlaWdodD0iOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NyIgeD0iMTYwIiB5PSI0OSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSIyNDEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjE5NiIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjE3MiIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIwOCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjE4MSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTU1IiB5PSIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA1IiB4PSIxOTIiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNiIgeD0iNyIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0zIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA3IiB4PSIxNjgiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDgiIHg9IjIwMCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSI1MyIgeT0iNTIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSIxMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEwIiB4PSIxNDgiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI3MCIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjEzIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMjMyIiB5PSI0OCIgd2lkdGg9IjkiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIxNzIiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE2IiB4PSIyNSIgeT0iNTMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTciIHg9IjE4NCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTgiIHg9IjEzNSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjM2IiB5PSI1MiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjgzIiB5PSI1MSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMjYiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyMjAiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIxMDAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNCIgeD0iMCIgeT0iMCIgd2lkdGg9IjYiIGhlaWdodD0iMjAiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSIxMTAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iNzMiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICA8L2NoYXJzPgogIDxrZXJuaW5ncyBjb3VudD0iODUiPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMyIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTEiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTA3IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI4NiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDIiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTgiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEyMiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTEzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAxIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI5MCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI5MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI0MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0MCIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NyIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIxMTYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMTE2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ1IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogIDwva2VybmluZ3M+CjwvZm9udD4K"},{ name : "font16_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjIiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIyIiBiYXNlPSIxOCIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE2XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI0OSIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE5IiB4YWR2YW5jZT0iMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjEwMyIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iMTc2IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSIyNSIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSI4IiB5PSIyMiIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iNDYiIHk9IjIxIiB3aWR0aD0iMTUiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIxMTUiIHk9IjY5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iMTYiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI3IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iNjkiIHk9IjcyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjE3OSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iODEiIHk9IjcyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjE1NCIgeT0iNjgiIHdpZHRoPSI5IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIxNDYiIHk9IjY4IiB3aWR0aD0iNyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NyIgeD0iMzgiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTYzIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIyNSIgeT0iNTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MCIgeD0iMTUwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIxMzciIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTIiIHg9IjcwIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUzIiB4PSIxMjQiIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9IjIyOCIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NSIgeD0iMTExIiB5PSIzOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSI5OCIgeT0iMzgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMjQxIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSI0OCIgeT0iNzIiIHdpZHRoPSI3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSI3MiIgeT0iNTUiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIyMTgiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjkwIiB5PSI2OSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYyIiB4PSIwIiB5PSI3NSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDkiIHk9IjAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMTA4IiB5PSIwIiB3aWR0aD0iMTgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY1IiB4PSIxMzciIHk9IjIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjE4MSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE5NSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjAiIHk9IjQxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMDIiIHk9IjM1IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjEzIiB5PSI1OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcxIiB4PSIyMDkiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIyMjMiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjczIiB4PSI4MSIgeT0iNTUiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIzNyIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NSIgeD0iOTIiIHk9IjIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc2IiB4PSI0OSIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NyIgeD0iMTA3IiB5PSIyMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OCIgeD0iMTY3IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTIyIiB5PSIyMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMTg5IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MSIgeD0iMTI3IiB5PSIwIiB3aWR0aD0iMTUiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgyIiB4PSI4NCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjQyIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIyOCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTQiIHk9IjM5IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI3NyIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMjciIHk9IjIxIiB3aWR0aD0iMTgiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg4IiB4PSI2MiIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTUyIiB5PSIxOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMzciIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijk5IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iNDkiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iOTAiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk0IiB4PSI1NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMTY0IiB5PSI2OCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk2IiB4PSIxMjMiIHk9IjY5IiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk3IiB4PSIxNjYiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTgiIHg9IjE4MyIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk5IiB4PSIyNDQiIHk9IjUyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSIxNzAiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjIyMSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTQzIiB5PSIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxNTciIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjAiIHk9IjIzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjYwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTMiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjE5NiIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMjMyIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDkiIHg9Ijg5IiB5PSI1NSIgd2lkdGg9IjE3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjE5MiIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTEiIHg9IjIwNSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjIxNSIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjAiIHk9IjU4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIzNyIgeT0iNzIiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEzIiB5PSI3NSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNiIgeD0iNjEiIHk9IjU1IiB3aWR0aD0iMTAiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE3IiB4PSIxNTMiIHk9IjU0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIxMjUiIHk9IjU0IiB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIxMDciIHk9IjU1IiB3aWR0aD0iMTciIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iMTMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMTM5IiB5PSI1NCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iNTYiIHk9IjM4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyNSIgeT0iNzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjMiIHg9IjcwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9IjAiIHk9IjAiIHdpZHRoPSI2IiBoZWlnaHQ9IjIyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNSIgeD0iODAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMTMzIiB5PSI2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjEwNiI+CiAgICA8a2VybmluZyBmaXJzdD0iMTIzIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjEiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTgiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE4IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTExIiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MSIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMjIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTE1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODUiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExNSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTExIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjkwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQwIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM5IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjQyIiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9IjkyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIxMTgiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMTE4IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICA8L2tlcm5pbmdzPgo8L2ZvbnQ+Cg"},{ name : "spine/character_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiRFhRcjgwUEZUS2siLCJzcGluZSI6IjQuMC42NCJ9LCJib25lcyI6W3sibmFtZSI6InJvb3QifV0sImFuaW1hdGlvbnMiOnsiYXR0YWNrIjp7ImJvbmVzIjp7InJvb3QiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjA2NjcsIngiOi01NS43OH0seyJ0aW1lIjowLjEzMzMsIngiOjkxLjh9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "storyjson", data : "W3siYWN0aW9uTGFiZWwiOiAiV2FrZSB1cCIsImlkIjogIkEgZmluZSBtb3JuaW5nLiIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJJdCdzIGEgZmluZSBtb3JuaW5nLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBoZWFkIGZvciB0aGUgZG9vciwgcmVhZHkgdG8gZ28gb3V0c2lkZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBZb3UncmUgZ29pbmcgb3V0IHRvZGF5IHRvbz8gV2hlcmUgdG8/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEtpbGwgc29tZSBtb25zdGVycywgbW9tLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaHkgZG8gSSBldmVuIGFzaywgc2hlIGRvZXMgdGhpcyBldmVyeSBkYXkuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9XSwidGl0bGUiOiAiQSBmaW5lIG1vcm5pbmcuIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiAiSSdtIGh1bmdyeS4uLiIsImlkIjogIlRpbWUgZm9yIGRpbm5lciIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJZb3VyIHJ1bWJsaW5nIHN0b21hY2ggbWFkZSB5b3UgZGVjaWRlIHRvIGdvIGJhY2sgaG9tZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBJJ20gYmFjayIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBHb29kLCBpdCdzIHRpbWUgZm9yIGRpbm5lci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgSGV5IG1vbS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaGF0IGlzIHdyb25nLCBkZWFyPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTW9tIn0seyJib2R5IjogIiBJJ20gbGVhdmluZyB0b3duIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEhhaGFoYWhhYSwgb2ggWW91Li4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEFuZCBJJ20gTWJvaSwgR29kIG9mIFdhdGVyd2F5cyEiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEMnbW9uLCBlYXQgdXAuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiWW91IGdvIGJhY2sgdG8gYmVkLCB1bnNhdGlzZmllZCB3aXRoIHdoYXQgeW91ciBtb20gc2FpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaW1lIGZvciBkaW5uZXIiLCJ2aXNpYmlsaXR5U2NyaXB0IjogIiByZXR1cm4gZ2xvYmFsW1wibWF4YXJlYVwiXSA+IDI7ICJ9LHsiYWN0aW9uTGFiZWwiOiAiSG93IGRvIEkgZ2V0IHN0cm9uZ2VyLi4uIiwiaWQiOiAiQmVjb21lIHN0cm9uZ2VyIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIllvdSBzdG9wIG1vdmluZyBhbmQgdGFrZSBhIGRlZXAgYnJlYXRoLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBzdGFyZSBhdCB5b3VyIGhhbmRzLCB3aGljaCBhcmUgc3Ryb25nZXIgdGhhbiBldmVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWWV0LCBzb21ldGhpbmcgY29uY2VybnMgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgZmVlbCBsaWtlIGl0IGJlY29tZXMgaGFyZGVyIGFuZCBoYXJkZXIgdG8gYmVjb21lIHN0cm9uZ2VyLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiQSBzaGFkeSBtYW4gYXBwcm9hY2hlcyB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgSGV5IGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hbiJ9LHsiYm9keSI6ICIgV2hvIGFyZSB5b3U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIE5hbWUncyBDaWQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFuIn0seyJib2R5IjogIiBJIGZlZWwgbGlrZSBJJ3ZlIHNlZW4gdGhhdCBuYW1lIGJlZm9yZS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBZb3Ugd2FubmEgYmVjb21lIHN0cm9uZ2VyPyBIZWguIFNvbWV0aW1lcyB5b3UgZ290dGEgbG9zZSBpdCBhbGwgdG8gcmVhY2ggYSBuZXcgaGVpZ2h0LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIiBBbnl3YXlzLCB0YWtlIHRoaXMuIEl0IHRlYWNoZXMgeW91IGhvdyB0byBTb3VsIENydXNoLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIkhlIGhhbmRzIHlvdSBhbiBvbGQgc2Nyb2xsLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgc2hvdWxkbid0IHJlYWxseSB0YWtlIHRoaW5ncyBmcm9tIHN0cmFuZ2Vycy4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBCdXQgb2ggd2VsbC4gSSdsbCB0YWtlIGEgc2hvdC4gSG9wZSBpdCBkb2Vzbid0IGdldCBtZSBraWxsZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIFlvdSBtYXkgbm90IGJlIGFibGUgdG8gZG8gaXQgbm93LCBidXQgc29tZWRheS4uLiBHb29kIGx1Y2ssIGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIkNpZCJ9LHsiYm9keSI6ICItLS0iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlNvdWwgQ3J1c2ggaXMgbm93IGFjY2Vzc2libGUuIFlvdSBuZWVkIHRvIGJlIGF0IGEgY2VydGFpbiBsZXZlbCB0byB1c2UgaXQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQmVjb21lIHN0cm9uZ2VyIiwidmlzaWJpbGl0eVNjcmlwdCI6ICIgcmV0dXJuIGdsb2JhbFtcImhlcm9sZXZlbFwiXSA+IDg7ICJ9XQ"}];
+haxe_Resource.content = [{ name : "font12_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMTgiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjE4IiBiYXNlPSIxNSIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDEyXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjUzIiB5PSI2MSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MyIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjIyMSIgeT0iNDYiIHdpZHRoPSI5IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM1IiB4PSIxMzIiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9IjExNiIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIyNCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzgiIHg9IjcwIiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIyMzkiIHk9IjQ2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iNzgiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI1NCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDIiIHg9IjIxMCIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iNzkiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjIzMSIgeT0iNDYiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NSIgeD0iNDQiIHk9IjYxIiB3aWR0aD0iOCIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIyNCIgeT0iNjMiIHdpZHRoPSI3IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ3IiB4PSIyNiIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDgiIHg9IjIxNSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjEzIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUwIiB4PSIyMjciIHk9IjE2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTEiIHg9IjIzOSIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMCIgeT0iMzYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MyIgeD0iMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9Ijk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSIyNCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iMzYiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjQ4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIxNjciIHk9IjQ2IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iMjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIxODciIHk9IjQ2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjAiIHk9IjY0IiB3aWR0aD0iMTEiIGhlaWdodD0iOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MiIgeD0iMTc1IiB5PSI0NiIgd2lkdGg9IjExIiBoZWlnaHQ9IjExIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMTEiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iODYiIHk9IjAiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjU2IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIxMDgiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE3NyIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2OCIgeD0iMTU2IiB5PSIzMSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMjQiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjE5MSIgeT0iMzEiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MSIgeD0iMTkwIiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNDQiIHk9IjMxIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjI0NSIgeT0iMzEiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIxODAiIHk9IjMxIiB3aWR0aD0iMTAiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzUiIHg9IjE2NCIgeT0iMTYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMjAyIiB5PSIzMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSI5OCIgeT0iMTciIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjIwMyIgeT0iMTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iODQiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijg0IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSIxMDIiIHk9IjAiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iNzIiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIxNTEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjE2OCIgeT0iMzEiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMTM4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg3IiB4PSI0MCIgeT0iMTgiIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjEyNSIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTEyIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIxMjAiIHk9IjMyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTQiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjYyIiB5PSIwIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iMTYiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkzIiB4PSI3MCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5OSIgeT0iNDYiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMzIiIHk9IjYxIiB3aWR0aD0iMTEiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjI0NiIgeT0iNDYiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjExMyIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OCIgeD0iMTM5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjEzNSIgeT0iNDciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMSIgeD0iNDMiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAyIiB4PSIyMzMiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTUxIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjgiIHk9IjE5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjciIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNyIgeD0iMTYzIiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA4IiB4PSIxNiIgeT0iMTgiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOSIgeD0iMTYiIHk9IjUwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iMTIiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMCIgeD0iOTEiIHk9IjQ4IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI1NSIgeT0iNDgiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjE3NSIgeT0iMCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIxNTciIHk9IjQ2IiB3aWR0aD0iOSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEwMiIgeT0iNDgiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjIzNSIgeT0iMzEiIHdpZHRoPSI5IiBoZWlnaHQ9IjE0IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMTI0IiB5PSI0NyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExOCIgeD0iNjciIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIwIiB5PSI1MSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjMxIiB5PSI0OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMTk5IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIxNDYiIHk9IjQ2IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIzNiIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI0IiB4PSIwIiB5PSIwIiB3aWR0aD0iNiIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSIzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjUiIHg9IjQ1IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjYiIHg9IjEyIiB5PSI2NCIgd2lkdGg9IjExIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjczIj4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjMiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9IjY1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjM0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iOTIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDUiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDAiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgPC9rZXJuaW5ncz4KPC9mb250Pgo"},{ name : "spine/text_effect_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiUHpjQVl4NjJBcU0iLCJzcGluZSI6IjQuMC42NCIsIngiOi0yMiwieSI6LTE5LjUsIndpZHRoIjo0NCwiaGVpZ2h0IjozOX0sImJvbmVzIjpbeyJuYW1lIjoicm9vdCJ9LHsibmFtZSI6InRleHQiLCJwYXJlbnQiOiJyb290In1dLCJzbG90cyI6W3sibmFtZSI6ImJhY2tncm91bmQiLCJib25lIjoicm9vdCIsImF0dGFjaG1lbnQiOiJwdXJwbGViYWNrIn0seyJuYW1lIjoibnVtYmVyX3Rlc3QiLCJib25lIjoidGV4dCIsImF0dGFjaG1lbnQiOiJudW1iZXJfdGVzdCJ9XSwic2tpbnMiOlt7Im5hbWUiOiJkZWZhdWx0IiwiYXR0YWNobWVudHMiOnsiYmFja2dyb3VuZCI6eyJwdXJwbGViYWNrIjp7IndpZHRoIjo0NCwiaGVpZ2h0IjozOX19LCJudW1iZXJfdGVzdCI6eyJudW1iZXJfdGVzdCI6eyJ3aWR0aCI6MjEsImhlaWdodCI6MTR9fX19XSwiYW5pbWF0aW9ucyI6eyJkb3duX3NsaWRlbGVmdCI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1fSx7InRpbWUiOjEuNSwieCI6LTguNzEsInkiOi01M30seyJ0aW1lIjoxLjY2NjcsIngiOi0zMS4zNywieSI6LTUzfV19fX0sImRvd25fc2xpZGVsZWZ0MiI6eyJzbG90cyI6eyJiYWNrZ3JvdW5kIjp7ImF0dGFjaG1lbnQiOlt7Im5hbWUiOm51bGx9XX19LCJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTUzLjQ1LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjEuNzY2NywieSI6LTUzLjQ1fSx7InRpbWUiOjIuMTY2NywieCI6LTEuNzQsInkiOi01M30seyJ0aW1lIjoyLjMzMzMsIngiOi0zMS4zNywieSI6LTUzfV19fX0sInBvcGluIjp7ImJvbmVzIjp7InRleHQiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjAzMzMsInkiOjE5LjAzfSx7InRpbWUiOjAuMTMzMywieSI6LTE0LjY2LCJjdXJ2ZSI6InN0ZXBwZWQifSx7InRpbWUiOjAuMiwieSI6LTE0LjY2fSx7InRpbWUiOjAuMjY2NywieSI6Ni41NX0seyJ0aW1lIjowLjMzMzMsImN1cnZlIjoic3RlcHBlZCJ9LHsidGltZSI6MC42NjY3fV19fX0sInBvcGluZmFzdCI6eyJib25lcyI6eyJ0ZXh0Ijp7InRyYW5zbGF0ZSI6W3sieSI6LTI2LjUyfSx7InRpbWUiOjAuMTMzMywiY3VydmUiOiJzdGVwcGVkIn0seyJ0aW1lIjowLjY2Njd9XX19fX19"},{ name : "story_main_json", data : "W3siYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIxX2VwaWxvZ3VlX3N0YXJ0IiwibWVzc2FnZXMiOiBbeyJib2R5IjogIlRoZSBzdW4gaXMgc2V0dGluZy4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJOb3Qgd2FudGluZyB0byBiZSBsYXRlLCB5b3UgaGVhZCBvdXQgZm9yIHRoZSByb2FkLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfV0sInRpdGxlIjogIlN0YXJ0IiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIyX2dvbGRlbl9zdGF0dWUiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiWW91IHJldHVybiBob21lLCBhIGZhbWlsaWFyIG1hbiB3ZWxjb21lcyB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgSGV5LCBob3BlIHlvdSBkaWRuJ3Qgd2FpdC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICJUaGUgbWFuIHNtaWxlcyB3aGVuIGhlIHNlZXMgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEZvciBhIG1pc2NoaWVmLW1ha2VyLCB5b3UgYXJlIGdvb2QgYXQga2VlcGluZyB0aW1lLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIiBUaGUgbWVldGluZyBwbGFjZSBpcyBiZWhpbmQgdGhlIGNodXJjaCwgcmlnaHQ/IFN0LiBJc2FiZWwuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIG1hbiBwaWNrcyB1cCBhIGdvbGRlbiBzdGF0dWUgb2YgYSB3b21hbi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBKdXN0IGdldCB0aGUgcGFja2FnZSBhbmQgZ2l2ZSB0aGVtIHRoZSBzdGF0dWUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIlRoZSBtYW4gZ2l2ZXMgeW91IGEgc2V2ZXJlIGxvb2sgYXMgeW91IHBpY2sgdXAgdGhlIHN0YXR1ZSwgYWxtb3N0IGFuZ3J5LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoYXQgc3RhdHVlIGlzIGEgYmVhdXRpZnVsIHdvcmsgb2YgYXJ0LiBUYWtlIGdvb2QgY2FyZSBvZiBpdC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgQW5kIGRvIG5vdCBjYXVzZSB0cm91YmxlLiBBcmUgd2UgY2xlYXI/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiWW91IG5vZCBhc3N1cmluZ2x5IGFuZCBoZWFkIG91dCBvZiB0aGUgaG91c2UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQSBnb2xkZW4gc3RhdHVlIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIzX3RoZV9kZWFsIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIkluIHRoZSBiYWNrIG9mIHRoZSBjaHVyY2ggdGhyZWUgbWFuIGluIGFybW9yIGFyZSB3YWl0aW5nIGZvciB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgWW91IGhhdmUgdGhlIHBhY2thZ2U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIG1hbiBwb2ludHMgaGlzIGhhbmQgdG8gYSBsYXJnZSB3b29kZW4gYm94LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoYXQgdGhpbmcgaXMgaHVnZS4gSG93IGFtIEkgZ29ubmEgY2FycnkgdGhhdC4uLj8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgWW91IHdpbGwgdXNlIG15IHBlcnNvbmFsIGNhcnJpYWdlLiBUaGUgcmlkZXIgaXMgYSBtYW4gb2YgdHJ1c3QuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJLbmlnaHQifSx7ImJvZHkiOiAiWW91IG5vZCByZXBlYXRlZGx5LCBjb252aW5jZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJZb3UgdGFrZSBvdXQgdGhlIGdvbGRlbiBzdGF0dWUsIGZvciB0aGUgbWFuIHRvIHNlZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlRoZSBtYW4gbm9kcyBhdCB5b3UgYW5kIGNvbWVzIGNsb3NlciB0byB0YWtlIHRoZSBzdGF0dWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIi4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICI1IGRheXMgbGF0ZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICJZb3Ugd2FrZSB1cCBhcyB0aGUgc3VuIGxpZ2h0IGhpdHMgeW91ciBmYWNlLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWW91IHdlcmUgc2xlZXBpbmcgcGVhY2VmdWxseSBpbiB5b3VyIGJlZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaGUgZGVhbCIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfSx7ImFjdGlvbkxhYmVsIjogbnVsbCwiaWQiOiAiNV90aGVfY291cnQiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiWW91IHdhbGsgaW50byB0aGUgY291cnRyb29tLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFRoaXMgaXMgSXNhYmVsLiBUaGVyZSBpcyBubyBvbmUgYmV0dGVyIHN1aXRlZCBmb3IgdGhlIGpvYiwgeW91ciBtYWplc3R5LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIlRoZSBLaW5nLCBEb20gUGVkcm8gSVYsIGxvb2tzIGF0IHlvdSB3aXRoIGEgbWl4IG9mIGRpc2d1c3QgYW5kIGRpc3RydXN0LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIE1hcmlubywgYXJlIHlvdSBzdXJlIHdlIGNhbiB0cnVzdCB0aGlzLi4uIENyZWF0dXJlPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBTaGUgSVMgaHVtYW4sIHlvdXIgbWFqZXN0eS4gVGhlIENoaWxkcmVuIG9mIFNhaGkgbWF5IGJlIG15c3RpY2FsLCBidXQgdGhleSBhcmUgYXMgaHVtYW4gYXMgSSBhbS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hcmlubyJ9LHsiYm9keSI6ICIgLi4uSXNhYmVsLiBJIGRvIG5vdCB0cnVzdCB5b3Ugb3IgeW91ciBraW5kLiBCdXQgSSB0cnVzdCBNYXJpbm8uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBJIHdhbnQgeW91IHRvIGhlYXIgbXkgcmVxdWVzdC4gTXkgZGF1Z2h0ZXIgaGFzIGJlZW4gY2FwdHVyZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIFJlc2N1ZSBoZXIuIEFuZCBtYWtlIG5vIG1pc3Rha2UsIEkgc3RyaXZlIHRvIGJlIGZhaXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIENvbXBsZXRlIHRoaXMgam9iIGFuZCB5b3UnbGwgYmUgcmV3YXJkZWQgYWNjb3JkaW5nbHkuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifSx7ImJvZHkiOiAiIEl0IHdvdWxkIGJlIG15IGhvbm9yLCB5b3VyIG1hamVzdHkuIEknbGwgZG8gd2hhdGV2ZXIgaXQgdGFrZXMgdG8gc2F2ZSBvdXIgcm95YWwgcHJpbmNlc3MuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVGhlIEtpbmcgbG9va2VkIHN1cnByaXNlZCBhdCB5b3VyIHdvcmRzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFNoZSBoYXMgbWFubmVycy4gWW91IGhhdmUgcmFpc2VkIGhlciB3ZWxsLCBNYXJpbm8uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiRG9tIFBlZHJvIElWIn0seyJib2R5IjogIiBHbyB0byB0aGUgZWFzdCBnYXRlIGFuZCBhc2sgZm9yIFZpY3Rvci4gSGUgd2lsbCB0ZWxsIHlvdSB3aGF0IHlvdSBuZWVkIHRvIGtub3cuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJEb20gUGVkcm8gSVYifV0sInRpdGxlIjogIlRoZSBDb3VydCIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfSx7ImFjdGlvbkxhYmVsIjogbnVsbCwiaWQiOiAiNl92aWN0b3IiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiIFlvdSBtdXN0IGJlIElzYWJlbC4gSSdtIFZpY3RvciBvZiB0aGUgUm95YWwgR3VhcmQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIlRoZSBtYW4gZG9lcyBub3Qgc2VlbiBoYXBweSB0byBtZWV0IHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBUaGUgcHJpbmNlc3MgaXMgYmVsaWV2ZWQgdG8gYmUgaGVsZCBhdCBTYW4gTWFyY2VsbyBGb3J0LiBJIHdpbGwgYWNjb21wYW55IHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgUGxlYXN1cmUgdG8gbWVldCB5b3UsIHNpciBWaWN0b3IuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFdobyBjYXB0dXJlZCB0aGUgcHJpbmNlc3M/IEFyZSB0aGV5IGFza2luZyBmb3IgcmFuc29tPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBZb3UgZG8gbm90IG5lZWQgdG8ga25vdy4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIC4uLkxpc3RlbiwgVmljdG9yLiBXZSB3YW50IHRoZSBzYW1lIHRoaW5nLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBUbyBzYXZlIHRoZSBwcmluY2Vzcy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgLi4uQXBvbG9naWVzLiBUaGV5IGJlbGlldmUgaXQgd2FzIHRoZSBsZWFkZXIgb2YgdGhlIFJveWFsIEd1YXJkIHdobyBjYXB0dXJlZCBoZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIE9oLi4uIEd1ZXNzIHdlJ2xsIGtub3cgd2hlbiB3ZSBnZXQgdGhlcmUuIExldCdzIGdvLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn1dLCJ0aXRsZSI6ICJWaWN0b3Igb2YgdGhlIFJveWFsIEd1YXJkIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI3X2ZpcnN0X3RpbWUiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiVmljdG9yIG9mIHRoZSBSb3lhbCBHdWFyZCBkb2VzIG5vdCBzZWVtIHRvIHN0b3Agc3RhcmluZyBhdCB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgRmlyc3QgdGltZSBzZWVpbmcgYSBjaGlsZCBvZiBTYWhpPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBBaCwgbXkgYXBvbG9naWVzLiBEaWQgbm90IG1lYW4gdG8gc3RhcmUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZZXMsIGl0IGlzLiBUaGUgYmx1ZSBpcyBhIGJlYXV0aWZ1bCBjb2xvci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgWW91IGRvbid0IHRoaW5rIG9mIHVzIGFzIG1vbnN0ZXJzPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBJIGFtIGEga25pZ2h0LCBpdCBpcyBub3QgZm9yIG1lIHRvIHRoaW5rIG9yIG5vdCB0aGluayBzdWNoIHRoaW5ncy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgU3BlYWtpbmcgYXMgVmljdG9yLCB0aGUgbWFuLCBJIHdvdWxkIHNheSB3ZSBoYXZlIGxpdHRsZSB0byBnYWluIGFuZCBhIGxvdCB0byBsb3NlIGZyb20gbGFiZWxpbmcgd2hvIGlzIGh1bWFuIGFuZCB3aG8gaXMgbm90LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBMb3ZlbHkgdGhvdWdodHMsIFZpY3Rvci4gS2VlcCB0aGVtIHRvIHlvdXIgaGVhcnQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIEJ1dCBiZXN0IG5vdCB0byB2b2ljZSB0aGVtLiBVbmxlc3MgeW91IGFyZSByZWFkeSB0byBmaWdodCBmb3IgYSBjYXVzZSB3aGljaCBkb2Vzbid0IHJlYWxseSBjb25jZXJuIHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICJZb3UgYW5kIFZpY3RvciBjb250aW51ZSBvbiB0aGUgcm9hZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJGaXJzdCB0aW1lIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI4X3JveWFsX2d1YXJkIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIiBJZiB5b3UgZG9uJ3QgY2FyZSB0aGF0IGFib3V0IG15IGhhaXIgY29sb3IsIHRoZW4gd2h5IGRvIHlvdSBsb29rIGFuZ3J5PyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBUaGlzIGR1dHkgc2hvdWxkIGhhdmUgYmVlbiBnaXZlbiB0byB0aGUgbWVtYmVycyBvZiB0aGUgUm95YWwgR3VhcmQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBUaGV5IGNvdWxkIGhhdmUgZXZlbiBzZW50IG1lIGFsb25lLiBJdCBpcyBteSBkdXR5IHRvIHByb3RlY3QgdGhlIHByaW5jZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZb3UgYXJlIG5vdCBuZWNlc3NhcnksIGFuZCB5ZXQuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSBzZWUuIFRoZXkgc3VzcGVjdCB0aGUgUm95YWwgR3VhcmQgaXMgaW52b2x2ZWQsIHNvIHRoYXQgaXMgd2h5IEkgd2FzIGNhbGxlZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgVGhlcmUgaXMgbm8gd2F5IGFueSBtZW1iZXIgb2YgdGhlIFJveWFsIEd1YXJkIGlzIGludm9sdmVkIGluIHRoaXMuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIFRoZSBlbmVteSBwbGFucyB0byBzcHJlYWQgZGlzdHJ1c3QgYW5kIGh1cnQgb3VyIGhvbm9yLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBZb3UsIElzYWJlbCwgaGFzIGJlY29tZSBhIHN0YWluIG9mIGRpcnQgaW4gb3VyIG5hbWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIC4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBJIGFncmVlIHdpdGggeW91LiBJIGRvbid0IHRoaW5rIHRoZSBSb3lhbCBHdWFyZCBpcyBiZWhpbmQgdGhpcyBlaXRoZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiVmljdG9yIGxvb2tzIHN1cnByaXNlZCBhdCB5b3VyIHdvcmRzLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBMZXQgdXMgaHVycnkuIFRoZSBmYXN0ZXIgd2UgY2FuIHNhdmUgdGhlIHByaW5jZXNzIGFuZCBmaW5kIG91dCB3aG8gdGhlIHJlYWwgZW5lbXkgaXMsIHRoZSBmYXN0ZXIgdGhlIFJveWFsIEd1YXJkIG5hbWUgY2FuIGJlIGNsZWFuZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifV0sInRpdGxlIjogIlJveWFsIEd1YXJkIEhvbm9yIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIxMV9hcnJlc3QiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiIFByaW5jZXNzISBZb3UgYXJlIHNhZmUhISIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBWaWN0b3IsIGdvb2Qgb2YgeW91IHRvIGNvbWUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiVGhlIHByaW5jZXNzIGxvb2tzIGF0IHlvdSwgd2l0aCBzZXJpb3VzLCBjYWxtIGV5ZXMuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgQW5kIHlvdSBhcmU/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgSXNhYmVsLCB5b3VyIGhpZ2huZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBBcnJlc3QgSXNhYmVsLCBWaWN0b3IuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgLi4uSSdtIHNvcnJ5PyBZb3UgbWlzdW5kZXJzdGFuZCwgUHJpbmNlc3MsIElzYWJlbCBoZWxwZWQgcmVzY3VlIHlvdS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSSBhbSBhd2FyZS4gQnV0IHNoZSBpcyBhbHNvIGEgY3JpbWluYWwuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgTWF5IEkgYXNrIHdoYXQgbXkgY3JpbWVzIGFyZSwgeW91ciBoaWdobmVzcz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgUm95YWx0eSBhYmR1Y3Rpb24gYW5kIGFzc2Fzc2luYXRpb24gb2YgdGhlIFJveWFsIEd1YXJkLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiSXNhYmVsIGRyYXdzIGhlciB3ZWFwb24uIFZpY3RvciBkb2VzIHRoZSBzYW1lIGFuZCBtb3ZlcyBjbG9zZXIgdG8gdGhlIHByaW5jZXNzLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgY2FuIGtpbGwgeW91IGJvdGggd2l0aG91dCBwcm9ibGVtLCB5b3Uga25vdz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgWW91IGNvdWxkLiBCdXQgd2hhdCB3b3VsZCB5b3UgZG8gbmV4dD8gR28gYmFjayB0byB0aGUgY2FzdGxlIGFuZCByZXBvcnQgb3VyIGRlYXRocz8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBPciBwZXJoYXBzIHlvdSB3b3VsZCBydW4gYXdheSBhZnRlciBraWxsaW5nIHVzLCBiZWNvbWluZyBhIHdhbnRlZCBjcmltaW5hbC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBFaXRoZXIgd2F5LCBNYXJpbm8gd291bGQgbG9zZSBoaXMgam9iIGFuZCB5b3UgZG9uJ3Qgd2FudCB0aGF0LCBkbyB5b3U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJQcmluY2VzcyJ9LHsiYm9keSI6ICIgWW91IGFyZSB3YXksIHdheSBzbWFydGVyIHRoYW4gSSB0aG91Z2h0LCBQcmluY2Vzcy4gQnJhdm8uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFdlbGwsIGlmIEkgZ2V0IGFycmVzdGVkLCBNYXJpbm8gd291bGQgbG9zZSBoaXMgam9iIHRoZSBzYW1lIHdheSwgc28uLi4gTWlnaHQgYXMgd2VsbCBraWxsIHlvdSBib3RoIGFuZCBrZWVwIG15IGZyZWVkb20uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIENhbiBzb21lb25lIGV4cGxhaW4gbWUgd2hhdCBpcyBoYXBwZW5pbmcgaGVyZS4uLj8gV2h5IHdvdWxkIElzYWJlbCBhYmR1Y3QgdGhlIFByaW5jZXNzIGFuZCB0aGVuIGhlbHAgcmVzY3VlIGhlcj8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlZpY3RvciJ9LHsiYm9keSI6ICIgSXQgaXMgYWxsIE1hcmlubydzIHBsb3QuIEhlIHBsYW5zIHRvIGluY3JlYXNlIGhpcyBpbmZsdWVuY2Ugb3ZlciB0aGUga2luZ2RvbS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIiBJIGd1ZXNzIGhlIGFsc28gd2FudHMgdG8gcHV0IGhpcyBwYXduLCBJc2FiZWwgaGVyZSwgaW4gYSBtb3JlIGFkdmFudGFnZW91cyBwb3NpdGlvbi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIlByaW5jZXNzIn0seyJib2R5IjogIlRoZSB0ZW5zaW9uIGJ1aWxkcyB1cCBpbiB0aGUgcm9vbSBhcyBWaWN0b3IgYW5kIElzYWJlbCBzdGFyZSBhdCBlYWNoIG90aGVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIFJ1biBQcmluY2VzcywgSSBjYW4gYXQgbGVhc3Qgc2F2ZSB0aW1lLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn0seyJib2R5IjogIiBQdXQgZG93biB5b3VyIHN3b3JkLCBWaWN0b3IuIFlvdSBhcmUgbm90IGFycmVzdGluZyBoZXIuIEFuZCBJc2FiZWwgd29uJ3QgZmlnaHQgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiIEkgd29uJ3Q/IFdoeT8iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgVGhlcmUgaXMgYSB3YXkgd2UgY2FuIGJvdGggZ2V0IHdoYXQgd2Ugd2FudC4gQW5kIG1vcmUuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiIFdoeSBkb24ndCB5b3UgbGlzdGVuIHRvIG15IG9mZmVyPyBJJ20gc3VyZSBpdCB3aWxsIGJlIHRvIHlvdXIgbGlraW5nLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiUHJpbmNlc3MifSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiSXNhYmVsJ3Mgc3Rvcnkgd2lsbCBjb250aW51ZSBpbiBmdXR1cmUgdXBkYXRlcy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlBsYXkgYXMgWW91IGJ5IGdvaW5nIHRvIHRoZSBUaXRsZSB0YWIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQXJyZXN0IElzYWJlbCIsInZpc2liaWxpdHlTY3JpcHQiOiBudWxsfSx7ImFjdGlvbkxhYmVsIjogbnVsbCwiaWQiOiAiNF9icmVha2Zhc3QiLCJtZXNzYWdlcyI6IFt7ImJvZHkiOiAiWW91IGNvb2sgZWdncyB3aGlsZSBNYXJpbm8gbWFrZXMgb3JhbmdlIHRlYS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBib3RoIHNpdCBkb3duIGZvciBicmVha2Zhc3QuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgVGhlIHRlYSB0YXN0ZXMgd2VpcmQgdG9kYXkuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBTb3JyeSwgY291bGRuJ3Qgc2xlZXAgd2VsbCBsYXN0IG5pZ2h0LiBNdXN0IGhhdmUgc2NyZXdlZCBpdCB1cC4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFyaW5vIn0seyJib2R5IjogIiBXb3JyaWVkIGFib3V0IHRoZSBwbGFuPyAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgLi4uWWVzLiBBcyBzaG91bGQgYmUgeW91LiBSZXBlYXQgdGhlIHBsYW4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiIFdlIG1lZXQgdGhlIEtpbmcuIEhlIGFza3MgbWUgdG8gcmVzY3VlIHRoZSBwcmluY2Vzcy4gSSByZXNjdWUgdGhlIHByaW5jZXNzLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgSSBiZWNvbWUgYSBoZXJvLiBWaXNjb25kZSBNYXJpbm8gYmVjb21lcyBDb25kZSBNYXJpbm8sIGEgbmljZSBwcm9tb3Rpb24uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIiBBbSBJIG1pc3NpbmcgYW55dGhpbmc/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFBlcmZlY3QuIEV4Y2VwdCBmb3Igd2hhdCB5b3UgZGlkIDUgZGF5cyBhZ28uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiIEkgbWFkZSB5b3VyIHBsYW4gZXZlbiBiZXR0ZXIuIFlvdSBzaG91bGQgdGhhbmsgbWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJJc2FiZWwifSx7ImJvZHkiOiAiIFlvdSBkaWQsIGJ1dCBhdCB0aGUgY29zdCBvZiBibG9vZC4gVW5uZWNlc3NhcnkuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNYXJpbm8ifSx7ImJvZHkiOiAiVGhlIHJvb20gYmVjb21lcyBzaWxlbnQgYXMgeW91IGJvdGggZmluaXNoIHlvdXIgbWVhbC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBMZXQgdXMgZ28uIERvbid0IHdhbm5hIGtlZXAgdGhlIEtpbmcgd2FpdGluZy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9XSwidGl0bGUiOiAiQnJlYWtmYXN0IiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICI5X3Ryb2xsIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIkEgdHJvbGwgc3RhbmRzIGluIHRoZSBnYXRlcyBvZiB0aGUgRm9ydCBTYW4gTWFyY2Vsby4gIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgU3RhbmQgYmFjaywgVmljdG9yLiBJJ2xsIGhhbmRsZSBoaW0uICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiSXNhYmVsIn0seyJib2R5IjogIlZpY3RvciBsb29rcyBkaXNhcHBvaW50ZWQgYXQgaGltc2VsZiwgYnV0IG5vZHMsIGxlYXZpbmcgdGhlIGJhdHRsZSB0byB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiVGhlIFRyb2xsIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiBudWxsLCJpZCI6ICIxMF9zdHJlbmd0aCIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICIgSSBoYXZlIGhlYXJkIHRoZSBjaGlsZHJlbiBvZiBTYWhpIHdlcmUgc3Ryb25nLCBidXQgZGlkbid0IGtub3cgaXQgd2FzIHN1Y2ggcG93ZXIuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIEkgd2lzaCBJIGhhZCBzdWNoIHN0cmVuZ3RoLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIEJlIGNhcmVmdWwgd2l0aCB3aGF0IHlvdSB3aXNoIGZvci4gSXQgY29tZXMgYXQgYSBjb3N0LiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICIgLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIFlvdSBhbHNvIGRvbid0IHRoaW5rIHRoZSBSb3lhbCBHdWFyZCBpcyBiZWhpbmQgdGhlIGFiZHVjdGlvbiBvZiB0aGUgcHJpbmNlc3M/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiIEkgZG9uJ3QuIFNvbWV0aGluZyBlbHNlIGlzIGF0IHdvcmsgaGVyZS4gTW9yZSBzaW5pc3Rlci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIklzYWJlbCJ9LHsiYm9keSI6ICJWaWN0b3Igc21pbGVzIGF0IHlvdSBhbmQgbm9kcy4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBJIGZlZWwgdGhlIHNhbWUuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJWaWN0b3IifSx7ImJvZHkiOiAiWW91IGJvdGggbG9vayBvdmVyIHRvIEZvcnQgU2FuIE1hcmNlbG8uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgTGV0IHVzIGh1cnJ5ISIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiVmljdG9yIn1dLCJ0aXRsZSI6ICJUaGUgc3RyZW5ndGggb2YgdGhlIENoaWxkcmVuIG9mIFNhaGkiLCJ2aXNpYmlsaXR5U2NyaXB0IjogbnVsbH1d"},{ name : "uigen_txt", data : "eyJsaW5lYXJMYXlvdXRzIjpbeyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoyMCwiY2hpbGRQaXZvdFkiOjAsImNoaWxkUGl2b3RYIjowLCJlbGVtZW50Ijp7ImlkIjoibWFpbmJ1dHRvbmdyb3VwIiwieCI6NjUsInkiOjM0MCwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjo3NzAsImhlaWdodCI6LTF9fSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjoyMCwic2VwYXJhdGlvblkiOjIwLCJjaGlsZFBpdm90WSI6MCwiY2hpbGRQaXZvdFgiOjAsImVsZW1lbnQiOnsiaWQiOiJzZXRidXR0b25ncm91cCIsIngiOjY1LCJ5Ijo0NjUsInNjcmVlblBpdm90WSI6MCwic2NyZWVuUGl2b3RYIjowLCJ3aWR0aCI6NzcwLCJoZWlnaHQiOi0xfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6NSwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjAsImVsZW1lbnQiOnsiaWQiOiJ0dXJub3JkZXIiLCJ4Ijo0NTcsInkiOjI4NSwic2NyZWVuUGl2b3RZIjowLCJzY3JlZW5QaXZvdFgiOjAsIndpZHRoIjoyNzAsImhlaWdodCI6MH19LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjE1LCJzZXBhcmF0aW9uWSI6MTAsImNoaWxkUGl2b3RYIjoxLCJjaGlsZFBpdm90WSI6MSwiZWxlbWVudCI6eyJpZCI6Imxvd2VyYnV0dG9ucyIsIngiOi0zMDAsInkiOi0xMCwic2NyZWVuUGl2b3RZIjoxLCJzY3JlZW5QaXZvdFgiOjEsIndpZHRoIjowLCJoZWlnaHQiOjB9fSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjEwLCJjaGlsZFBpdm90WCI6MC41LCJjaGlsZFBpdm90WSI6MCwiZWxlbWVudCI6eyJpZCI6ImRpYWxvZ2J1dHRvbiIsIngiOjAsInkiOjAsInNjcmVlblBpdm90WSI6MC41LCJzY3JlZW5QaXZvdFgiOjAuNSwid2lkdGgiOjI3MCwiaGVpZ2h0IjowfX0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImVxdWlwYnV0dG9uIiwieCI6MzMwLCJ5IjoxNTAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjEwLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJ0YWJidXR0b24iLCJ4Ijo1NiwieSI6MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjoyMn0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJlcXVpcHBlZGJ1dHRvbnMiLCJ4IjoxNywieSI6MTU0LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MTUsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6Im1pc2NlcXVpcGJ1dHRvbnMiLCJ4IjoxNywieSI6ODIsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6NTB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjoxMCwic2VwYXJhdGlvblkiOjEwLCJlbGVtZW50Ijp7ImlkIjoic2V0ZXF1aXBidXR0b25zIiwieCI6NzAwLCJ5Ijo4Miwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxvZyIsIngiOjg3NiwieSI6NzUsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6LTEsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MywiZWxlbWVudCI6eyJpZCI6ImVxdWlwYWN0b3J2aWV3IiwieCI6MjIsInkiOjMyOSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiYWN0b3JzdGF0aG92ZXIiLCJ4IjoyMjIsInkiOjI5NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBjdXJyZW5jeXZpZXciLCJ4IjoyMiwieSI6LTEwMCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjozLCJlbGVtZW50Ijp7ImlkIjoiZXF1aXBob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxNSwiZWxlbWVudCI6eyJpZCI6ImdlbmVyaWNob3ZlciIsIngiOjIyMiwieSI6Mjk1LCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjI4MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InRpdGxlYnV0dG9ucyIsIngiOjUwLCJ5IjoxMDAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MTUwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjMsImVsZW1lbnQiOnsiaWQiOiJ0aXRsZWxvZ28iLCJ4IjoyMDAsInkiOjAsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjAuNSwid2lkdGgiOjE1MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowLjV9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJhcmVhIiwieCI6MjAwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjoyNTAsImhlaWdodCI6MzB9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJzdWJidXR0b25zIiwieCI6NTEwLCJ5Ijo1MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjozMH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjAsInNlcGFyYXRpb25ZIjo3LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX3JlZ2lvbnMiLCJ4IjozNSwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MjMwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOnRydWUsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6NywiZWxlbWVudCI6eyJpZCI6InJlZ2lvbl9hcmVhcyIsIngiOjIzMiwieSI6NzAsInNjcmVlblBpdm90WCI6MCwic2NyZWVuUGl2b3RZIjowLCJ3aWR0aCI6MzQwLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjE1LCJlbGVtZW50Ijp7ImlkIjoicmVnaW9uX2VuZW15IiwieCI6NTcyLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjozNDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MTUsImVsZW1lbnQiOnsiaWQiOiJyZWdpb25fZW5lbXlfc3RhdCIsIngiOjU3MiwieSI6MTIwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MCwic2VwYXJhdGlvblkiOjAsImVsZW1lbnQiOnsiaWQiOiJtZW1vcnlfYnV0dG9ucyIsIngiOjUwLCJ5Ijo2NSwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2MDAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6ZmFsc2UsInNlcGFyYXRpb25YIjowLCJzZXBhcmF0aW9uWSI6MCwiZWxlbWVudCI6eyJpZCI6InN0b3J5X21haW4iLCJ4IjowLCJ5Ijo3MCwic2NyZWVuUGl2b3RYIjowLjUsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOjY2MCwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjpmYWxzZSwic2VwYXJhdGlvblgiOjQ1LCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJzdG9yeWJ1dHRvbmEiLCJ4IjowLCJ5IjotMjIsInNjcmVlblBpdm90WCI6MC41LCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLjUsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6InN0b3J5YnV0dG9uYiIsIngiOi0zNDUsInkiOi0yMiwic2NyZWVuUGl2b3RYIjoxLCJzY3JlZW5QaXZvdFkiOjEsIndpZHRoIjotMSwiaGVpZ2h0Ijo1MH0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH0seyJob3Jpem9udGFsIjp0cnVlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImxheW91dF9hY2hpZXZlbWVudCIsIngiOjQwLCJ5Ijo5MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjo2ODAsImhlaWdodCI6LTF9LCJjaGlsZFBpdm90WCI6MCwiY2hpbGRQaXZvdFkiOjB9LHsiaG9yaXpvbnRhbCI6dHJ1ZSwic2VwYXJhdGlvblgiOjIwLCJzZXBhcmF0aW9uWSI6MTAsImVsZW1lbnQiOnsiaWQiOiJ0YWxlbnRfc2V0X3dpZGdldHMiLCJ4IjoyMCwieSI6MTQwLCJzY3JlZW5QaXZvdFgiOjAsInNjcmVlblBpdm90WSI6MCwid2lkdGgiOi0xLCJoZWlnaHQiOi0xfSwiY2hpbGRQaXZvdFgiOjAsImNoaWxkUGl2b3RZIjowfSx7Imhvcml6b250YWwiOmZhbHNlLCJzZXBhcmF0aW9uWCI6MjAsInNlcGFyYXRpb25ZIjoxMCwiZWxlbWVudCI6eyJpZCI6ImNoYXJhY3Rlcl9zZWxlY3Rpb24iLCJ4IjoxNzUsInkiOjE0MCwic2NyZWVuUGl2b3RYIjowLCJzY3JlZW5QaXZvdFkiOjAsIndpZHRoIjotMSwiaGVpZ2h0IjotMX0sImNoaWxkUGl2b3RYIjowLCJjaGlsZFBpdm90WSI6MH1dfQ"},{ name : "Unnamed_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9IlBpeGVsTXBsdXMxMCIgc2l6ZT0iMTEiIGJvbGQ9IjAiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjAiIGFhPSIxIiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjAiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjExIiBiYXNlPSI5IiBzY2FsZVc9IjI1NiIgc2NhbGVIPSIyNTYiIHBhZ2VzPSIxIiBwYWNrZWQ9IjAiIGFscGhhQ2hubD0iMCIgcmVkQ2hubD0iNCIgZ3JlZW5DaG5sPSI0IiBibHVlQ2hubD0iNCIvPgogIDxwYWdlcz4KICAgIDxwYWdlIGlkPSIwIiBmaWxlPSJVbm5hbWVkXzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSIxMjciPgogICAgPGNoYXIgaWQ9IjEiIHg9IjI1IiB5PSIxOSIgd2lkdGg9IjQiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIiIHg9IjE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMiIHg9IjI2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNCIgeD0iMzgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1IiB4PSI0MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYiIHg9IjQ4IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNyIgeD0iMyIgeT0iMjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4IiB4PSIxMjAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5IiB4PSI1MyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwIiB4PSIzMiIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExIiB4PSIxNTciIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMiIgeD0iMTYxIiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTMiIHg9IjE2OSIgeT0iOCIgd2lkdGg9IjMiIGhlaWdodD0iNiIgeG9mZnNldD0iMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE0IiB4PSIxNjUiIHk9IjgiIHdpZHRoPSIzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNSIgeD0iMCIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxNiIgeD0iNTUiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTciIHg9IjY3IiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjE4IiB4PSI2MSIgeT0iMTgiIHdpZHRoPSI1IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxOSIgeD0iNDkiIHk9IjE4IiB3aWR0aD0iNSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjAiIHg9IjQzIiB5PSIxOCIgd2lkdGg9IjUiIGhlaWdodD0iMSIgeG9mZnNldD0iMCIgeW9mZnNldD0iOSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIxIiB4PSI2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iMiIgeW9mZnNldD0iMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjIyIiB4PSIxMCIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyMyIgeD0iMTQ1IiB5PSI4IiB3aWR0aD0iNSIgaGVpZ2h0PSI2IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIwIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjQiIHg9IjE1MSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNiIgeG9mZnNldD0iMCIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI1IiB4PSIxNCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyNiIgeD0iMTQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMjciIHg9IjE0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjI4IiB4PSIyNDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIyOSIgeD0iMTU3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzAiIHg9IjE2MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMxIiB4PSI5MSIgeT0iMTgiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMiIgeD0iODMiIHk9IjE4IiB3aWR0aD0iMyIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTAiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzMyIgeD0iMTQzIiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjgiIHk9IjIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzUiIHg9IjE3NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSI5NiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSIxODIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMTg3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzkiIHg9IjE1IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSI4NSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI4MSIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQyIiB4PSIyNDUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MyIgeD0iMTkwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDQiIHg9IjQwIiB5PSIxOCIgd2lkdGg9IjIiIGhlaWdodD0iMiIgeG9mZnNldD0iMSIgeW9mZnNldD0iOCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ1IiB4PSI3OCIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NiIgeD0iOTMiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjEwMSIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOCIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ4IiB4PSIyMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OSIgeD0iMjUyIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjIzMiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIyMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MiIgeD0iMjQyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjI0NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU0IiB4PSIwIiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU1IiB4PSI1IiB5PSIxMiIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSIxMCIgeT0iMTIiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMTUiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTgiIHg9IjE3IiB5PSIyMCIgd2lkdGg9IjEiIGhlaWdodD0iNCIgeG9mZnNldD0iMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSIwIiB5PSIyMCIgd2lkdGg9IjIiIGhlaWdodD0iNSIgeG9mZnNldD0iMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIzMCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMzAiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIzIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjE5NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMjI3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjUiIHg9IjE1MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY2IiB4PSIyNSIgeT0iMTEiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMjAiIHk9IjExIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjIxNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMTIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MCIgeD0iMjA3IiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjE5MiIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIxNzIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3MyIgeD0iMTM5IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzQiIHg9IjE2NyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSIxMzciIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTMyIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzciIHg9IjEyNyIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc4IiB4PSIxMjIiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODAiIHg9Ijk1IiB5PSI5IiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODEiIHg9IjYzIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODIiIHg9IjM1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSI0MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NCIgeD0iMTEwIiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODUiIHg9IjQ1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI1MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMTE2IiB5PSIwIiB3aWR0aD0iNSIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODgiIHg9IjU1IiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg5IiB4PSIxMzAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MCIgeD0iNjAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijc3IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjkxIiB5PSIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTMiIHg9IjczIiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTQiIHg9IjE5IiB5PSIyMCIgd2lkdGg9IjUiIGhlaWdodD0iMyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk1IiB4PSI3MyIgeT0iMTgiIHdpZHRoPSI0IiBoZWlnaHQ9IjEiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjkiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NiIgeD0iMTIiIHk9IjIwIiB3aWR0aD0iMiIgaGVpZ2h0PSI0IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTciIHg9IjIyMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSI3MCIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5OSIgeD0iMjA1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSI3NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMiIgeD0iODAiIHk9IjEwIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAzIiB4PSI4NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDQiIHg9IjkwIiB5PSIxMCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNSIgeD0iMTA2IiB5PSIwIiB3aWR0aD0iMyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA2IiB4PSIyMiIgeT0iMCIgd2lkdGg9IjMiIGhlaWdodD0iMTAiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjEwMCIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMTM1IiB5PSI4IiB3aWR0aD0iMyIgaGVpZ2h0PSI3IiB4b2Zmc2V0PSIxIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSIxNzMiIHk9IjgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjI1MCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMSIgeD0iMTg1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEyIiB4PSI2NSIgeT0iMTAiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjEwNSIgeT0iOSIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMTk1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIyMDAiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTYiIHg9IjExMCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNyIgeG9mZnNldD0iMCIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNyIgeD0iMjEwIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIyMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjE3OSIgeT0iOCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMjI1IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSI1IiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIxIiB4PSIxMTUiIHk9IjgiIHdpZHRoPSI0IiBoZWlnaHQ9IjciIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjIiIHg9IjIzNSIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNSIgeG9mZnNldD0iMCIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMyIgeD0iNjgiIHk9IjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjkiIHhvZmZzZXQ9IjAiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9Ijg5IiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSIyIiB5b2Zmc2V0PSIxIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSI1OCIgeT0iMCIgd2lkdGg9IjQiIGhlaWdodD0iOSIgeG9mZnNldD0iMCIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMzUiIHk9IjE4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiB4b2Zmc2V0PSIwIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI3IiB4PSI4NyIgeT0iMTgiIHdpZHRoPSIzIiBoZWlnaHQ9IjEiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogIDwvY2hhcnM+CjwvZm9udD4K"},{ name : "font14_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjAiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIwIiBiYXNlPSIxNiIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE0XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI1MCIgeT0iNDgiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNyIgeGFkdmFuY2U9IjMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjMzIiB4PSIxNyIgeT0iNTMiIHdpZHRoPSI3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM0IiB4PSIzNiIgeT0iNjUiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iOTgiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzYiIHg9Ijg4IiB5PSIwIiB3aWR0aD0iMTEiIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzciIHg9IjEzNyIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iMjI2IiB5PSIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSI1NiIgeT0iNjUiIHdpZHRoPSI3IiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQwIiB4PSIzNyIgeT0iMCIgd2lkdGg9IjgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDEiIHg9IjQ2IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iMTIiIHk9IjY5IiB3aWR0aD0iMTAiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjEyMiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iNDciIHk9IjY1IiB3aWR0aD0iOCIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjEwNyIgeT0iNjQiIHdpZHRoPSI4IiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI5IiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDYiIHg9Ijg2IiB5PSI2NCIgd2lkdGg9IjciIGhlaWdodD0iNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjExIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDciIHg9IjE3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTI0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIxNDgiIHk9IjMzIiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTAiIHg9IjE4NCIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MSIgeD0iMjA4IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUyIiB4PSIyMTUiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTMiIHg9IjIyMCIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NCIgeD0iNzYiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTUiIHg9IjIzMiIgeT0iMzIiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NiIgeD0iNTIiIHk9IjM2IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTciIHg9IjY0IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSIyNDIiIHk9IjQ4IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1OSIgeD0iMCIgeT0iNTMiIHdpZHRoPSI4IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSI5NiIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MSIgeD0iMjMiIHk9IjY5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTAiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjIiIHg9IjEwOSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2MyIgeD0iMjQ0IiB5PSIzMiIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY0IiB4PSI1NSIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NSIgeD0iNDIiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjExMSIgeT0iMTkiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NyIgeD0iMTUwIiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY4IiB4PSIxMjQiIHk9IjE5IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjkiIHg9Ijg4IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcwIiB4PSIxMDAiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzEiIHg9IjAiIHk9IjIxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzIiIHg9IjE3NiIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzMiIHg9IjkiIHk9IjUzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NCIgeD0iMTM2IiB5PSIzNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc1IiB4PSI4NCIgeT0iMTkiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NiIgeD0iMTYwIiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc3IiB4PSIyNDEiIHk9IjAiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzgiIHg9IjE2MyIgeT0iMTciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzkiIHg9IjcwIiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMjI4IiB5PSIxNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgxIiB4PSI3MyIgeT0iMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MiIgeD0iMTg5IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgzIiB4PSIwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIzOSIgeT0iMzYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTM3IiB5PSIxNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NiIgeD0iMjgiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODciIHg9IjIwOCIgeT0iMCIgd2lkdGg9IjE3IiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjEyIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OCIgeD0iMTQiIHk9IjIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODkiIHg9IjU2IiB5PSIxOSIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMDIiIHk9IjE3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9IjEyOSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTgiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTIiIHg9IjI3IiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIxOSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iMTIwIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NCIgeD0iMCIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iOTQiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE1IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTYiIHg9IjY0IiB5PSI2NSIgd2lkdGg9IjgiIGhlaWdodD0iOSIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjEiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NyIgeD0iMTYwIiB5PSI0OSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk4IiB4PSIyNDEiIHk9IjE2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTkiIHg9IjE5NiIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDAiIHg9IjE3MiIgeT0iMzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIwOCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjE4MSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTU1IiB5PSIwIiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxMTIiIHk9IjM1IiB3aWR0aD0iMTEiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA1IiB4PSIxOTIiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwNiIgeD0iNyIgeT0iMCIgd2lkdGg9IjkiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0zIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA3IiB4PSIxNjgiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDgiIHg9IjIwMCIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA5IiB4PSI1MyIgeT0iNTIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSIxMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTEwIiB4PSIxNDgiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTExIiB4PSI3MCIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjEzIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExMyIgeD0iMTk2IiB5PSIzMyIgd2lkdGg9IjExIiBoZWlnaHQ9IjE1IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNCIgeD0iMjMyIiB5PSI0OCIgd2lkdGg9IjkiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE1IiB4PSIxNzIiIHk9IjQ5IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE2IiB4PSIyNSIgeT0iNTMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxNCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTciIHg9IjE4NCIgeT0iNDkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTgiIHg9IjEzNSIgeT0iNTEiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjYiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTkiIHg9IjM2IiB5PSI1MiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjAiIHg9IjgzIiB5PSI1MSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNiIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iMjYiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTUiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyMjAiIHk9IjQ4IiB3aWR0aD0iMTEiIGhlaWdodD0iMTIiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI2IiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIzIiB4PSIxMDAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNCIgeD0iMCIgeT0iMCIgd2lkdGg9IjYiIGhlaWdodD0iMjAiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIyIiB4YWR2YW5jZT0iNCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTI1IiB4PSIxMTAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjE4IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iNzMiIHk9IjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iOCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICA8L2NoYXJzPgogIDxrZXJuaW5ncyBjb3VudD0iODUiPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMyIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNjUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMzQiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTEiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTA3IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI4NiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDIiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTgiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iOTEiIHNlY29uZD0iMTA2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg2IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEyMiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTEzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAxIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI5NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI5MCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI5MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI3MCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSI0MiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0MCIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIzOSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI2NSIgc2Vjb25kPSIzNCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NyIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIxMTYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDQiIHNlY29uZD0iMTE2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ1IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogIDwva2VybmluZ3M+CjwvZm9udD4K"},{ name : "font16_fnt", data : "PD94bWwgdmVyc2lvbj0iMS4wIj8+Cjxmb250PgogIDxpbmZvIGZhY2U9Ik5vdG8gU2FucyBKUCIgc2l6ZT0iMjIiIGJvbGQ9IjEiIGl0YWxpYz0iMCIgY2hhcnNldD0iIiB1bmljb2RlPSIxIiBzdHJldGNoSD0iMTAwIiBzbW9vdGg9IjEiIGFhPSI0IiBwYWRkaW5nPSIwLDAsMCwwIiBzcGFjaW5nPSIxLDEiIG91dGxpbmU9IjIiLz4KICA8Y29tbW9uIGxpbmVIZWlnaHQ9IjIyIiBiYXNlPSIxOCIgc2NhbGVXPSIyNTYiIHNjYWxlSD0iMjU2IiBwYWdlcz0iMSIgcGFja2VkPSIwIiBhbHBoYUNobmw9IjAiIHJlZENobmw9IjQiIGdyZWVuQ2hubD0iNCIgYmx1ZUNobmw9IjQiLz4KICA8cGFnZXM+CiAgICA8cGFnZSBpZD0iMCIgZmlsZT0iZm9udDE2XzAucG5nIiAvPgogIDwvcGFnZXM+CiAgPGNoYXJzIGNvdW50PSI5NSI+CiAgICA8Y2hhciBpZD0iMzIiIHg9IjI0OSIgeT0iMCIgd2lkdGg9IjUiIGhlaWdodD0iNSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjE5IiB4YWR2YW5jZT0iMyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzMiIHg9IjI0MSIgeT0iMCIgd2lkdGg9IjciIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMzQiIHg9IjEwMyIgeT0iNjkiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzNSIgeD0iMTc2IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM2IiB4PSIyNSIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM3IiB4PSI4IiB5PSIyMiIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIzOCIgeD0iNDYiIHk9IjIxIiB3aWR0aD0iMTUiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjM5IiB4PSIxMTUiIHk9IjY5IiB3aWR0aD0iNyIgaGVpZ2h0PSIxMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MCIgeD0iMTYiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIxIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQxIiB4PSI3IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0MiIgeD0iNjkiIHk9IjcyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTEiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIzIiB4YWR2YW5jZT0iNyIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDMiIHg9IjE3OSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjUiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NCIgeD0iODEiIHk9IjcyIiB3aWR0aD0iOCIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjEyIiB4YWR2YW5jZT0iNSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNDUiIHg9IjE1NCIgeT0iNjgiIHdpZHRoPSI5IiBoZWlnaHQ9IjciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxMCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ2IiB4PSIxNDYiIHk9IjY4IiB3aWR0aD0iNyIgaGVpZ2h0PSI4IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMTIiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0NyIgeD0iMzgiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI0OCIgeD0iMTYzIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjQ5IiB4PSIyNSIgeT0iNTYiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1MCIgeD0iMTUwIiB5PSIzNyIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUxIiB4PSIxMzciIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTIiIHg9IjcwIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjUzIiB4PSIxMjQiIHk9IjM3IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNTQiIHg9IjIyOCIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NSIgeD0iMTExIiB5PSIzOCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU2IiB4PSI5OCIgeT0iMzgiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI1NyIgeD0iMjQxIiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU4IiB4PSI0OCIgeT0iNzIiIHdpZHRoPSI3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjU5IiB4PSI3MiIgeT0iNTUiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYwIiB4PSIyMTgiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI1IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjEiIHg9IjkwIiB5PSI2OSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYyIiB4PSIwIiB5PSI3NSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjYzIiB4PSIyMDkiIHk9IjAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI2NCIgeD0iMTA4IiB5PSIwIiB3aWR0aD0iMTgiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY1IiB4PSIxMzciIHk9IjIwIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjYiIHg9IjE4MSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjciIHg9IjE5NSIgeT0iMTgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNjgiIHg9IjAiIHk9IjQxIiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjY5IiB4PSIyMDIiIHk9IjM1IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iNzAiIHg9IjEzIiB5PSI1OCIgd2lkdGg9IjExIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcxIiB4PSIyMDkiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjcyIiB4PSIyMjMiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjczIiB4PSI4MSIgeT0iNTUiIHdpZHRoPSI3IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc0IiB4PSIzNyIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NSIgeD0iOTIiIHk9IjIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTAiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijc2IiB4PSI0OSIgeT0iNTUiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3NyIgeD0iMTA3IiB5PSIyMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEzIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OCIgeD0iMTY3IiB5PSIxOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI3OSIgeD0iMTIyIiB5PSIyMCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjExIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MCIgeD0iMTg5IiB5PSIzNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjEwIiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4MSIgeD0iMTI3IiB5PSIwIiB3aWR0aD0iMTUiIGhlaWdodD0iMTkiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjgyIiB4PSI4NCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSIxMCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iODMiIHg9IjQyIiB5PSIzOCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg0IiB4PSIyOCIgeT0iMzgiIHdpZHRoPSIxMyIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NSIgeD0iMTQiIHk9IjM5IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTEiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg2IiB4PSI3NyIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4NyIgeD0iMjciIHk9IjIxIiB3aWR0aD0iMTgiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iMTQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijg4IiB4PSI2MiIgeT0iMjEiIHdpZHRoPSIxNCIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI4OSIgeD0iMTUyIiB5PSIxOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE2IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNCIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjkwIiB4PSIyMzciIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTEiIHg9Ijk5IiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MiIgeD0iNDkiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5MyIgeD0iOTAiIHk9IjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk0IiB4PSI1NiIgeT0iNzIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMSIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjQiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSI5NSIgeD0iMTY0IiB5PSI2OCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSIxNiIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk2IiB4PSIxMjMiIHk9IjY5IiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMSIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk3IiB4PSIxNjYiIHk9IjUyIiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iOTgiIHg9IjE4MyIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9Ijk5IiB4PSIyNDQiIHk9IjUyIiB3aWR0aD0iMTEiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTAwIiB4PSIxNzAiIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDEiIHg9IjIzMSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI4IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDIiIHg9IjIyMSIgeT0iMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwMyIgeD0iMTQzIiB5PSIwIiB3aWR0aD0iMTMiIGhlaWdodD0iMTciIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTA0IiB4PSIxNTciIHk9IjAiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDUiIHg9IjAiIHk9IjIzIiB3aWR0aD0iNyIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDYiIHg9IjYwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTMiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDciIHg9IjE5NiIgeT0iMCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE3IiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjkiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEwOCIgeD0iMjMyIiB5PSIwIiB3aWR0aD0iOCIgaGVpZ2h0PSIxNyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMDkiIHg9Ijg5IiB5PSI1NSIgd2lkdGg9IjE3IiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjE0IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTAiIHg9IjE5MiIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTEiIHg9IjIwNSIgeT0iNTIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTIiIHg9IjIxNSIgeT0iMzUiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxNiIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI5IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTMiIHg9IjAiIHk9IjU4IiB3aWR0aD0iMTIiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE0IiB4PSIzNyIgeT0iNzIiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTEiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI2IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMTUiIHg9IjEzIiB5PSI3NSIgd2lkdGg9IjExIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjciIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjExNiIgeD0iNjEiIHk9IjU1IiB3aWR0aD0iMTAiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI0IiB4YWR2YW5jZT0iNiIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE3IiB4PSIxNTMiIHk9IjU0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0xIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE4IiB4PSIxMjUiIHk9IjU0IiB3aWR0aD0iMTMiIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTE5IiB4PSIxMDciIHk9IjU1IiB3aWR0aD0iMTciIGhlaWdodD0iMTMiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iMTMiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMCIgeD0iMTM5IiB5PSI1NCIgd2lkdGg9IjEzIiBoZWlnaHQ9IjEzIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iNyIgeGFkdmFuY2U9IjgiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyMSIgeD0iNTYiIHk9IjM4IiB3aWR0aD0iMTMiIGhlaWdodD0iMTYiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI3IiB4YWR2YW5jZT0iOCIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgICA8Y2hhciBpZD0iMTIyIiB4PSIyNSIgeT0iNzMiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxMyIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjciIHhhZHZhbmNlPSI3IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjMiIHg9IjcwIiB5PSIwIiB3aWR0aD0iOSIgaGVpZ2h0PSIyMCIgeG9mZnNldD0iLTIiIHlvZmZzZXQ9IjMiIHhhZHZhbmNlPSI1IiBwYWdlPSIwIiBjaG5sPSIxNSIgLz4KICAgIDxjaGFyIGlkPSIxMjQiIHg9IjAiIHk9IjAiIHdpZHRoPSI2IiBoZWlnaHQ9IjIyIiB4b2Zmc2V0PSItMSIgeW9mZnNldD0iMiIgeGFkdmFuY2U9IjQiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNSIgeD0iODAiIHk9IjAiIHdpZHRoPSI5IiBoZWlnaHQ9IjIwIiB4b2Zmc2V0PSItMiIgeW9mZnNldD0iMyIgeGFkdmFuY2U9IjUiIHBhZ2U9IjAiIGNobmw9IjE1IiAvPgogICAgPGNoYXIgaWQ9IjEyNiIgeD0iMTMzIiB5PSI2OCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjgiIHhvZmZzZXQ9Ii0yIiB5b2Zmc2V0PSI4IiB4YWR2YW5jZT0iOSIgcGFnZT0iMCIgY2hubD0iMTUiIC8+CiAgPC9jaGFycz4KICA8a2VybmluZ3MgY291bnQ9IjEwNiI+CiAgICA8a2VybmluZyBmaXJzdD0iMTIzIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEyMSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMjEiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE5IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTgiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE4IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExNCIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTQiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTE0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMTIiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTExIiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjExMSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIxMDciIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9Ijg2IiBhbW91bnQ9IjEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iMTAyIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjEwMiIgc2Vjb25kPSI0NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5OCIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI5MSIgc2Vjb25kPSIxMDYiIGFtb3VudD0iMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMjIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTE1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjExMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMTEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iMTAzIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg5IiBzZWNvbmQ9IjEwMSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI0NiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI2NSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSIzOSIgc2Vjb25kPSI3NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4OSIgc2Vjb25kPSIxMDAiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iOTciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDUiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODkiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODYiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODUiIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTIyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjExNSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMTMiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTExIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjEwMyIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI4NCIgc2Vjb25kPSIxMDEiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iODQiIHNlY29uZD0iMTAwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijk3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ1IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijg0IiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjkwIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9Ijc0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQwIiBzZWNvbmQ9IjEwNiIgYW1vdW50PSIxIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjM5IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjQyIiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ2IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjgwIiBzZWNvbmQ9IjQ0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9IjkyIiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg5IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg3IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg2IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9Ijc2IiBzZWNvbmQ9Ijg0IiBhbW91bnQ9Ii0yIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ0IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NCIgc2Vjb25kPSIxMTgiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iNDIiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzkiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzYiIHNlY29uZD0iMzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNzQiIGFtb3VudD0iLTIiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDciIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDYiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNzAiIHNlY29uZD0iNDQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iODQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iNDIiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzkiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNjUiIHNlY29uZD0iMzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDciIHNlY29uZD0iNzQiIGFtb3VudD0iLTEiIC8+CiAgICA8a2VybmluZyBmaXJzdD0iNDYiIHNlY29uZD0iMTE4IiBhbW91bnQ9Ii0xIiAvPgogICAgPGtlcm5pbmcgZmlyc3Q9IjQ2IiBzZWNvbmQ9IjExNiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NiIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSI0MiIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzOSIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NiIgc2Vjb25kPSIzNCIgYW1vdW50PSItMiIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4OSIgYW1vdW50PSItMSIgLz4KICAgIDxrZXJuaW5nIGZpcnN0PSI0NSIgc2Vjb25kPSI4NCIgYW1vdW50PSItMSIgLz4KICA8L2tlcm5pbmdzPgo8L2ZvbnQ+Cg"},{ name : "spine/character_json", data : "eyJza2VsZXRvbiI6eyJoYXNoIjoiRFhRcjgwUEZUS2siLCJzcGluZSI6IjQuMC42NCJ9LCJib25lcyI6W3sibmFtZSI6InJvb3QifV0sImFuaW1hdGlvbnMiOnsiYXR0YWNrIjp7ImJvbmVzIjp7InJvb3QiOnsidHJhbnNsYXRlIjpbe30seyJ0aW1lIjowLjA2NjcsIngiOi01NS43OH0seyJ0aW1lIjowLjEzMzMsIngiOjkxLjh9LHsidGltZSI6MC42NjY3fV19fX19fQ"},{ name : "storyjson", data : "W3siYWN0aW9uTGFiZWwiOiAiV2FrZSB1cCIsImlkIjogIkEgZmluZSBtb3JuaW5nLiIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJJdCdzIGEgZmluZSBtb3JuaW5nLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBoZWFkIGZvciB0aGUgZG9vciwgcmVhZHkgdG8gZ28gb3V0c2lkZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBZb3UncmUgZ29pbmcgb3V0IHRvZGF5IHRvbz8gV2hlcmUgdG8/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEtpbGwgc29tZSBtb25zdGVycywgbW9tLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaHkgZG8gSSBldmVuIGFzaywgc2hlIGRvZXMgdGhpcyBldmVyeSBkYXkuLi4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9XSwidGl0bGUiOiAiQSBmaW5lIG1vcm5pbmcuIiwidmlzaWJpbGl0eVNjcmlwdCI6IG51bGx9LHsiYWN0aW9uTGFiZWwiOiAiSSdtIGh1bmdyeS4uLiIsImlkIjogIlRpbWUgZm9yIGRpbm5lciIsIm1lc3NhZ2VzIjogW3siYm9keSI6ICJZb3VyIHJ1bWJsaW5nIHN0b21hY2ggbWFkZSB5b3UgZGVjaWRlIHRvIGdvIGJhY2sgaG9tZS4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIiBJJ20gYmFjayIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBHb29kLCBpdCdzIHRpbWUgZm9yIGRpbm5lci4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgSGV5IG1vbS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBXaGF0IGlzIHdyb25nLCBkZWFyPyIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTW9tIn0seyJib2R5IjogIiBJJ20gbGVhdmluZyB0b3duIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEhhaGFoYWhhYSwgb2ggWW91Li4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiIEFuZCBJJ20gTWJvaSwgR29kIG9mIFdhdGVyd2F5cyEiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1vbSJ9LHsiYm9keSI6ICIgLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIEMnbW9uLCBlYXQgdXAuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJNb20ifSx7ImJvZHkiOiAiWW91IGdvIGJhY2sgdG8gYmVkLCB1bnNhdGlzZmllZCB3aXRoIHdoYXQgeW91ciBtb20gc2FpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH1dLCJ0aXRsZSI6ICJUaW1lIGZvciBkaW5uZXIiLCJ2aXNpYmlsaXR5U2NyaXB0IjogIiByZXR1cm4gZ2xvYmFsW1wibWF4YXJlYVwiXSA+IDI7ICJ9LHsiYWN0aW9uTGFiZWwiOiAiSG93IGRvIEkgZ2V0IHN0cm9uZ2VyLi4uIiwiaWQiOiAiQmVjb21lIHN0cm9uZ2VyIiwibWVzc2FnZXMiOiBbeyJib2R5IjogIllvdSBzdG9wIG1vdmluZyBhbmQgdGFrZSBhIGRlZXAgYnJlYXRoLiAiLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIllvdSBzdGFyZSBhdCB5b3VyIGhhbmRzLCB3aGljaCBhcmUgc3Ryb25nZXIgdGhhbiBldmVyLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiWWV0LCBzb21ldGhpbmcgY29uY2VybnMgeW91LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgZmVlbCBsaWtlIGl0IGJlY29tZXMgaGFyZGVyIGFuZCBoYXJkZXIgdG8gYmVjb21lIHN0cm9uZ2VyLi4uIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiQSBzaGFkeSBtYW4gYXBwcm9hY2hlcyB5b3UuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9LHsiYm9keSI6ICIgSGV5IGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIk1hbiJ9LHsiYm9keSI6ICIgV2hvIGFyZSB5b3U/Iiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIE5hbWUncyBDaWQuICIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiTWFuIn0seyJib2R5IjogIiBJIGZlZWwgbGlrZSBJJ3ZlIHNlZW4gdGhhdCBuYW1lIGJlZm9yZS4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBZb3Ugd2FubmEgYmVjb21lIHN0cm9uZ2VyPyBIZWguIFNvbWV0aW1lcyB5b3UgZ290dGEgbG9zZSBpdCBhbGwgdG8gcmVhY2ggYSBuZXcgaGVpZ2h0LiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIiBBbnl3YXlzLCB0YWtlIHRoaXMuIEl0IHRlYWNoZXMgeW91IGhvdyB0byBTb3VsIENydXNoLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiQ2lkIn0seyJib2R5IjogIkhlIGhhbmRzIHlvdSBhbiBvbGQgc2Nyb2xsLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiBudWxsfSx7ImJvZHkiOiAiIEkgc2hvdWxkbid0IHJlYWxseSB0YWtlIHRoaW5ncyBmcm9tIHN0cmFuZ2Vycy4uLiIsInNjcmlwdCI6IG51bGwsInNwZWFrZXIiOiAiWW91In0seyJib2R5IjogIiBCdXQgb2ggd2VsbC4gSSdsbCB0YWtlIGEgc2hvdC4gSG9wZSBpdCBkb2Vzbid0IGdldCBtZSBraWxsZWQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6ICJZb3UifSx7ImJvZHkiOiAiIFlvdSBtYXkgbm90IGJlIGFibGUgdG8gZG8gaXQgbm93LCBidXQgc29tZWRheS4uLiBHb29kIGx1Y2ssIGtpZC4iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogIkNpZCJ9LHsiYm9keSI6ICItLS0iLCJzY3JpcHQiOiBudWxsLCJzcGVha2VyIjogbnVsbH0seyJib2R5IjogIlNvdWwgQ3J1c2ggaXMgbm93IGFjY2Vzc2libGUuIFlvdSBuZWVkIHRvIGJlIGF0IGEgY2VydGFpbiBsZXZlbCB0byB1c2UgaXQuIiwic2NyaXB0IjogbnVsbCwic3BlYWtlciI6IG51bGx9XSwidGl0bGUiOiAiQmVjb21lIHN0cm9uZ2VyIiwidmlzaWJpbGl0eVNjcmlwdCI6ICIgcmV0dXJuIGdsb2JhbFtcImhlcm9sZXZlbFwiXSA+IDg7ICJ9XQ"}];
 haxe_ds_ObjectMap.count = 0;
 js_Boot.__toStr = ({ }).toString;
 Achievement.LOCKED = 0;
@@ -47902,6 +48997,7 @@ Generation.random = new seedyrng_Random();
 BattleConstants.damageLastTurn = "damage-last-turn";
 BattleConstants.counterAttack = "Counterattack";
 BattleConstants.MAGICATTACK = "MagicAttack";
+BattleConstants.MAGICDEFENSE = "MagicDefense";
 BattleConstants.MAGICAL = "Mystic";
 BattleConstants.MPMax = "MPMax";
 BattleManager.NORMAL_ENEMY_VIEW = 1;
@@ -47937,6 +49033,7 @@ GRIControlRegion.listStandard = 0;
 GRIControlRegion.listDanger = 1;
 GRIControlRegion.dataRegionB = "regionbutton";
 GRIControlRegion.dataAreaB = "areabutton";
+GRIControlTitle.CHARACTER_SELECTION_HAPPENED_KEY = "characterselectionhappened";
 GRIEffects.SPINE_TEXT_EFFECT = "spine/text_effect_json";
 GRIEffects.SPINE_ACTOR = "spine/character_json";
 GRISetView.SETVIEWTAG = "setview";
@@ -47960,13 +49057,14 @@ GRIView.COLOR_ACTIVE_PINK = GRIView.COLOR_TEXT_ACTION;
 GRIView.COLOR_ACTIVE_PINK2 = GRIView.COLOR_TEXT_ACTION_HOVER;
 GRIView.LAYER_BACKGROUND = 0;
 GRIView.LAYER_DEFAULT = 1;
-GRIView.LAYER_EFFECT = 2;
-GRIView.LAYER_HOVER = 3;
-GRIView.LAYER_DIALOG = 4;
+GRIView.LAYER_EFFECT = 3;
+GRIView.LAYER_HOVER = 4;
+GRIView.LAYER_DIALOG = 5;
 GRIView.TEXT_MESSAGEBOSS = "Hard Area Cleared!\nYour stats permanently increased!\n\n";
 GRIView.ARCHETYPE_SIMPLE = "simple";
 GRIView.ARCHETYPE_TEXT_ACTION = "actiontext";
 GRIView.ARCHETYPE_SIMPLE_MEDIUM = "simplemedium";
+GRIView.ARCHETYPE_SIMPLE_LARGE = "simplemedium";
 GRIView.ARCHETYPE_SIMPLE_TIMID = "simpletimid";
 GRIView.ARCHETYPE_IMPORTANT_TIMID = "importanttimid";
 GRIView.ARCHETYPE_HEADER = "header";
@@ -47997,6 +49095,7 @@ GRIView.tagTabRegion = "tabregion";
 GRIView.tagTabTitle = "tabtitle";
 GRIView.tagTabMemory = "tabmemory";
 GRIView.tagTabCharacter = "tabcharacter";
+GRIView.tagTabVillage = "tabcharacter";
 ActorViewLogic.ignoredStats = ["Life","MP","MPRecharge","MPRechargeCount","","SpeedCount","damage-last-turn"];
 ActorViewLogic.AttributeExplanation = (function($this) {
 	var $r;
@@ -48067,14 +49166,18 @@ GRIViewStory.DATA_BUTTON_ADVANCE = "storyadvance";
 GRIViewStory.DATA_BUTTON_SKIP = "storyskip";
 GRIViewStory.DATA_BUTTON_LATER = "storylater";
 GRIViewTitle.LAYOUT_BUTTON_TITLE = "titlebuttons";
+GRIViewTitle.LAYOUT_CHARACTER_SELECTION = "character_selection";
 GRIViewTitle.TAG_TITLE_MAIN = "tag_title_main";
 GRIViewTitle.TAG_TITLE_ACCEPT = "tag_title_accept";
+GRIViewTitle.TAG_TITLE_DIMENSION = "tag_title_dimension";
+GRIViewTitle.TAG_TITLE_LOGO = "tag_title_logo";
 GRIViewTitle.DATA_DISCORD = "discord";
 GRIViewTitle.DATA_STEAM = "steam";
 GRIViewTitle.DATA_START = "start";
 GRIViewTitle.DATA_RESET = "reset";
 GRIViewTitle.DATA_EXIT = "quit";
 GRIViewTitle.DATA_CONTINUE = "buttoncontinue";
+GRIViewTitle.DATA_GOTOCHARACTER = "buttonfirststart";
 GRIViewTitle.DATA_ROADMAP = "roadmap";
 GRIViewTitle.DATA_ACCEPT = "accept";
 GRIViewTitle.DATA_PRIVACYSEE = "privacysee";
@@ -48102,13 +49205,13 @@ Keyboard.JOY_BUTTON_D_RIGHT = 100062;
 Keyboard.JOY_BUTTON_START = 100063;
 Keyboard.JOY_BUTTON_SELECT = 100064;
 Keyboard.keyboard = new Keyboard();
-JsonStoryTypes.jsonwriterstory = new JsonWriter_$81();
-JsonStoryTypes.jsonparserstory = new JsonParser_$93();
-JsonStoryTypes.jsonparsercutscenes = new JsonParser_$98();
+JsonStoryTypes.jsonwriterstory = new JsonWriter_$89();
+JsonStoryTypes.jsonparserstory = new JsonParser_$101();
+JsonStoryTypes.jsonparsercutscenes = new JsonParser_$106();
 JsonMainTypes.jsonwriterwdata = new JsonWriter_$1();
 JsonMainTypes.jsonparserwdata = new JsonParser_$1();
-JsonMainTypes.jsonwritergeneral = new JsonWriter_$73();
-JsonMainTypes.jsonparsergeneral = new JsonParser_$85();
+JsonMainTypes.jsonwritergeneral = new JsonWriter_$81();
+JsonMainTypes.jsonparsergeneral = new JsonParser_$93();
 PhaserRenderer.images = new haxe_ds_StringMap();
 PhaserRenderer.z = 0;
 PrototypeItemMaker.itemType_Weapon = 0;
