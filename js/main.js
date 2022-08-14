@@ -1341,9 +1341,6 @@ BattleManager.prototype = {
 					this.AddEvent(EventTypes.AreaUnlock).data = this.wdata.maxArea;
 					killedInArea[this.wdata.maxArea] = 0;
 				}
-				if(this.wdata.hero.turnRecharge == null) {
-					this.wdata.hero.turnRecharge = [];
-				}
 				if(this.wdata.autoAdvance) {
 					this.autoAdvanceRequest = true;
 					this.wdata.hero.turnRecharge.length = 0;
@@ -2000,7 +1997,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1461, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1458, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -2856,10 +2853,10 @@ BattleManager.prototype = {
 		lu.enabled = this.canAdvance;
 		var lu = this.wdata.playerActions.h["autoadvance"];
 		lu.visible = this.wdata.maxArea > 10 || lu.visible;
-		lu.enabled = this.wdata.hero.level >= 15 || lu.enabled;
+		lu.enabled = this.wdata.hero.level > 50 || lu.enabled;
 		var lu = this.wdata.playerActions.h["autorepeat"];
 		lu.visible = this.wdata.maxArea > 5 || lu.visible;
-		lu.enabled = this.wdata.hero.level >= 10 || lu.enabled;
+		lu.enabled = this.wdata.hero.level > 10 || lu.enabled;
 		var lu = this.wdata.playerActions.h["retreat"];
 		lu.enabled = this.canRetreat;
 		lu.visible = lu.enabled || lu.visible;
@@ -3199,7 +3196,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2686, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2683, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -3216,7 +3213,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2703, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2700, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -3412,16 +3409,16 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2889, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2886, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
 			HxOverrides.strDate(loadedWdata.retention.gameStartDate);
-			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2894, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2891, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2897, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2894, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -3435,28 +3432,28 @@ BattleManager.prototype = {
 		try {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 			if(JsonMainTypes.jsonparserwdata.errors.length > 0) {
-				haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2912, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2909, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			}
 			if(loadedWdata == null) {
 				ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
-				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2917, className : "BattleManager", methodName : "SendJsonPersistentData"});
-				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2918, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2914, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2915, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				jsonString = StringTools.replace(jsonString,"undefined","null");
 				loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 				if(loadedWdata == null) {
 					return false;
 				} else {
-					haxe_Log.trace("save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2924, className : "BattleManager", methodName : "SendJsonPersistentData"});
+					haxe_Log.trace("save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2921, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				}
 			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2929, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2926, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2934, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2935, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2931, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2932, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			ErrorX.exception = e;
 			return false;
 		}
@@ -3557,7 +3554,7 @@ BattleManager.prototype = {
 			}
 			return false;
 		}
-		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3041, className : "BattleManager", methodName : "testCondition"});
+		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3038, className : "BattleManager", methodName : "testCondition"});
 		return false;
 	}
 	,isBattleArea: function() {
@@ -4639,22 +4636,19 @@ GRIConfigurer.setupLagrimaRegions = function() {
 	regionPrizes.push({ xpPrize : false, statBonus : _g});
 	var _g = new haxe_ds_StringMap();
 	_g.h["Attack"] = 8;
-	_g.h["MagicAttack"] = 8;
 	_g.h["Speed"] = 0.2;
 	_g.h["LifeMax"] = 0.03;
 	var _g1 = new haxe_ds_StringMap();
 	_g1.h["Defense"] = 8;
 	_g1.h["Safeguard"] = 75;
-	_g1.h["LifeMax"] = 1;
 	_g1.h[BattleConstants.MAGICAL] = 100;
 	var _g2 = new haxe_ds_StringMap();
 	_g2.h["Defense"] = 4;
 	_g2.h["Speed"] = 0.05;
 	_g2.h["MagicDefense"] = 8;
-	_g2.h["MagicAttack"] = 8;
 	enemySheets.push({ speciesMultiplier : { attributesBase : _g}, speciesAdd : _g1, speciesLevelStats : { attributesBase : _g2}});
 	var _g = new haxe_ds_StringMap();
-	_g.h["MagicAttack"] = 1;
+	_g.h["Attack"] = 1;
 	_g.h["Defense"] = 1;
 	regionPrizes.push({ xpPrize : false, statBonus : _g});
 	var _g = new haxe_ds_StringMap();
@@ -5173,7 +5167,6 @@ GRIControl.prototype = {
 	,update: function(miliseconds) {
 		var _gthis = this;
 		Mouse.mouse.scaledScreen(1 / Renderer.scaleInt);
-		Mouse.mouse.calculateMouseMoved();
 		KeyboardToButtonsLogic.process(this.buttonBindings);
 		this.titleControl.update();
 		this.view.update(miliseconds,Mouse.mouse);
@@ -5235,7 +5228,7 @@ GRIControl.prototype = {
 			}
 			if(value.stringData == "fb") {
 				this.showFeedback = true;
-				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 563, className : "GRIControl", methodName : "update"});
+				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 562, className : "GRIControl", methodName : "update"});
 			}
 			if(value.stringData == "error") {
 				this.showError = !this.showError;
@@ -9382,11 +9375,19 @@ Mouse.prototype = {
 		self.x *= mul;
 		self.y *= mul;
 		this.mousePosition = self;
+		var self = this.mousePositionLastFrame;
+		var this1 = new Vector2Default(self.x,self.y);
+		var self = this1;
+		self.x *= mul;
+		self.y *= mul;
+		this.mousePositionLastFrame = self;
+		var self = this.mouseMoved;
+		var this1 = new Vector2Default(self.x,self.y);
+		var self = this1;
+		self.x *= mul;
+		self.y *= mul;
+		this.mouseMoved = self;
 		this.deltaWheelY = mul * this.deltaWheelY | 0;
-	}
-	,calculateMouseMoved: function() {
-		this.mouseMoved.x = this.mousePosition.x - this.mousePositionLastFrame.x;
-		this.mouseMoved.y = this.mousePosition.y - this.mousePositionLastFrame.y;
 	}
 	,__class__: Mouse
 };
@@ -16885,6 +16886,9 @@ PlayScene.prototype = $extend(Phaser.Scene.prototype,{
 		var self = mouse.mousePosition;
 		self.x = this.engineMouse.x;
 		self.y = this.engineMouse.y;
+		var self = mouse.mouseMoved;
+		self.x = mouse.mousePosition.x - mouse.mousePositionLastFrame.x;
+		self.y = mouse.mousePosition.y - mouse.mousePositionLastFrame.y;
 		mouse.deltaWheelY = this.engineMouse.deltaWheelY;
 		var key = Keyboard.keyboard;
 		ArraysUtilities.copyContentIntArray(key.charsDown,this.engineKeyboard.charsDown);
