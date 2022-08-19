@@ -1100,11 +1100,12 @@ BattleManager.prototype = {
 			json = null;
 		}
 		if(json == null) {
-			this.generalSaveData = { achievementData : { achievs : null}, mouseWheelSensibility : 1};
+			this.generalSaveData = { achievementData : { achievs : null}, mouseWheelSensibility : 1, language : 0};
 			this.generalSaveData.achievementData = { achievs : new haxe_ds_StringMap()};
 		} else {
 			this.generalSaveData = JsonMainTypes.jsonparsergeneral.fromJson(json);
 		}
+		Local.language = this.generalSaveData.language;
 		this.achievementModel.modelData.achievementData = this.generalSaveData.achievementData;
 		this.achievementModel.modelData.globalData = this.global;
 		if(this.generalSaveData.mouseWheelSensibility > 0 == false) {
@@ -1694,12 +1695,12 @@ BattleManager.prototype = {
 			if(areaData.externalClearConditions.length > 0) {
 				if(this.wdata.maxArea == this.wdata.battleArea) {
 					this.wdata.maxArea++;
-					haxe_Log.trace("succeed in clearing external condition area",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 836, className : "BattleManager", methodName : "clearExternalConditionArea"});
+					haxe_Log.trace("succeed in clearing external condition area",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 838, className : "BattleManager", methodName : "clearExternalConditionArea"});
 					return;
 				}
 			}
 		}
-		haxe_Log.trace("ERROR!! NOT EXTERNAL CONDITION AREA ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 842, className : "BattleManager", methodName : "clearExternalConditionArea"});
+		haxe_Log.trace("ERROR!! NOT EXTERNAL CONDITION AREA ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 844, className : "BattleManager", methodName : "clearExternalConditionArea"});
 	}
 	,AddEquip: function(e,event,dropperReference) {
 		var addedIndex = -1;
@@ -2180,7 +2181,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1577, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1579, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -3426,7 +3427,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2827, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2829, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -3443,7 +3444,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2844, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 2846, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -3645,16 +3646,16 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3037, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3039, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
 			HxOverrides.strDate(loadedWdata.retention.gameStartDate);
-			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3042, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("normal date",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3044, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3045, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3047, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -3668,29 +3669,29 @@ BattleManager.prototype = {
 		try {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 			if(loadedWdata == null) {
-				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3060, className : "BattleManager", methodName : "SendJsonPersistentData"});
-				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3061, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3062, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3063, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				jsonString = StringTools.replace(jsonString,"undefined","null");
 				loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 				if(loadedWdata == null) {
 					ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
 					if(JsonMainTypes.jsonparserwdata.errors.length > 0) {
-						haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3068, className : "BattleManager", methodName : "SendJsonPersistentData"});
-						haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3069, className : "BattleManager", methodName : "SendJsonPersistentData"});
+						haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3070, className : "BattleManager", methodName : "SendJsonPersistentData"});
+						haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3071, className : "BattleManager", methodName : "SendJsonPersistentData"});
 					}
 					return false;
 				} else {
-					haxe_Log.trace("save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3073, className : "BattleManager", methodName : "SendJsonPersistentData"});
+					haxe_Log.trace("save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3075, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				}
 			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3078, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("legacy save ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3080, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3083, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3084, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3085, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3086, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			ErrorX.exception = e;
 			return false;
 		}
@@ -3791,7 +3792,7 @@ BattleManager.prototype = {
 			}
 			return false;
 		}
-		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3190, className : "BattleManager", methodName : "testCondition"});
+		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3192, className : "BattleManager", methodName : "testCondition"});
 		return false;
 	}
 	,isBattleArea: function() {
@@ -4185,7 +4186,6 @@ CrossTarget.endInputRequest = function() {
 	CrossTarget.requestedInput = null;
 };
 CrossTarget.alert = function(arg0) {
-	window.alert(Std.string(arg0));
 };
 var CurrencyMetaInfo = function() {
 	this.maxValue = -1;
@@ -5200,19 +5200,21 @@ var GRIConfigurer = function(screenWidth,screenHeight) {
 	this.desiredMode = -1;
 	this.enemies = new EnemySheets();
 	this.selectedGRIConfiguration = -1;
+	haxe_Log.trace("LOAD LOCALLIZATION",{ fileName : "Sources\\GRI/GRIConfigurer.hx", lineNumber : 92, className : "GRIConfigurer", methodName : "new"});
+	Local.load(autogen_GriTxts.local);
 	this.dimensions = [];
-	this.dimensions.push(this.setupCrystalRoad());
-	this.dimensions.push(GRIConfigurer.setupLagrimaRegions());
 	this.resolutionScaling.feed(screenWidth,screenHeight);
 	this.griControl = new GRIControl(this.resolutionScaling);
-	this.griControl.setupTitle(this.dimensions);
+	this.dimensions.push(this.setupCrystalRoad());
+	this.dimensions.push(GRIConfigurer.setupLagrimaRegions());
+	this.griControl.setupTitle(this.dimensions,false);
 };
 $hxClasses["GRIConfigurer"] = GRIConfigurer;
 GRIConfigurer.__name__ = "GRIConfigurer";
 GRIConfigurer.setupLagrimaRegions = function() {
-	var config = new GRIConfiguration("Play as Lu");
+	var config = new GRIConfiguration(Local.getString("Play as Lu"));
 	config.description_sprite = new Sprite("main_story",512);
-	config.description_text = "An young girl who adventures across the Lagrima Continent";
+	config.description_text = Local.getString("An young girl who adventures across the Lagrima Continent");
 	config.description_title = "Lu";
 	config.mainCharacterName = "Lu";
 	config.dimensionId = GRIConfigurer.DIMENSION_ID_LAGRIMA;
@@ -5476,13 +5478,13 @@ GRIConfigurer.prototype = {
 			}
 			this.griControl = new GRIControl(this.resolutionScaling,this.dimensions[dimension]);
 			var tmp = dimension == 1;
-			this.griControl.setupTitle(this.dimensions);
+			this.griControl.setupTitle(this.dimensions,true);
 			this.griControl.setupView();
 		}
 		this.selectedGRIConfiguration = dimension;
 	}
 	,setupCrystalRoad: function() {
-		var config = new GRIConfiguration("Play as Isabel");
+		var config = new GRIConfiguration(Local.getString("Play as Isabel"));
 		config.heroViewAux = 4;
 		config.mainCharacterName = "Isabel";
 		config.storyDataResource = ["story_main_json"];
@@ -5490,7 +5492,7 @@ GRIConfigurer.prototype = {
 		config.heroMaxLevel = 20;
 		config.battleManagerConfiguration.equipDropChance = 35;
 		config.battleManagerConfiguration.equipDropChance_Rare = 15;
-		config.description_text = "A woman who seeks out revenge and will do whatever it takes to get it done";
+		config.description_text = Local.getString("A woman who seeks out revenge and will do whatever it takes to get it done");
 		config.description_title = "Isabel";
 		config.description_sprite = new Sprite("isabel_story",512);
 		config.dimensionId = GRIConfigurer.DIMENSION_ID_AMAZONIA;
@@ -5546,7 +5548,7 @@ GRIConfigurer.prototype = {
 		return config;
 	}
 	,addLockedLuArea: function(config,regPos,areaName,levelRequirement) {
-		var area = config.addArea(regPos,"Farm bed","","reach level " + levelRequirement + " as Lu to proceed","Lu has reached level " + levelRequirement + ". You can now proceed.",true,true);
+		var area = config.addArea(regPos,"Farm bed","",Local.getIntString("reach level {0} as Lu to proceed",levelRequirement),Local.getIntString("Lu has reached level {0}. You can now proceed.",levelRequirement),true,true);
 		area.externalClearConditions.push(new Condition(ConditionType.largerOrEqual,arcania_logic_ArcaniaModel.REUSABLE_CONDITION_TYPE,"playerlevelLAGRIMA",levelRequirement));
 	}
 	,__class__: GRIConfigurer
@@ -5631,7 +5633,6 @@ var GRIControl = function(resolution,configuration) {
 	this.eventToAction = new haxe_ds_StringMap();
 	this.eventTransformers = [];
 	this.turnOrderView = new TurnOrderView();
-	this.view = new GRIView();
 	this.scriptExecuter = new hscript_Interp();
 	this.battleManager = new BattleManager();
 	this.resolution = resolution;
@@ -5648,17 +5649,10 @@ var GRIControl = function(resolution,configuration) {
 	bm.config = this.config.battleManagerConfiguration;
 	if(hasConfig) {
 		bm.achievementModel.dimensionId = configuration.dimensionId;
-		this.view.mainCharacterName = this.config.mainCharacterName;
 	}
 	this.eventTransformers.push(new EventTransformer(StoryControlLogic.sceneStartedEventNatural("3_the_deal"),this.battleManager.createAreaGoEvent(1,0)));
 	this.eventTransformers.push(new EventTransformer(StoryControlLogic.sceneStartedEventNatural("3_the_deal"),Data.create(1,BattleConstants.DATAEVENT_REGIONUNLOCK)));
 	this.genericWarning = { title : "Warning", description : "Warning Description", buttonYes : "Close", buttonFalse : null};
-	this.equipControl = new GRIControlEquip(bm,this);
-	this.regionControl = new GRIControlRegion(this,bm);
-	this.villageControl = new GRIControlVillage(this);
-	this.titleControl = new GRIControlTitle(bm);
-	this.storyControl = StoryControlLogic.createStoryControl(this.view);
-	this.areaControl = new triple_$choice_$gri_GRIAreaControl(this,new ArcaniaActionsForTC(this));
 	this.turnOrderView.layoutId = "turnorder";
 	var proto = new PrototypeItemMaker();
 	proto.MakeItems();
@@ -5675,101 +5669,31 @@ var GRIControl = function(resolution,configuration) {
 		var i = _g++;
 		bm.wdata.hero.equipmentSets[i].equipmentSlots[2] = 0;
 	}
-	var storyPersistence = { progressionData : new haxe_ds_StringMap(), worldVersion : bm.wdata.worldVersion, currentStoryId : null};
 	var jsonData = CrossTarget.GetLocalStorageItem(GRIControl.key);
-	var persistenceMaster = SaveAssistant.GetPersistenceMaster(jsonData);
-	this.previousPersistenceMaster = persistenceMaster;
-	var jsonData2 = persistenceMaster.jsonStory;
-	if(jsonData2 != null && jsonData2 != "") {
-		storyPersistence = StoryControlLogic.ReadJsonPersistentData(jsonData2);
-	}
+	this.persistenceMaster = SaveAssistant.GetPersistenceMaster(jsonData);
+	this.previousPersistenceMaster = this.persistenceMaster;
 	if(hasConfig) {
 		if(this.config.dimensionSave < 0) {
-			if(persistenceMaster.jsonGameplay != null) {
-				var success = bm.SendJsonPersistentData(persistenceMaster.jsonGameplay);
+			if(this.persistenceMaster.jsonGameplay != null) {
+				var success = bm.SendJsonPersistentData(this.persistenceMaster.jsonGameplay);
 				var tmp = success == false;
 			}
 		} else {
-			if(persistenceMaster.jsonGameplayDimensions == null) {
-				persistenceMaster.jsonGameplayDimensions = [];
+			if(this.persistenceMaster.jsonGameplayDimensions == null) {
+				this.persistenceMaster.jsonGameplayDimensions = [];
 			}
-			if(persistenceMaster.jsonGameplayDimensions.length > this.config.dimensionSave) {
-				var jsonD = persistenceMaster.jsonGameplayDimensions[this.config.dimensionSave];
+			if(this.persistenceMaster.jsonGameplayDimensions.length > this.config.dimensionSave) {
+				var jsonD = this.persistenceMaster.jsonGameplayDimensions[this.config.dimensionSave];
 				if(jsonD != null) {
 					bm.SendJsonPersistentData(jsonD);
 				}
 			}
 		}
-		bm.loadGeneralJson(persistenceMaster.jsonGeneral,persistenceMaster.worldVersion);
-		var tmp = persistenceMaster.jsonVillageDimensions != null;
+		bm.loadGeneralJson(this.persistenceMaster.jsonGeneral,this.persistenceMaster.worldVersion);
+		var tmp = this.persistenceMaster.jsonVillageDimensions != null;
 	} else {
-		bm.loadGeneralJson(persistenceMaster.jsonGeneral,persistenceMaster.worldVersion);
+		bm.loadGeneralJson(this.persistenceMaster.jsonGeneral,this.persistenceMaster.worldVersion);
 	}
-	this.villageControl.loadVillage(persistenceMaster,this.config.villageDimensionSave);
-	var storyRuntime = [];
-	var _g = new haxe_ds_StringMap();
-	var value = new Sprite("mom_story",512);
-	_g.h["mom"] = value;
-	var value = new Sprite("main_story",512);
-	_g.h["lu"] = value;
-	var value = new Sprite("cid_story",512);
-	_g.h["cid"] = value;
-	var value = new Sprite("cid_story",512);
-	_g.h["man"] = value;
-	var value = new Sprite("isabel_story",512);
-	_g.h["isabel"] = value;
-	var value = new Sprite("vitor_story",512);
-	_g.h["victor"] = value;
-	var value = new Sprite("pedroiv_story",512);
-	_g.h["dom pedro iv"] = value;
-	var value = new Sprite("iracema_story",512);
-	_g.h["iracema"] = value;
-	var value = new Sprite("iracema_story",512);
-	_g.h["princess"] = value;
-	var value = new Sprite("marino_story",512);
-	_g.h["marino"] = value;
-	var storyRuntime1 = { currentStoryProgression : null, currentCutsceneIndex : -1, cutscene : null, cutsceneExtra : storyRuntime, cutsceneStartable : null, cutscenes : null, visibilityConditionScripts : [], messageRuntimeInfo : [], persistence : storyPersistence, speakerToImage : _g};
-	this.storyControl.runtime = storyRuntime1;
-	var storyFile = ["storyjson"];
-	if(hasConfig) {
-		storyFile = this.config.storyDataResource;
-	}
-	var storyJsons = [];
-	var _g = 0;
-	while(_g < storyFile.length) {
-		var s = storyFile[_g];
-		++_g;
-		storyJsons.push(CrossTarget.getTextResource(s));
-	}
-	StoryControlLogic.Init(storyJsons,this.storyControl.runtime);
-	if(hasConfig) {
-		var _g4_current = 0;
-		var _g4_array = this.config.eventToStoryTriggers;
-		while(_g4_current < _g4_array.length) {
-			var _g5_value = _g4_array[_g4_current];
-			var _g5_key = _g4_current++;
-			var index = _g5_key;
-			var value = _g5_value;
-			var storyId = value.storyId;
-			var _g6_current = 0;
-			var _g6_array = this.storyControl.runtime.cutscenes;
-			while(_g6_current < _g6_array.length) {
-				var _g7_value = _g6_array[_g6_current];
-				var _g7_key = _g6_current++;
-				var cutscenePos = _g7_key;
-				var cutscene = _g7_value;
-				if(storyId == cutscene.id) {
-					this.storyControl.runtime.cutsceneExtra[cutscenePos] = new CutsceneExtraData(false);
-					break;
-				}
-			}
-		}
-		bm.wdata.hero.viewAux = this.config.heroViewAux;
-		if(this.config.heroMaxLevel >= 0) {
-			bm.heroMaxLevel = this.config.heroMaxLevel;
-		}
-	}
-	this.scriptExecuter.variables.h["global"] = bm.global.data;
 	CrossTarget.SetLocalStorageItem(GRIControl.key,jsonData);
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.FEEDBACK_BUTTON,102));
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.SKILL_BUTTON_1,49));
@@ -5783,14 +5707,93 @@ var GRIControl = function(resolution,configuration) {
 $hxClasses["GRIControl"] = GRIControl;
 GRIControl.__name__ = "GRIControl";
 GRIControl.prototype = {
-	setupTitle: function(dimensions) {
+	setupTitle: function(dimensions,hasConfig) {
+		this.view = new GRIView();
+		var bm = this.battleManager;
+		this.equipControl = new GRIControlEquip(bm,this);
+		this.regionControl = new GRIControlRegion(this,bm);
+		this.villageControl = new GRIControlVillage(this);
+		this.titleControl = new GRIControlTitle(bm);
+		this.storyControl = StoryControlLogic.createStoryControl(this.view);
+		var storyPersistence = { progressionData : new haxe_ds_StringMap(), worldVersion : bm.wdata.worldVersion, currentStoryId : null};
+		var jsonData2 = this.persistenceMaster.jsonStory;
+		if(jsonData2 != null && jsonData2 != "") {
+			storyPersistence = StoryControlLogic.ReadJsonPersistentData(jsonData2);
+		}
+		var storyRuntime = [];
+		var _g = new haxe_ds_StringMap();
+		var value = new Sprite("mom_story",512);
+		_g.h["mom"] = value;
+		var value = new Sprite("main_story",512);
+		_g.h["lu"] = value;
+		var value = new Sprite("cid_story",512);
+		_g.h["cid"] = value;
+		var value = new Sprite("cid_story",512);
+		_g.h["man"] = value;
+		var value = new Sprite("isabel_story",512);
+		_g.h["isabel"] = value;
+		var value = new Sprite("vitor_story",512);
+		_g.h["victor"] = value;
+		var value = new Sprite("pedroiv_story",512);
+		_g.h["dom pedro iv"] = value;
+		var value = new Sprite("iracema_story",512);
+		_g.h["iracema"] = value;
+		var value = new Sprite("iracema_story",512);
+		_g.h["princess"] = value;
+		var value = new Sprite("marino_story",512);
+		_g.h["marino"] = value;
+		var storyRuntime1 = { currentStoryProgression : null, currentCutsceneIndex : -1, cutscene : null, cutsceneExtra : storyRuntime, cutsceneStartable : null, cutscenes : null, visibilityConditionScripts : [], messageRuntimeInfo : [], persistence : storyPersistence, speakerToImage : _g};
+		this.storyControl.runtime = storyRuntime1;
+		var storyFile = ["storyjson"];
+		if(hasConfig) {
+			storyFile = this.config.storyDataResource;
+			this.view.mainCharacterName = this.config.mainCharacterName;
+		}
+		var storyJsons = [];
+		var _g = 0;
+		while(_g < storyFile.length) {
+			var s = storyFile[_g];
+			++_g;
+			storyJsons.push(CrossTarget.getTextResource(s));
+		}
+		StoryControlLogic.Init(storyJsons,this.storyControl.runtime);
+		if(hasConfig) {
+			var _g2_current = 0;
+			var _g2_array = this.config.eventToStoryTriggers;
+			while(_g2_current < _g2_array.length) {
+				var _g3_value = _g2_array[_g2_current];
+				var _g3_key = _g2_current++;
+				var index = _g3_key;
+				var value = _g3_value;
+				var storyId = value.storyId;
+				var _g4_current = 0;
+				var _g4_array = this.storyControl.runtime.cutscenes;
+				while(_g4_current < _g4_array.length) {
+					var _g5_value = _g4_array[_g4_current];
+					var _g5_key = _g4_current++;
+					var cutscenePos = _g5_key;
+					var cutscene = _g5_value;
+					if(storyId == cutscene.id) {
+						this.storyControl.runtime.cutsceneExtra[cutscenePos] = new CutsceneExtraData(false);
+						break;
+					}
+				}
+			}
+			bm.wdata.hero.viewAux = this.config.heroViewAux;
+			if(this.config.heroMaxLevel >= 0) {
+				bm.heroMaxLevel = this.config.heroMaxLevel;
+			}
+		}
+		this.scriptExecuter.variables.h["global"] = bm.global.data;
+		this.areaControl = new triple_$choice_$gri_GRIAreaControl(this,new ArcaniaActionsForTC(this));
 		BitmapText.loadFontFnt("main","lato13",CrossTarget.getTextResource("lato13_fnt"));
 		BitmapText.loadFontFnt("main14","lato15",CrossTarget.getTextResource("lato15_fnt"));
 		BitmapText.loadFontFnt("main16","lato17",CrossTarget.getTextResource("lato17_fnt"));
+		this.villageControl.loadVillage(this.persistenceMaster,this.config.villageDimensionSave);
 		var genui = new GenUIIntegration();
 		var res = CrossTarget.getTextResource("uigen_txt");
 		CrossTarget.crossPrint(res);
-		haxe_Log.trace(res,{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 367, className : "GRIControl", methodName : "setupTitle"});
+		haxe_Log.trace(res,{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 376, className : "GRIControl", methodName : "setupTitle"});
 		genui.readUIMaster(res);
 		GRILayoutManual.createLayouts(genui);
 		this.view.ui.genUI = genui;
@@ -5978,7 +5981,7 @@ GRIControl.prototype = {
 			}
 			if(value.stringData == "fb") {
 				this.showFeedback = true;
-				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 638, className : "GRIControl", methodName : "update"});
+				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 655, className : "GRIControl", methodName : "update"});
 			}
 			if(value.stringData == "error") {
 				this.showError = !this.showError;
@@ -6239,9 +6242,9 @@ GRIControl.prototype = {
 		}
 		var sleepAct = bm.wdata.playerActions.h["sleep"];
 		if(sleepAct.mode == 0) {
-			this.view.ui.elementTextId("sleep","Nap");
+			this.view.ui.elementTextId("sleep",Local.getString("Nap"));
 		} else {
-			this.view.ui.elementTextId("sleep","Wake up");
+			this.view.ui.elementTextId("sleep",Local.getString("Wake up"));
 		}
 		var highlightSleep = sleepAct.mode != 0;
 		if(this.view.highlightedButtons.indexOf(this.view.sleepButton) != -1 != highlightSleep) {
@@ -7933,12 +7936,12 @@ GRIView.prototype = {
 		}
 	}
 	,setupTabButtons: function() {
-		this.addButton(GRIView.tagTabRegion,"Region",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
-		this.addButton(GRIView.tagTabBattle,"Battle",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
-		this.addButton(GRIView.tagTabEquip,"Equipment",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
-		this.addButton(GRIView.tagTabMemory,"Memory",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
-		this.addButton(GRIView.tagTabCharacter,"Achievement",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
-		this.addButton(GRIView.tagTabVillage,"Unknown",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabRegion,Local.getString("Region"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabBattle,Local.getString("Battle"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabEquip,Local.getString("Equipment"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabMemory,Local.getString("Memory"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabCharacter,Local.getString("Achievement"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
+		this.addButton(GRIView.tagTabVillage,Local.getString("Unknown"),GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
 		this.tabTags.push(GRIView.tagTabVillage);
 		this.tabTags.push(GRIView.tagTabRegion);
 		this.tabTags.push(GRIView.tagTabBattle);
@@ -9386,6 +9389,12 @@ GRISettingsControl.prototype = {
 			if(data.stringData == GRISettingsView.DATA_RETURN) {
 				this.titleControl.changeMode(TitleMode.NORMAL);
 			}
+			if(data.stringData == GRISettingsView.DATA_LANGUAGE) {
+				Local.language = data.intData;
+				this.titleControl.control.battleManager.generalSaveData.language = Local.language;
+				this.titleControl.control.requestSaveGeneral();
+				CrossTarget.reload();
+			}
 			if(data.stringData == GRISettingsView.DATA_INCREASE_MOUSE_WHEEL_SENSIBILITY) {
 				this.titleControl.control.battleManager.generalSaveData.mouseWheelSensibility++;
 			}
@@ -9406,7 +9415,7 @@ GRISettingsControl.prototype = {
 			this.titleControl.control.requestSaveGeneral();
 		}
 		var v = this.titleControl.control.battleManager.generalSaveData.mouseWheelSensibility;
-		this.viewSettings.settingsText.text = "Mouse wheel sensibility: x" + v;
+		this.viewSettings.settingsText.text = Local.getIntString("Mouse wheel sensibility: {0}",v);
 		UIElementManager.fitTextHeight(this.viewSettings.settingsText);
 	}
 	,__class__: GRISettingsControl
@@ -9439,7 +9448,7 @@ GRIViewTitle.prototype = {
 		var e = this.view.addText("","UNSTABLE Version: 0.18Br",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		e.text = "DEMO " + e.text;
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-130);
-		var e = this.view.addText("","Developed by Pedro Gabriel\nFonteles Furtado",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		var e = this.view.addText("",Local.getString("Developed by Pedro Gabriel\nFonteles Furtado"),GRIView.ARCHETYPE_HEADER_TIMID,null);
 		e.textPivot.y = 0;
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-110);
 		HxOverrides.remove(this.view.uiCreation.tags,GRIViewTitle.TAG_TITLE_LOGO);
@@ -9490,9 +9499,9 @@ GRIViewTitle.prototype = {
 		self.y = 60;
 		var img = this.view.uiCreation.createImageElement(Sprite.create("steam",81,24),81,24);
 		this.view.uiCreation.addWithOffset(img,steamButton,0.5,0.5,0,8);
-		var text = this.view.addText("","Full version",GRIView.ARCHETYPE_TEXT_ACTION,null,null,false);
+		var text = this.view.addText("",Local.getString("Full version"),GRIView.ARCHETYPE_TEXT_ACTION,null,null,false);
 		this.view.uiCreation.addWithOffset(text,steamButton,0.5,0.5,0,-14);
-		this.view.addButton(GRIViewTitle.DATA_RESET,"Reset",null,GRIViewTitle.LAYOUT_BUTTON_TITLE,null,this.cursorGroup);
+		this.view.addButton(GRIViewTitle.DATA_RESET,Local.getString("Reset"),null,GRIViewTitle.LAYOUT_BUTTON_TITLE,null,this.cursorGroup);
 		this.view.uiCreation.singleTag(GRIView.tagTabTitle);
 		this.view.uiCreation.tags.push(GRIViewTitle.TAG_TITLE_ACCEPT);
 		this.view.addButton(GRIViewTitle.DATA_ACCEPT,"Start & Accept",null,GRIViewTitle.LAYOUT_BUTTON_TITLE);
@@ -9505,9 +9514,10 @@ GRIViewTitle.prototype = {
 	,__class__: GRIViewTitle
 };
 var GRISettingsView = function(viewTitle) {
+	GRISettingsView.BUTTON_LABELS = [Local.getString("Mouse Wheel Sensibility Up"),Local.getString("Mouse Wheel Sensibility Down"),Local.getString("Return")];
 	var TAG_SETTINGS = GRIViewTitle.TAG_TITLE_SETTINGS;
 	this.view = viewTitle.view;
-	var settings = viewTitle.addMainButton(GRISettingsView.DATA_SETTINGSGO,"Settings",0,"Change settings of the game");
+	var settings = viewTitle.addMainButton(GRISettingsView.DATA_SETTINGSGO,Local.getString("Settings"),0,Local.getString("Change settings of the game"));
 	this.view.uiCreation.tags.length = 0;
 	this.settingsText = this.view.addText("","SAMPLE",GRIView.ARCHETYPE_SIMPLE_MEDIUM,GRISettingsView.LAYOUT_SETTINGS,TAG_SETTINGS,true);
 	this.settingsText.tags.push(TAG_SETTINGS);
@@ -9523,6 +9533,7 @@ var GRISettingsView = function(viewTitle) {
 		var button = this.view.addButton("",label,null,GRISettingsView.LAYOUT_SETTINGS,TAG_SETTINGS,viewTitle.cursorGroup);
 		button.tags.push(GRIView.tagTabTitle);
 		button.data.stringData = data;
+		button.data.intData = GRISettingsView.BUTTON_DATAS_INT[index];
 	}
 };
 $hxClasses["GRISettingsView"] = GRISettingsView;
@@ -11077,6 +11088,9 @@ GlobalData.__name__ = "GlobalData";
 GlobalData.prototype = {
 	__class__: GlobalData
 };
+var GlobalSetting = function() { };
+$hxClasses["GlobalSetting"] = GlobalSetting;
+GlobalSetting.__name__ = "GlobalSetting";
 var HxOverrides = function() { };
 $hxClasses["HxOverrides"] = HxOverrides;
 HxOverrides.__name__ = "HxOverrides";
@@ -11214,20 +11228,6 @@ Mouse.prototype = {
 		self.x *= mul;
 		self.y *= mul;
 		this._mousePosition = self;
-		var self = this.mousePositionLastFrame;
-		var x = self.x;
-		var y = self.y;
-		if(y == null) {
-			y = 0;
-		}
-		if(x == null) {
-			x = 0;
-		}
-		var this1 = new Vector2Default(x,y);
-		var self = this1;
-		self.x *= mul;
-		self.y *= mul;
-		this.mousePositionLastFrame = self;
 		var self = this.mouseMoved;
 		var x = self.x;
 		var y = self.y;
@@ -14093,7 +14093,7 @@ JsonParser_$90.__name__ = "JsonParser_90";
 JsonParser_$90.__super__ = json2object_reader_BaseParser;
 JsonParser_$90.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	onIncorrectType: function(pos,variable) {
-		this.errors.push(json2object_Error.IncorrectType(variable,"{ mouseWheelSensibility : Int, achievementData : AchievementsPersistence }",pos));
+		this.errors.push(json2object_Error.IncorrectType(variable,"{ mouseWheelSensibility : Int, language : Int, achievementData : AchievementsPersistence }",pos));
 		json2object_reader_BaseParser.prototype.onIncorrectType.call(this,pos,variable);
 	}
 	,loadJsonNull: function(pos,variable) {
@@ -14101,7 +14101,7 @@ JsonParser_$90.prototype = $extend(json2object_reader_BaseParser.prototype,{
 	}
 	,loadJsonObject: function(o,pos,variable) {
 		var assigned = new haxe_ds_StringMap();
-		this.objectSetupAssign(assigned,["achievementData","mouseWheelSensibility"],[false,false]);
+		this.objectSetupAssign(assigned,["achievementData","language","mouseWheelSensibility"],[false,false,false]);
 		this.value = this.getAuto();
 		var _g = 0;
 		while(_g < o.length) {
@@ -14110,6 +14110,9 @@ JsonParser_$90.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			switch(field.name) {
 			case "achievementData":
 				this.value.achievementData = this.loadObjectField(($_=new JsonParser_$92(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"achievementData",assigned,this.value.achievementData,pos);
+				break;
+			case "language":
+				this.value.language = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"language",assigned,this.value.language,pos);
 				break;
 			case "mouseWheelSensibility":
 				this.value.mouseWheelSensibility = this.loadObjectField(($_=new JsonParser_$4(this.errors,this.putils,1),$bind($_,$_.loadJson)),field,"mouseWheelSensibility",assigned,this.value.mouseWheelSensibility,pos);
@@ -14121,7 +14124,7 @@ JsonParser_$90.prototype = $extend(json2object_reader_BaseParser.prototype,{
 		this.objectErrors(assigned,pos);
 	}
 	,getAuto: function() {
-		return { achievementData : new JsonParser_$92([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mouseWheelSensibility : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
+		return { achievementData : new JsonParser_$92([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), language : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1))), mouseWheelSensibility : new JsonParser_$4([],this.putils,0).loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JNull,new hxjsonast_Position("",0,1)))};
 	}
 	,__class__: JsonParser_$90
 });
@@ -14442,9 +14445,9 @@ JsonWriter_$78.prototype = {
 		if(o == null) {
 			return firstIndent + "null";
 		}
-		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$80(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull),indent + space + "\"mouseWheelSensibility\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.mouseWheelSensibility,space,level + 1,false,onAllOptionalNull)];
+		var decl = [indent + space + "\"achievementData\": " + new JsonWriter_$80(this.ignoreNullOptionals)._write(o.achievementData,space,level + 1,false,onAllOptionalNull),indent + space + "\"language\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.language,space,level + 1,false,onAllOptionalNull),indent + space + "\"mouseWheelSensibility\": " + new JsonWriter_$4(this.ignoreNullOptionals)._write(o.mouseWheelSensibility,space,level + 1,false,onAllOptionalNull)];
 		if(this.ignoreNullOptionals) {
-			var skips = [false,false];
+			var skips = [false,false,false];
 			if(skips.indexOf(false) == -1) {
 				decl = onAllOptionalNull != null ? [onAllOptionalNull()] : [];
 			} else {
@@ -18900,6 +18903,96 @@ JsonX.stringify = function(value) {
 JsonX.parse = function(json) {
 	return JSON.parse(json);
 };
+var Local = function() { };
+$hxClasses["Local"] = Local;
+Local.__name__ = "Local";
+Local.getString = function(englishString,language) {
+	if(language == null) {
+		language = -1;
+	}
+	if(language < 0) {
+		language = Local.language;
+	}
+	var key = StringTools.replace(englishString," ","").toUpperCase();
+	if(key.length > 10) {
+		key = HxOverrides.substr(key,0,10);
+	}
+	var n = 1;
+	var origKey = key;
+	if(Object.prototype.hasOwnProperty.call(Local.mapOfValues.h,key) == false) {
+		var this1 = Local.mapOfValues;
+		var v = [];
+		this1.h[key] = v;
+		Local.mapOfValues.h[key].push(englishString);
+	}
+	return Local.mapOfValues.h[key][language];
+};
+Local.getIntString = function(arg0,levelRequirement) {
+	var localString = Local.getString(arg0,Local.language);
+	if(localString != null) {
+		return StringTools.replace(localString,"{0}","" + levelRequirement);
+	}
+	return null;
+};
+Local.generateCSV = function() {
+	var output = "";
+	var h = Local.mapOfValues.h;
+	var _g_h = h;
+	var _g_keys = Object.keys(h);
+	var _g_length = _g_keys.length;
+	var _g_current = 0;
+	while(_g_current < _g_length) {
+		var key = _g_keys[_g_current++];
+		var _g1_key = key;
+		var _g1_value = _g_h[key];
+		var key1 = _g1_key;
+		var value = _g1_value;
+		output += "\n" + key1;
+		var _g2_current = 0;
+		var _g2_array = value;
+		while(_g2_current < _g2_array.length) {
+			var _g3_value = _g2_array[_g2_current];
+			var _g3_key = _g2_current++;
+			var index = _g3_key;
+			var value1 = _g3_value;
+			value1 = StringTools.replace(value1,"\n","\\n");
+			output += "|" + value1;
+		}
+	}
+	return output;
+};
+Local.load = function(arg0) {
+	var separator = "|";
+	if(arg0.indexOf("|") == -1) {
+		separator = ",";
+	}
+	var lines = arg0.split("\n");
+	var _g_current = 0;
+	var _g_array = lines;
+	while(_g_current < _g_array.length) {
+		var _g1_value = _g_array[_g_current];
+		var _g1_key = _g_current++;
+		var index = _g1_key;
+		var value = _g1_value;
+		var values = value.split(separator);
+		var key = values[0];
+		var this1 = Local.mapOfValues;
+		var v = [];
+		this1.h[key] = v;
+		var _g2_current = 0;
+		var _g2_array = values;
+		while(_g2_current < _g2_array.length) {
+			var _g3_value = _g2_array[_g2_current];
+			var _g3_key = _g2_current++;
+			var index1 = _g3_key;
+			var value1 = _g3_value;
+			if(index1 != 0) {
+				Local.mapOfValues.h[key].push(value1);
+				haxe_Log.trace(" KEYYYB + " + key + "+" + value1 + "+" + Local.mapOfValues.h[key].length,{ fileName : "Sources\\Reusable/Local.hx", lineNumber : 67, className : "Local", methodName : "load"});
+			}
+		}
+	}
+};
 var MyMacro = function() { };
 $hxClasses["MyMacro"] = MyMacro;
 MyMacro.__name__ = "MyMacro";
@@ -19132,7 +19225,17 @@ PlayScene.prototype = $extend(Phaser.Scene.prototype,{
 		ArraysUtilities.copyContentIntArray(key.charsUp,this.engineKeyboard.charsUp);
 		this.engineKeyboard.charsDown.length = 0;
 		this.engineKeyboard.charsUp.length = 0;
-		griControl.update(16);
+		var updateRun = true;
+		if(GlobalSetting.pauseUpdate) {
+			updateRun = false;
+		}
+		if(GlobalSetting.pauseUpdate_FrameSkip > 0) {
+			updateRun = true;
+			GlobalSetting.pauseUpdate_FrameSkip--;
+		}
+		if(updateRun) {
+			griControl.update(16);
+		}
 		PhaserRenderer.startFrame();
 		this.engineMouse.update();
 		griControl.render();
@@ -19474,10 +19577,6 @@ PrototypeItemMaker.prototype = {
 		_g.h["LifeMax"] = value;
 		this.AddMod("of Nature","Aerith's",_g,null,normalItemStart);
 		var _g = new haxe_ds_StringMap();
-		var value = this.R(105,110);
-		_g.h["MagicAttack"] = value;
-		this.AddMod("of Magic","Magical",_g,null,normalItemStart);
-		var _g = new haxe_ds_StringMap();
 		var value = this.R(115,125);
 		_g.h["Attack"] = value;
 		var value = this.R(70,70);
@@ -19511,6 +19610,10 @@ PrototypeItemMaker.prototype = {
 		var value = this.R(60,75);
 		_g.h["Attack"] = value;
 		this.AddMod("of the T.Hunter","Locke's",_g,null,modComplexStart);
+		var _g = new haxe_ds_StringMap();
+		var value = this.R(105,110);
+		_g.h["MagicAttack"] = value;
+		this.AddMod("of Magic","Magical",_g,null,normalItemStart);
 		var _g = new haxe_ds_StringMap();
 		var value = this.R(125,135);
 		_g.h["MagicAttack"] = value;
@@ -57992,8 +58095,9 @@ GRISettingsView.DATA_DECREASE_MOUSE_WHEEL_SENSIBILITY = "wheeldown";
 GRISettingsView.DATA_FULL_SCREEN = "fullscreen";
 GRISettingsView.DATA_RETURN = "settings_return";
 GRISettingsView.DATA_SETTINGSGO = "settings_go";
+GRISettingsView.DATA_LANGUAGE = "language";
 GRISettingsView.BUTTON_DATAS = [GRISettingsView.DATA_INCREASE_MOUSE_WHEEL_SENSIBILITY,GRISettingsView.DATA_DECREASE_MOUSE_WHEEL_SENSIBILITY,GRISettingsView.DATA_RETURN];
-GRISettingsView.BUTTON_LABELS = ["Mouse Wheel Sensibility Up","Mouse Wheel Sensibility Down","Return"];
+GRISettingsView.BUTTON_DATAS_INT = [0,0,0];
 TurnOrderData.charaSprites = [Sprite.create("heroicon",512,512),Sprite.create("enemyicon",512,512),Sprite.create("boss",512,512),Sprite.create("bossb",512,512),Sprite.create("isabelicon",512,512)];
 ActorViewLogic.ignoredStats = ["Life","MP","MPRecharge","MPRechargeCount","","SpeedCount","damage-last-turn"];
 ActorViewLogic.AttributeExplanation = (function($this) {
@@ -58081,6 +58185,8 @@ GRIViewTalent.MODETAGS = [GRIViewTalent.TAG_TALENTMODE,GRIViewTalent.TAG_PRACTIC
 GRIViewTalent.CURSORGROUPMODES = [new CursorGroup(),new CursorGroup()];
 GRIViewTalent.FORMRANKNAMES = ["F","E","D","C","B","A","A+","S","S+","SS","X","X+","Y","Y+","Z","Z+","ZZ","ZY","ZX"];
 GlobalData.IGNORE = -99999;
+GlobalSetting.pauseUpdate = false;
+GlobalSetting.pauseUpdate_FrameSkip = 0;
 Mouse.mouse = new Mouse();
 Keyboard.KEY_UP = 100000;
 Keyboard.KEY_LEFT = 100001;
@@ -58116,6 +58222,8 @@ JsonMainTypes.jsonwritervillageD = new JsonWriter_$86();
 JsonMainTypes.jsonparservillageD = new JsonParser_$98();
 JsonMainTypes.jsonwritervillageS = new JsonWriter_$98();
 JsonMainTypes.jsonparservillageS = new JsonParser_$110();
+Local.mapOfValues = new haxe_ds_StringMap();
+Local.language = 1;
 PhaserRenderer.images = new haxe_ds_StringMap();
 PhaserRenderer.z = 0;
 PrototypeItemMaker.itemType_Weapon = 0;
@@ -58202,8 +58310,8 @@ autogen_GriPngs.discordb = Sprite.create("discordb",91,31);
 autogen_GriPngs.discordbig = Sprite.create("discordbig",800,272);
 autogen_GriPngs.downshadow = Sprite.create("downshadow",32,32);
 autogen_GriPngs.e_AuroraRing = Sprite.create("e_AuroraRing",128,128);
-autogen_GriPngs.e_Burst_1 = Sprite.create("e_Burst_1",256,256);
 autogen_GriPngs.enemyicon = Sprite.create("enemyicon",512,512);
+autogen_GriPngs.e_Burst_1 = Sprite.create("e_Burst_1",256,256);
 autogen_GriPngs.e_check = Sprite.create("e_check",256,193);
 autogen_GriPngs.e_Fog2001 = Sprite.create("e_Fog2001",128,128);
 autogen_GriPngs.e_SaintArrow = Sprite.create("e_SaintArrow",64,128);
@@ -58215,8 +58323,8 @@ autogen_GriPngs.font14_0 = Sprite.create("font14_0",256,256);
 autogen_GriPngs.font16_0 = Sprite.create("font16_0",256,256);
 autogen_GriPngs.gearrepeat = Sprite.create("gearrepeat",27,16);
 autogen_GriPngs.greengradient = Sprite.create("greengradient",32,32);
-autogen_GriPngs.icon_gold = Sprite.create("icon_gold",16,16);
 autogen_GriPngs.heroicon = Sprite.create("heroicon",512,512);
+autogen_GriPngs.icon_gold = Sprite.create("icon_gold",16,16);
 autogen_GriPngs.iracema_story = Sprite.create("iracema_story",512,512);
 autogen_GriPngs.isabelicon = Sprite.create("isabelicon",512,512);
 autogen_GriPngs.isabel_story = Sprite.create("isabel_story",512,512);
@@ -58286,8 +58394,8 @@ autogen_GriPngs.allSprites = (function($this) {
 	_g.h["discordbig"] = autogen_GriPngs.discordbig;
 	_g.h["downshadow"] = autogen_GriPngs.downshadow;
 	_g.h["e_AuroraRing"] = autogen_GriPngs.e_AuroraRing;
-	_g.h["e_Burst_1"] = autogen_GriPngs.e_Burst_1;
 	_g.h["enemyicon"] = autogen_GriPngs.enemyicon;
+	_g.h["e_Burst_1"] = autogen_GriPngs.e_Burst_1;
 	_g.h["e_check"] = autogen_GriPngs.e_check;
 	_g.h["e_Fog2001"] = autogen_GriPngs.e_Fog2001;
 	_g.h["e_SaintArrow"] = autogen_GriPngs.e_SaintArrow;
@@ -58299,8 +58407,8 @@ autogen_GriPngs.allSprites = (function($this) {
 	_g.h["font16_0"] = autogen_GriPngs.font16_0;
 	_g.h["gearrepeat"] = autogen_GriPngs.gearrepeat;
 	_g.h["greengradient"] = autogen_GriPngs.greengradient;
-	_g.h["icon_gold"] = autogen_GriPngs.icon_gold;
 	_g.h["heroicon"] = autogen_GriPngs.heroicon;
+	_g.h["icon_gold"] = autogen_GriPngs.icon_gold;
 	_g.h["iracema_story"] = autogen_GriPngs.iracema_story;
 	_g.h["isabelicon"] = autogen_GriPngs.isabelicon;
 	_g.h["isabel_story"] = autogen_GriPngs.isabel_story;
@@ -58373,8 +58481,8 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	_g.h["discordbig"] = "discordbig.png";
 	_g.h["downshadow"] = "downshadow.png";
 	_g.h["e_AuroraRing"] = "e_AuroraRing.png";
-	_g.h["e_Burst_1"] = "e_Burst_1.png";
 	_g.h["enemyicon"] = "enemyicon.png";
+	_g.h["e_Burst_1"] = "e_Burst_1.png";
 	_g.h["e_check"] = "e_check.png";
 	_g.h["e_Fog2001"] = "e_Fog2001.png";
 	_g.h["e_SaintArrow"] = "e_SaintArrow.png";
@@ -58386,8 +58494,8 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	_g.h["font16_0"] = "font16_0.png";
 	_g.h["gearrepeat"] = "gearrepeat.png";
 	_g.h["greengradient"] = "greengradient.png";
-	_g.h["icon_gold"] = "icon_gold.png";
 	_g.h["heroicon"] = "heroicon.png";
+	_g.h["icon_gold"] = "icon_gold.png";
 	_g.h["iracema_story"] = "iracema_story.jpeg";
 	_g.h["isabelicon"] = "isabelicon.png";
 	_g.h["isabel_story"] = "isabel_story.jpeg";
@@ -58421,6 +58529,7 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 autogen_GriTxts.actions = "[\r\n    {\r\n        \"id\": \"sitdown\",\r\n        \"name\": \"Sit down\",\r\n        \"desc\": \"Lay down your butt in the grass\",\r\n        \"perpetual\": true,\r\n        \"effect\": {\r\n            \"stamina\": 3,\r\n            \"mental\": 3\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"pickflowers\",\r\n        \"name\": \"Pick up flower\",\r\n        \"desc\": \"There are some flowers growing nearby. I think they are Snapdragons?\\n\\n (You can hold the button press to repeat)\",\r\n        \"cost\": {\r\n            \"stamina\": 1\r\n        },\r\n        \"result\": {\r\n            \"flower\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"imagine\",\r\n        \"name\": \"Imagine\",\r\n        \"desc\": \"Think up adventures, what ifs, the craziest ideas\",\r\n        \"run\": {\r\n            \"mental\": 3\r\n        },\r\n        \"effect\": {\r\n            \"creativity\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"contemplatearea\"\r\n    },\r\n    {\r\n        \"id\": \"commune\",\r\n        \"name\": \"Commune\",\r\n        \"desc\": \"Open your ears to Brazil, so that it may open to you\",\r\n        \"run\": {\r\n            \"mental\": 2\r\n        },\r\n        \"effect\": {\r\n            \"esoterism\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"flowersahi\"\r\n    },\r\n    {\r\n        \"id\": \"riteres1gen\",\r\n        \"name\": \"Hope to the Gods\",\r\n        \"desc\": \"Hope for a... Better future?\",\r\n        \"duration\": 5,\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"riteres1\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"spiritology-level>0\"\r\n    },\r\n    {\r\n        \"id\": \"riteres2gen\",\r\n        \"name\": \"Trust in what is mystic\",\r\n        \"desc\": \"First, you must trust to be trusted\",\r\n        \"duration\": 15,\r\n        \"cost\": {\r\n            \"riteres1\":3\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"riteres2\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"spiritology-level>1\"\r\n    },\r\n    {\r\n        \"id\": \"riteres3gen\",\r\n        \"name\": \"Pray for the rituals\",\r\n        \"desc\": \"Through prayer, comes faith\",\r\n        \"duration\": 30,\r\n        \"cost\": {\r\n            \"riteres2\":4\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"riteres3\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"spiritology-level>2\"\r\n    },\r\n    {\r\n        \"id\": \"thinkflower\",\r\n        \"name\": \"Dwell on flowers\",\r\n        \"desc\": \"What can you possibly do with a flower?\",\r\n        \"max\": 1,\r\n        \"duration\": 20,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"cost\": {\r\n            \"creativity\": 8,\r\n            \"esoterism\": 7\r\n        },\r\n        \"require\": \"creativity>3\"\r\n    },\r\n    {\r\n        \"id\": \"embedflower\",\r\n        \"name\": \"Embed flower\",\r\n        \"desc\": \"Bring the flower back to the Gods\",\r\n        \"perpetual\": true,\r\n        \"duration\": 7,\r\n        \"cost\": {\r\n            \"flower\": 1\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"mysticflower\": 1\r\n        },\r\n        \"require\": \"thinkflower\"\r\n    },\r\n    {\r\n        \"id\": \"embedlunarflower\",\r\n        \"name\": \"Ascend flowers\",\r\n        \"desc\": \"Combine multiple flowers into one\",\r\n        \"perpetual\": true,\r\n        \"duration\": 120,\r\n        \"cost\": {\r\n            \"flower\": 220,\r\n            \"mysticflower\": 80,\r\n            \"lunarres1\":3\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarflower\": 1\r\n        },\r\n        \"require\": \"lunarres1\"\r\n    },\r\n    {\r\n        \"id\": \"readmerchantbook\",\r\n        \"name\": \"Read [Life of Antonio Rodriges]\",\r\n        \"desc\": \"Let's hope you will know a little bit more about commerce after this\",\r\n        \"duration\": 400,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"mod\": {\r\n            \"selling-level.max\": 1\r\n        },\r\n        \"max\": 1,\r\n        \"require\": \"buymerchantbook\"\r\n    },\r\n    {\r\n        \"id\": \"readlunarbook\",\r\n        \"name\": \"Read a chapter of [Secrets of the Moon]\",\r\n        \"desc\": \"People have been obssessed with the bright light up in the sky\",\r\n        \"duration\": 400,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"mod\": {\r\n            \"lunology-level.max\": 1\r\n        },\r\n        \"max\": 2,\r\n        \"require\": \"buylunarbook\"\r\n    },\r\n    {\r\n        \"id\": \"sellflower\",\r\n        \"name\": \"Sell flowers\",\r\n        \"desc\": \"Just one for 1 gil. Wait, no.\",\r\n        \"perpetual\": true,\r\n        \"duration\": 10,\r\n        \"cost\": {\r\n            \"flower\": 10\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1\r\n        },\r\n        \"result\": {\r\n            \"coin\": 1\r\n        },\r\n        \"require\": \"selling-level>0\"\r\n    },\r\n    {\r\n        \"id\": \"sellbottle\",\r\n        \"name\": \"Sell bottle\",\r\n        \"desc\": \"A bit hard to find a buyer for an old bottle\",\r\n        \"perpetual\": true,\r\n        \"duration\": 20,\r\n        \"cost\": {\r\n            \"bottle\": 1\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1\r\n        },\r\n        \"result\": {\r\n            \"coin\": 1,\r\n            \"flower\": 3\r\n        },\r\n        \"require\": \"selling-level>0\"\r\n    },\r\n    {\r\n        \"id\": \"sellmysticflower\",\r\n        \"name\": \"Sell mystic flower\",\r\n        \"desc\": \"Who doesn't want to buy shining magic flowers? They look beautiful on the dining table.\",\r\n        \"perpetual\": true,\r\n        \"duration\": 3,\r\n        \"cost\": {\r\n            \"mysticflower\": 1\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1\r\n        },\r\n        \"result\": {\r\n            \"coin\": 2\r\n        },\r\n        \"require\": \"selling-level>1\"\r\n    },\r\n    {\r\n        \"id\": \"sellmysticbottle\",\r\n        \"name\": \"Sell mystic bottle\",\r\n        \"desc\": \"Some parents buy it to amaze their children. Some Tayra interested in Paje rituals may also be interested.\",\r\n        \"perpetual\": true,\r\n        \"duration\": 3,\r\n        \"cost\": {\r\n            \"mysticbottle\": 1\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1\r\n        },\r\n        \"result\": {\r\n            \"coin\": 5\r\n        },\r\n        \"require\": \"selling-level>2\"\r\n    },\r\n    {\r\n        \"id\": \"embedbottle\",\r\n        \"name\": \"Embed bottle\",\r\n        \"desc\": \"Breath a faint of life into what is lifeless\",\r\n        \"perpetual\": true,\r\n        \"duration\": 20,\r\n        \"cost\": {\r\n            \"bottle\": 1\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"mysticbottle\": 1\r\n        },\r\n        \"require\": \"mysticflower>7\"\r\n    },\r\n    {\r\n        \"id\": \"embedstone\",\r\n        \"name\": \"Embed stone\",\r\n        \"desc\": \"Bring the stone back to the Gods\",\r\n        \"perpetual\": true,\r\n        \"duration\": 20,\r\n        \"cost\": {\r\n            \"copperstone\": 1,\r\n            \"mysticflower\": 20,\r\n            \"esoterism\": 10,\r\n            \"riteres1\": 10\r\n        },\r\n        \"run\": {\r\n            \"mental\": 3,\r\n            \"stamina\": 3,\r\n            \"esoterism\": 2\r\n        },\r\n        \"result\": {\r\n            \"mysticstone\": 1\r\n        },\r\n        \"require\": \"spiritology-level>1\",\r\n        \"need\": \"copperstone\"\r\n    },\r\n    {\r\n        \"id\": \"throwflowers\",\r\n        \"name\": \"Flowers to the wind\",\r\n        \"desc\": \"Throw out some flowers into the wind\",\r\n        \"max\": 1,\r\n        \"duration\": 5,\r\n        \"require\": \"flower>5\",\r\n        \"cost\": {\r\n            \"flower\": 12\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"esotericdreams\",\r\n        \"name\": \"Esoteric Dreams\",\r\n        \"desc\": \"Sleep and dream of the unknown\",\r\n        \"max\": 1,\r\n        \"require\": \"mysticflower>7\",\r\n        \"cost\": {\r\n            \"mysticflower\": 8,\r\n            \"esoterism\": 20\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"duration\": 90,\r\n        \"mod\": {\r\n            \"mental.max\": 15,\r\n            \"esoterism.max\": 5\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"contemplatearea\",\r\n        \"name\": \"Place to contemplate\",\r\n        \"desc\": \"Put some flowers here, some there. Perfect place to think.\",\r\n        \"max\": 1,\r\n        \"duration\": 12,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        },\r\n        \"require\": \"throwflowers\",\r\n        \"cost\": {\r\n            \"flower\": 15\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"giveflowersoldman\",\r\n        \"name\": \"Give Flowers\",\r\n        \"desc\": \"Give the old man some flowers. Maybe he will smile.\",\r\n        \"max\": 1,\r\n        \"duration\": 5,\r\n        \"require\": \"throwflowers\",\r\n        \"cost\": {\r\n            \"flower\": 12\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"makemoonstone\",\r\n        \"name\": \"Make a Moon Stone\",\r\n        \"desc\": \"If you focus all your energy on this stone...\",\r\n        \"max\": 1,\r\n        \"duration\": 2000,\r\n        \"require\": \"mysticstone\",\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"stamina\": 1\r\n        },\r\n        \"cost\": {\r\n            \"esoterism\": 15,\r\n            \"mysticstone\": 1,\r\n            \"lunarres1\": 10,\r\n            \"darkleaf\": 10\r\n        },\r\n        \"result\": {\r\n            \"playerattack\":15,\r\n            \"playermagicattack\":25,\r\n            \"playermagicdefense\":15\r\n        },\r\n        \"mod\": {\r\n            \"mental.max\":10,\r\n            \"riteres1.max\":10\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"ritualtigerstatue\",\r\n        \"name\": \"Ritual of Baipu Tuvy\",\r\n        \"desc\": \"Use the statue of the blue tiger to channel a ritual\",\r\n        \"max\": 1,\r\n        \"duration\": 2000,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        },\r\n        \"require\": \"spiritology-level>3\",\r\n        \"need\": \"buytigerstatue\",\r\n        \"cost\": {\r\n            \"esoterism\": 30,\r\n            \"lunarres1\": 10,\r\n            \"riteres2\": 10,\r\n            \"darkleaf\": 15\r\n        },\r\n        \"result\": {\r\n            \"playerlife\":10,\r\n            \"playerdefense\":10,\r\n            \"playerspeed\":5\r\n        },\r\n        \"mod\": {\r\n            \"riteres1.max\":10,\r\n            \"riteres2.max\":5,\r\n            \"riteres3.max\":5\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"flowersahi\",\r\n        \"name\": \"Deity Flowers\",\r\n        \"desc\": \"Offer flowers to Sahi, Goddess of the Cursed Moon\",\r\n        \"max\": 1,\r\n        \"duration\": 15,\r\n        \"require\": \"flower>= 15\",\r\n        \"cost\": {\r\n            \"flower\": 30\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"mindsahi1\",\r\n        \"name\": \"Mind to Sahi\",\r\n        \"desc\": \"Let the Cursed Moon corrupt your senses\",\r\n        \"max\": 1,\r\n        \"duration\": 30,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"require\": \"flowersahi\",\r\n        \"need\": \"playerlevel>=5\",\r\n        \"cost\": {\r\n            \"esoterism\": 15\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"mindsahi2\",\r\n        \"name\": \"Mind to Sahi II\",\r\n        \"desc\": \"Let the Cursed Moon corrupt your senses\",\r\n        \"max\": 1,\r\n        \"duration\": 40,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"require\": \"mindsahi1\",\r\n        \"need\": \"playerlevel>=20\",\r\n        \"cost\": {\r\n            \"esoterism\": 30\r\n        },\r\n        \"mod\": {\r\n            \"sahiattack.max\": 2,\r\n            \"sahilife.max\": 4,\r\n            \"sahishield.max\": 2\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"mindsahi3\",\r\n        \"name\": \"Mind to Sahi III\",\r\n        \"desc\": \"Let the Cursed Moon corrupt your senses\",\r\n        \"max\": 1,\r\n        \"duration\": 360,\r\n        \"run\": {\r\n            \"mental\": 1\r\n        },\r\n        \"require\": \"mindsahi2\",\r\n        \"need\": \"playerlevel>=50\",\r\n        \"cost\": {\r\n            \"esoterism\": 90\r\n        },\r\n        \"mod\": {\r\n            \"sahiattack.max\": 3,\r\n            \"sahilife.max\": 5,\r\n            \"sahishield.max\": 3,\r\n            \"sahimagic.max\": 3,\r\n            \"sahimagicshield.max\": 3,\r\n            \"sahispeed.max\": 3,\r\n            \"highesoterism.max\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahiflesh\",\r\n        \"name\": \"Lunar Flesh\",\r\n        \"desc\": \"Attain the body of the Lunars\",\r\n        \"max\": 1,\r\n        \"duration\": 90,\r\n        \"require\": \"mindsahi2\",\r\n        \"need\": \"playerlevel>=21\",\r\n        \"cost\": {\r\n            \"esoterism\": 35,\r\n            \"flower\": 40\r\n        },\r\n        \"mod\": {\r\n            \"sahilife.max\": 4,\r\n            \"sahishield.max\": 3,\r\n            \"sahispeed.max\": 3\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"ritualsahi1\",\r\n        \"name\": \"Ritual for Sahi I\",\r\n        \"desc\": \"A novice ritual for the evil Goddess of the Moon\",\r\n        \"max\": 1,\r\n        \"duration\": 120,\r\n        \"require\": \"spiritology-level>0\",\r\n        \"need\": \"mindsahi2\",\r\n        \"cost\": {\r\n            \"esoterism\": 30,\r\n            \"flower\": 30,\r\n            \"riteres1\": 10\r\n        },\r\n        \"mod\": {\r\n            \"sahiflesh.max\": 1,\r\n            \"sahispirit.max\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"ritualsahi2\",\r\n        \"name\": \"Ritual for Sahi II\",\r\n        \"desc\": \"An apprentice-type ritual for the evil Goddess of the Moon\",\r\n        \"max\": 1,\r\n        \"duration\": 400,\r\n        \"require\": \"spiritology-level>1\",\r\n        \"need\": \"mindsahi2\",\r\n        \"cost\": {\r\n            \"esoterism\": 70,\r\n            \"flower\": 70,\r\n            \"riteres1\": 10\r\n        },\r\n        \"mod\": {\r\n            \"sahiflesh.max\": 3,\r\n            \"sahispirit.max\": 3\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"ritualsahi3\",\r\n        \"name\": \"Ritual for Sahi III\",\r\n        \"desc\": \"A flegling ritual for the evil Goddess of the Moon\",\r\n        \"max\": 1,\r\n        \"duration\": 700,\r\n        \"require\": \"spiritology-level>2\",\r\n        \"need\": \"mindsahi3\",\r\n        \"cost\": {\r\n            \"esoterism\": 30,\r\n            \"flower\": 30,\r\n            \"riteres1\": 10\r\n        },\r\n        \"mod\": {\r\n            \"sahiflesh.max\": 8,\r\n            \"sahispirit.max\": 8\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahispirit\",\r\n        \"name\": \"Lunar Spirit\",\r\n        \"desc\": \"Attain the psyche of the Lunars\",\r\n        \"max\": 1,\r\n        \"duration\": 90,\r\n        \"require\": \"mindsahi2\",\r\n        \"need\": \"playerlevel>=22\",\r\n        \"cost\": {\r\n            \"esoterism\": 40,\r\n            \"flower\": 30\r\n        },\r\n        \"mod\": {\r\n            \"sahiattack.max\": 3,\r\n            \"sahimagic.max\": 3,\r\n            \"sahimagicshield.max\": 3\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"highesoterism\",\r\n        \"name\": \"Obscure Mind\",\r\n        \"desc\": \"Open your eyes to that which is arcane\",\r\n        \"max\": 3,\r\n        \"require\": \"esoterism>25\",\r\n        \"duration\": 50,\r\n        \"cost\": {\r\n            \"esoterism\": 50,\r\n            \"flower\": 35,\r\n            \"mental\": 30\r\n        },\r\n        \"mod\": {\r\n            \"esoterism.max\": 25\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"godbibelot\",\r\n        \"name\": \"Mystic Bibelot\",\r\n        \"desc\": \"A small ornament for the old Gods\",\r\n        \"max\": 3,\r\n        \"require\": \"esoterism>=5\",\r\n        \"duration\": 30,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        },\r\n        \"cost\": {\r\n            \"flower\": 45,\r\n            \"esoterism\": 10,\r\n            \"creativity\": 15\r\n        },\r\n        \"mod\": {\r\n            \"esoterism.max\": 8\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahiattack\",\r\n        \"name\": \"Aggressive Moon\",\r\n        \"desc\": \"Let the aggressive face of the Moon become your face\",\r\n        \"max\": 2,\r\n        \"duration\": 30,\r\n        \"require\": \"mindsahi1\",\r\n        \"cost\": {\r\n            \"esoterism\": 15,\r\n            \"flower\": 10\r\n        },\r\n        \"result\": {\r\n            \"playerattack\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahimagic\",\r\n        \"name\": \"Magical Moon\",\r\n        \"desc\": \"The mysticism of the moon\",\r\n        \"max\": 2,\r\n        \"duration\": 30,\r\n        \"require\": \"sahispirit\",\r\n        \"cost\": {\r\n            \"esoterism\": 20,\r\n            \"flower\": 15\r\n        },\r\n        \"result\": {\r\n            \"playermagicattack\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahimagicshield\",\r\n        \"name\": \"Solid Moon\",\r\n        \"desc\": \"The moon can shield you from the flames of the sun\",\r\n        \"max\": 2,\r\n        \"duration\": 30,\r\n        \"require\": \"sahispirit\",\r\n        \"cost\": {\r\n            \"esoterism\": 18,\r\n            \"flower\": 18\r\n        },\r\n        \"result\": {\r\n            \"playermagicdefense\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahispeed\",\r\n        \"name\": \"Moon Hare\",\r\n        \"desc\": \"The Lusitani say there is a rabbit in the moon\",\r\n        \"max\": 2,\r\n        \"require\": \"sahiflesh\",\r\n        \"duration\": 30,\r\n        \"cost\": {\r\n            \"esoterism\": 35,\r\n            \"flower\": 20\r\n        },\r\n        \"result\": {\r\n            \"playerspeed\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahilife\",\r\n        \"name\": \"Nurturing Moon\",\r\n        \"desc\": \"The moon reflects the nurturing light of the sun\",\r\n        \"max\": 4,\r\n        \"require\": \"mindsahi1\",\r\n        \"duration\": 20,\r\n        \"cost\": {\r\n            \"esoterism\": 20,\r\n            \"flower\": 35\r\n        },\r\n        \"result\": {\r\n            \"playerlife\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"sahishield\",\r\n        \"name\": \"Guardian Moon\",\r\n        \"desc\": \"In the night, the moonlight is your only guardian\",\r\n        \"max\": 2,\r\n        \"require\": \"sahilife\",\r\n        \"duration\": 25,\r\n        \"cost\": {\r\n            \"esoterism\": 20,\r\n            \"flower\": 50\r\n        },\r\n        \"result\": {\r\n            \"playerdefense\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buybottle\",\r\n        \"name\": \"Trade for a bottle\",\r\n        \"desc\": \"The old man is carrying a large amount of bottles... Why?\",\r\n        \"require\": \"giveflowersoldman\",\r\n        \"cost\": {\r\n            \"flower\": 9\r\n        },\r\n        \"result\": {\r\n            \"bottle\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buycandle\",\r\n        \"name\": \"Buy candle\",\r\n        \"desc\": \"For the nights\",\r\n        \"require\": \"selling-level>1\",\r\n        \"cost\": {\r\n            \"coin\": 5\r\n        },\r\n        \"result\": {\r\n            \"candle\": 1\r\n        }\r\n    },  \r\n    {\r\n        \"id\": \"buyvase\",\r\n        \"name\": \"Flower vase\",\r\n        \"desc\": \"Flowers for a vase, vase for flowers.\",\r\n        \"max\": 2,\r\n        \"require\": \"giveflowersoldman\",\r\n        \"cost\": {\r\n            \"flower\": 20\r\n        },\r\n        \"mod\": {\r\n            \"flower.max\": 10\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"mysticcandle\",\r\n        \"name\": \"Mystic candle\",\r\n        \"desc\": \"Embed a candle with the power of the unknown\",\r\n        \"require\": \"candle\",\r\n        \"duration\":120,\r\n        \"cost\": {\r\n            \"candle\": 1,\r\n            \"esoterism\": 250\r\n        },\r\n        \"max\": 10,\r\n        \"mod\": {\r\n            \"esoterism.rate\": 60\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buyvasecoin\",\r\n        \"name\": \"Commercial flower vase\",\r\n        \"desc\": \"It's not as beautiful as the other one, but it seems to work better\",\r\n        \"max\": 3,\r\n        \"require\": \"selling-level>1\",\r\n        \"cost\": {\r\n            \"coin\": 10\r\n        },\r\n        \"mod\": {\r\n            \"flower.max\": 15\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buybottlebox\",\r\n        \"name\": \"Buy box for bottles\",\r\n        \"desc\": \"The box comes empty though.\",\r\n        \"max\": 5,\r\n        \"require\": \"selling-level>2\",\r\n        \"cost\": {\r\n            \"coin\": 10\r\n        },\r\n        \"mod\": {\r\n            \"bottle.max\": 5,\r\n            \"mysticbottle.max\": 5\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buystone\",\r\n        \"name\": \"Buy Copper Stone\",\r\n        \"desc\": \"What use is there for this, anyways\",\r\n        \"require\": \"selling-level>0\",\r\n        \"cost\": {\r\n            \"coin\": 6\r\n        },\r\n        \"result\": {\r\n            \"copperstone\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"autosellnormalon\",\r\n        \"name\": \"Auto sell common loot\",\r\n        \"desc\": \"Automatically sells any equipment you get that doesn't have magical properties\",\r\n        \"require\": \"selling-level>2\",\r\n        \"result\": {\r\n            \"autosellnormal\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"autosellnormaloff\",\r\n        \"name\": \"Stop auto selling\",\r\n        \"desc\": \"Disable auto selling\",\r\n        \"require\": \"selling-level>2\",\r\n        \"cost\": {\r\n            \"autosellnormal\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buyleaf\",\r\n        \"name\": \"Buy Alocasia Leaf\",\r\n        \"desc\": \"Buy a mysterious black leaf\",\r\n        \"require\": \"selling-level>2\",\r\n        \"cost\": {\r\n            \"coin\": 25\r\n        },\r\n        \"result\": {\r\n            \"darkleaf\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buymerchantbook\",\r\n        \"name\": \"Buy [Life of Antonio Rodrigues]\",\r\n        \"desc\": \"A book on the life of a famous merchant\",\r\n        \"require\": \"selling-level>2\",\r\n        \"cost\": {\r\n            \"coin\": 70\r\n        },\r\n        \"max\": 1\r\n    },\r\n    {\r\n        \"id\": \"buylunarbook\",\r\n        \"name\": \"Buy [Secrets of the Moon]\",\r\n        \"desc\": \"A book on the mysteries of the moon\",\r\n        \"require\": \"selling-level>3\",\r\n        \"cost\": {\r\n            \"coin\": 70\r\n        },\r\n        \"max\": 1\r\n    },\r\n    {\r\n        \"id\": \"buywallet\",\r\n        \"name\": \"Buy Wallet\",\r\n        \"desc\": \"A hand-made wallet, using tree vines. Not the best, but does the job.\",\r\n        \"require\": \"selling-level>1\",\r\n        \"cost\": {\r\n            \"coin\": 10\r\n        },\r\n        \"max\": 2,\r\n        \"mod\": {\r\n            \"coin.max\": 10\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buypurse\",\r\n        \"name\": \"Buy bag\",\r\n        \"desc\": \"A hand-made bag, using thinly cut vines.\",\r\n        \"require\": \"coin>20\",\r\n        \"cost\": {\r\n            \"coin\": 30\r\n        },\r\n        \"max\": 2,\r\n        \"mod\": {\r\n            \"coin.max\": 25\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buytigerstatue\",\r\n        \"name\": \"Buy Statue of Baipu Tuvy\",\r\n        \"desc\": \"A small statue of the blue tiger\",\r\n        \"require\": \"selling-level>2\",\r\n        \"cost\": {\r\n            \"coin\": 60\r\n        },\r\n        \"max\": 1,\r\n        \"result\": {\r\n            \"playerattack\": 2\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"clearmist\",\r\n        \"name\": \"Clear the Mist\",\r\n        \"desc\": \"Focus everything you got into making the mist go away\",\r\n        \"require\": \"playerlevel>5\",\r\n        \"need\": \"playerlevel>25\",\r\n        \"duration\": 300,\r\n        \"cost\": {\r\n            \"esoterism\": 50,\r\n            \"mysticflower\": 25\r\n        },\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"clearmist2\",\r\n        \"name\": \"Clear the Mist II\",\r\n        \"desc\": \"Focus everything you got into making the mist go away\",\r\n        \"require\": \"clearmist\",\r\n        \"need\": \"playerlevel>45\",\r\n        \"duration\": 300,\r\n        \"cost\": {\r\n            \"esoterism\": 50,\r\n            \"mysticflower\": 25\r\n        },\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"exploreoldtown\",\r\n        \"name\": \"Explore abandoned village\",\r\n        \"desc\": \"Deep through the forest, beyond the mist, you can see an abandoned village\",\r\n        \"require\": \"clearmist2\",\r\n        \"duration\": 120,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"exploredeadoca\",\r\n        \"name\": \"Explore the dead oca\",\r\n        \"desc\": \"Ocas are the houses built by the Taira, the indigenous people of Brazil. This oca, no longer seems to have anyone living here. There is something sinister in the atmosphere...\",\r\n        \"require\": \"exploreoldtown\",\r\n        \"duration\": 20,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 4,\r\n            \"mental\": 4\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"talkpaje\",\r\n        \"name\": \"Talk to the Paje\",\r\n        \"desc\": \"There was a Paje inside the abandoned oca. Is he looking over the dead here...?\",\r\n        \"require\": \"exploredeadoca\",\r\n        \"duration\": 10,\r\n        \"max\": 1\r\n    },\r\n    {\r\n        \"id\": \"comprehendpaje\",\r\n        \"name\": \"Comprehend the Paje\",\r\n        \"desc\": \"You can't understand much of what he says... Maybe if I could talk to him beyond words?\",\r\n        \"require\": \"talkpaje\",\r\n        \"cost\":{\r\n            \"mental\": 5,\r\n            \"esoterism\": 25\r\n        },\r\n        \"duration\": 60,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 2,\r\n            \"mental\": 4,\r\n            \"esoterism\": 3\r\n        },\r\n        \"mod\":{\r\n            \"mental.max\": 5\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"explorecity\",\r\n        \"name\": \"Explore the town\",\r\n        \"desc\": \"When the mist dissipates, you can see a calm town\",\r\n        \"require\": \"clearmist\",\r\n        \"duration\": 120,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"helpvillager\",\r\n        \"name\": \"Help out a villager\",\r\n        \"desc\": \"A fairly old man is carrying packages a bit beyond himself\",\r\n        \"require\": \"clearmist\",\r\n        \"duration\": 180,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 3\r\n        },\r\n        \"result\": {\r\n            \"playerattack\": 2,\r\n            \"coin\": 4\r\n        },\r\n        \"mod\": {\r\n            \"stamina.max\": 3\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"exploremarket\",\r\n        \"name\": \"Explore the market\",\r\n        \"desc\": \"You found the town market while exploring\",\r\n        \"require\": \"explorecity\",\r\n        \"duration\": 300,\r\n        \"max\": 1,\r\n        \"run\": {\r\n            \"stamina\": 1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"buymarketnotes\",\r\n        \"name\": \"Buy merchant notes\",\r\n        \"desc\": \"A shady merchant says he can sells you some of his notes on commerce. For a steepy price. Being able to learn from it, though, depends on you.\",\r\n        \"require\": \"exploremarket\",\r\n        \"max\": 1,\r\n        \"cost\": {\r\n            \"flower\": 50,\r\n            \"mysticbottle\": 3,\r\n            \"mysticflower\": 15\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"helpkid\",\r\n        \"name\": \"Help out a kid\",\r\n        \"desc\": \"A kid is cutting some plants. I guess it is his job?\",\r\n        \"require\": \"explorecity\",\r\n        \"max\": 1,\r\n        \"duration\": 200,\r\n        \"run\": {\r\n            \"stamina\": 2\r\n        },\r\n        \"result\": {\r\n            \"coin\": 5,\r\n            \"playerlife\": 3\r\n        },\r\n        \"mod\": {\r\n            \"stamina.max\": 2\r\n        }\r\n    }\r\n]";
 autogen_GriTxts.actions_lunar = "[\r\n    {\r\n        \"id\": \"lunarres1gen\",\r\n        \"name\": \"Sense the moon\",\r\n        \"desc\": \"Doesn't have to be during the night\",\r\n        \"duration\": 25,\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres1\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"lunology-level>0\"\r\n    },\r\n    {\r\n        \"id\": \"lunarres2gen\",\r\n        \"name\": \"Feel the moon\",\r\n        \"desc\": \"Is it the moon in the sky, or the moon in...\",\r\n        \"duration\": 120,\r\n        \"cost\": {\r\n            \"lunarres1\": 5\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres2\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"lunology-level>1\"\r\n    },\r\n    {\r\n        \"id\": \"lunarres3gen\",\r\n        \"name\": \"Be the moon\",\r\n        \"desc\": \"Forget about being yourself\",\r\n        \"duration\": 150,\r\n        \"cost\": {\r\n            \"lunarres1\": 10,\r\n            \"lunarres2\": 5\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres3\": 1\r\n        },\r\n        \"perpetual\": true,\r\n        \"require\": \"lunology-level>2\"\r\n    },\r\n    {\r\n        \"id\": \"lunarmax1\",\r\n        \"name\": \"Moonwatching\",\r\n        \"desc\": \"There is beauty to be seen\",\r\n        \"duration\": 30,\r\n        \"cost\": {\r\n            \"lunarres1\": 5\r\n        },\r\n        \"run\": {\r\n            \"mental\": 3,\r\n            \"esoterism\": 3\r\n        },\r\n        \"result\": {\r\n            \"lunarres1\":5\r\n        },\r\n        \"mod\": {\r\n            \"lunarres1.max\": 15\r\n        },\r\n        \"require\": \"lunology-level>1\",\r\n        \"max\": 5\r\n    },\r\n    {\r\n        \"id\": \"lunarmax2\",\r\n        \"name\": \"Moongazing\",\r\n        \"desc\": \"There is beauty to be seen\",\r\n        \"duration\": 90,\r\n        \"cost\" : {\r\n            \"lunarres2\": 3\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1,\r\n            \"lunarres1\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres1\":10,\r\n            \"lunarres2\":5\r\n        },\r\n        \"mod\": {\r\n            \"lunarres1.max\": 15,\r\n            \"lunarres2.max\": 30,\r\n            \"lunarres3.max\": 1\r\n        },\r\n        \"need\": \"lunology-level>1\",\r\n        \"require\": \"lunarmax1>2\",\r\n        \"max\": 5\r\n    },\r\n    {\r\n        \"id\": \"lunarmax3\",\r\n        \"name\": \"Moonwishing\",\r\n        \"desc\": \"Will it come true?\",\r\n        \"duration\": 150,\r\n        \"cost\" : {\r\n            \"lunarres3\": 3\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1,\r\n            \"lunarres1\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres3\":2\r\n        },\r\n        \"mod\": {\r\n            \"lunarres1.max\": 15,\r\n            \"lunarres2.max\": 10,\r\n            \"lunarres3.max\": 10,\r\n            \"lunarmax2.max\": 1\r\n            \r\n        },\r\n        \"need\": \"lunology-level>2\",\r\n        \"require\": \"lunarmax2>2\",\r\n        \"max\": 5\r\n    },\r\n    {\r\n        \"id\": \"lunarmax4\",\r\n        \"name\": \"Moonbathing\",\r\n        \"desc\": \"Take off your clothes and let your whole body feel the moon\",\r\n        \"duration\": 250,\r\n        \"cost\" : {\r\n            \"lunarres1\": 50,\r\n            \"lunarres2\": 40,\r\n            \"lunarres3\": 10\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1,\r\n            \"lunarres1\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres3\":5\r\n        },\r\n        \"mod\": {\r\n            \"lunarres1.max\": 100,\r\n            \"lunarres2.max\": 100,\r\n            \"lunarres3.max\": 100,\r\n            \"lunarmax3.max\": 3\r\n            \r\n        },\r\n        \"need\": \"lunology-level>3\",\r\n        \"require\": \"lunarmax3>2\",\r\n        \"max\": 5\r\n    },\r\n    {\r\n        \"id\": \"lunarmax5\",\r\n        \"name\": \"Moonadoring\",\r\n        \"desc\": \"Develop deeper affection for the moon\",\r\n        \"duration\": 300,\r\n        \"cost\" : {\r\n            \"lunarres1\": 60,\r\n            \"lunarres2\": 50,\r\n            \"lunarres3\": 20\r\n        },\r\n        \"run\": {\r\n            \"mental\": 1,\r\n            \"esoterism\": 1,\r\n            \"lunarres1\": 1\r\n        },\r\n        \"result\": {\r\n            \"lunarres3\":10\r\n        },\r\n        \"mod\": {\r\n            \"lunarres1.max\": 500,\r\n            \"lunarres2.max\": 500,\r\n            \"lunarres3.max\": 500,\r\n            \"lunarmax4.max\": 3\r\n            \r\n        },\r\n        \"need\": \"lunology-level>4\",\r\n        \"require\": \"lunarmax4>2\",\r\n        \"max\": 5\r\n    },\r\n    {\r\n        \"id\": \"lunarcandle\",\r\n        \"name\": \"Lunar candle\",\r\n        \"desc\": \"Embed a candle with the light of the moon\",\r\n        \"require\": \"lunology-level>2\",\r\n        \"duration\":100,\r\n        \"cost\": {\r\n            \"candle\": 1,\r\n            \"lunarres1\": 100\r\n        },\r\n        \"max\": 10,\r\n        \"mod\": {\r\n            \"lunarres1.rate\": 100\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"lunarcandelabra\",\r\n        \"name\": \"Lunar candelabra\",\r\n        \"desc\": \"embed a candelabra with the light of the moon \",\r\n        \"require\": \"lunology-level>3\",\r\n        \"duration\":100,\r\n        \"cost\": {\r\n            \"candle\": 5,\r\n            \"lunarres1\": 100,\r\n            \"lunarres2\": 100\r\n        },\r\n        \"max\": 10,\r\n        \"mod\": {   \r\n            \"lunarres2.rate\": 10\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"lunarchandeler\",\r\n        \"name\": \"Lunar chandeler\",\r\n        \"desc\": \"embed a chandeler with the light of the moon \",\r\n        \"require\": \"lunology-level>3\",\r\n        \"duration\":100,\r\n        \"cost\": {\r\n            \"candle\": 10,\r\n            \"lunarres1\": 100,\r\n            \"lunarres2\": 100,\r\n            \"lunarres3\": 100\r\n        },\r\n        \"max\": 10,\r\n        \"mod\": {\r\n            \"lunarres3.rate\": 1\r\n        }\r\n    }\r\n]";
 autogen_GriTxts.actions_tc = "[\r\n    {\r\n        \"id\": \"tc_get_money\",\r\n        \"name\": \"Look for coins\",\r\n        \"desc\": \"Some coins laying around here and there\",\r\n        \"result\": {\r\n            \"reiscoin\": 10\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"tc_upgrade_wallet\",\r\n        \"name\": \"Enchant wallet\",\r\n        \"desc\": \"A mysterious old paje, the Brazilian shaman, offers to enhance your wallet. For a price.\",\r\n        \"cost\": {\r\n            \"reiscoin\": 10\r\n        }, \r\n        \"mod\": {\r\n            \"reiscoin.exponential_max_multiply\": 2\r\n        }\r\n    }\r\n]";
+autogen_GriTxts.local = "\nLANG|English|Portuguese\nMOUSEWHEEL|Mouse Wheel Sensibility Up|+Sensibilidade Roda do Mouse\nRETURN|Return|Voltar\nPLAYASISAB|Play as Isabel|Jogar como Isabel\nAWOMANWHOS|A woman who seeks out revenge and will do whatever it takes to get it done|Uma mulher em busca de vingança que é capaz de tudo para alcançar seu objetivo\nREACHLEVEL|reach level {0} as Lu to proceed|A Lu precisa alcançar o level {0} para avançar\nLUHASREACH|Lu has reached level {0}. You can now proceed.|Lu alcançou o level {0}. Você pode prosseguir.\nPLAYASLU|Play as Lu|Jogar como a Lu\nANYOUNGGIR|An young girl who adventures across the Lagrima Continent|Uma menina que se aventura no Continente da Lagrima\nDEVELOPEDB|Developed by Pedro Gabriel\\nFonteles Furtado|Desenvolvido por Pedro Gabriel\\nFonteles Furtado\nFULLVERSIO|Full version|Versão completa\nRESET|Reset|Resetar\nSETTINGS|Settings|Opções|\nCHANGESETT|Change settings of the game|Mudar as opções do jogo\nREGION|Region|Região\nBATTLE|Battle|Batalha\nEQUIPMENT|Equipment|Equipamento\nMEMORY|Memory|Memoria\nACHIEVEMEN|Achievement|Conquistas\nUNKNOWN|Unknown|Desconhecido\nNAP|Nap|Dormir\nWAKEUP|Wake up|Acordar";
 autogen_GriTxts.proceduralactions = "[\r\n    {\r\n        \"id\": \"ritualluar\",\r\n        \"name\": \"Ritual do Luar\",\r\n        \"desc\": \"Ritual of the Moonlight. There are 27 levels to the ritual, each stronger than the last.\",\r\n        \"max\": 27,\r\n        \"require\": \"spiritology-level>1\",\r\n        \"proceduralduration\": {\r\n            \"initial\": 60,\r\n            \"add\": 60\r\n        },\r\n        \"run\": {\r\n            \"stamina\": 1,\r\n            \"mental\": 1\r\n        },\r\n        \"proceduralresult\": {\r\n            \"playerlife\": {\r\n                \"initial\": 1,\r\n                \"add\": 2,\r\n                \"add_delay\": 0\r\n            },\r\n            \"playerattack\": {\r\n                \"initial\": 1,\r\n                \"add\": 2,\r\n                \"add_delay\": 1\r\n            },\r\n            \"playerdefense\": {\r\n                \"initial\": 1,\r\n                \"add\": 1,\r\n                \"add_delay\": 3\r\n            }\r\n        },\r\n        \"proceduralcost\": {\r\n            \"esoterism\": {\r\n                \"initial\": 5,\r\n                \"growth\": 1.1\r\n            },\r\n            \"riteres1\": {\r\n                \"initial\": 1,\r\n                \"growth\": 1.16\r\n            },\r\n            \"riteres2\": {\r\n                \"initial\": 1,\r\n                \"delay\": 4,\r\n                \"growth\": 1.1\r\n            },\r\n            \"riteres3\": {\r\n                \"initial\": 1,\r\n                \"delay\": 7,\r\n                \"growth\": 1.08\r\n            },\r\n            \"lunarres1\": {\r\n                \"initial\": 1,\r\n                \"delay\": 1,\r\n                \"growth\": 1.4\r\n            },\r\n            \"lunarres2\": {\r\n                \"initial\": 1,\r\n                \"delay\": 5,\r\n                \"growth\": 1.48\r\n            },\r\n            \"lunarres3\": {\r\n                \"initial\": 1,\r\n                \"delay\": 7,\r\n                \"growth\": 1.5\r\n            }\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"solenidadelua\",\r\n        \"name\": \"Solenidade da Lua\",\r\n        \"desc\": \"Ceremony of the Moonlight. There are 27 levels to the ceremony, each stronger than the last.\",\r\n        \"max\": 27,\r\n        \"require\": \"spiritology-level>2\",\r\n        \"proceduralduration\": {\r\n            \"initial\": 60,\r\n            \"add\": 60\r\n        },\r\n        \"run\": {\r\n            \"stamina\": 1,\r\n            \"mental\": 1\r\n        },\r\n        \"proceduralresult\": {\r\n            \"playermagicattack\": {\r\n                \"initial\": 1,\r\n                \"add\": 2,\r\n                \"add_delay\": 1\r\n            },\r\n            \"playermagicdefense\": {\r\n                \"initial\": 1,\r\n                \"add\": 1,\r\n                \"add_delay\": 3\r\n            },\r\n            \"playerspeed\": {\r\n                \"initial\": 1,\r\n                \"add\": 1,\r\n                \"add_delay\": 3\r\n            }\r\n        },\r\n        \"proceduralcost\": {\r\n            \"esoterism\": {\r\n                \"initial\": 5,\r\n                \"growth\": 1.1\r\n            },\r\n            \"riteres1\": {\r\n                \"initial\": 1,\r\n                \"growth\": 1.16\r\n            },\r\n            \"riteres2\": {\r\n                \"initial\": 1,\r\n                \"delay\": 4,\r\n                \"growth\": 1.1\r\n            },\r\n            \"riteres3\": {\r\n                \"initial\": 1,\r\n                \"delay\": 7,\r\n                \"growth\": 1.08\r\n            },\r\n            \"lunarres1\": {\r\n                \"initial\": 1,\r\n                \"delay\": 1,\r\n                \"growth\": 1.4\r\n            },\r\n            \"lunarres2\": {\r\n                \"initial\": 1,\r\n                \"delay\": 5,\r\n                \"growth\": 1.48\r\n            },\r\n            \"lunarres3\": {\r\n                \"initial\": 1,\r\n                \"delay\": 7,\r\n                \"growth\": 1.5\r\n            }\r\n        }\r\n    }\r\n]";
 autogen_GriTxts.resources = "[\r\n    {\r\n        \"id\" : \"reiscoin\",\r\n        \"name\": \"Reis Coin\",\r\n        \"desc\": \"A coin made up of copper. Currency used in the Brazilian Empire.\",\r\n        \"max\": 200,\r\n        \"initial\" : 0,\r\n        \"require\": \"reiscoin\"\r\n    },\r\n\r\n    {\r\n        \"id\" : \"stamina\",\r\n        \"name\": \"Stamina\",\r\n        \"desc\": \"The ability to sustain effort\",\r\n        \"max\": 45,\r\n        \"initial\" : 0\r\n    },\r\n    {\r\n        \"id\" : \"flower\",\r\n        \"desc\": \"Possibly a subspecies of Snapdragon.\\nUnlike Snapdragons found in the Lusitani empire, this one is blue\",\r\n        \"name\": \"Flower\",\r\n        \"max\": 15\r\n    },\r\n    {\r\n        \"id\" : \"candle\",\r\n        \"desc\": \"Can keep a small flame going\",\r\n        \"name\": \"Candle\",\r\n        \"require\": \"candle\",\r\n        \"mod\": {\r\n            \"esoterism.max\": 1\r\n        },\r\n        \"max\": 20\r\n    },\r\n    {\r\n        \"id\" : \"mysticflower\",\r\n        \"desc\": \"The snapdragon goes from blue to purple. Sometimes, it shines during the night.\",\r\n        \"name\": \"Mystic Flower\",\r\n        \"max\": 10,\r\n        \"mod\": {\r\n            \"esoterism.max\": 1\r\n        },\r\n        \"require\": \"mysticflower>0\"\r\n    },\r\n    {\r\n        \"id\" : \"lunarflower\",\r\n        \"desc\": \"The snapdragon goes from purple to white. Those who can afford it might use it in place of bonfires\",\r\n        \"name\": \"Lunar Flower\",\r\n        \"max\": 10,\r\n        \"mod\": {\r\n            \"esoterism.max\": 2,\r\n            \"esoterism.rate\": 50\r\n        },\r\n        \"require\": \"lunarflower\"\r\n    },\r\n    {\r\n        \"id\" : \"mysticstone\",\r\n        \"desc\": \"You can no longer tell this stone is made of copper. It looks like something out of this world.\",\r\n        \"name\": \"Mystic Stone\",\r\n        \"max\": 3,\r\n        \"mod\": {\r\n            \"esoterism.max\": 20,\r\n            \"riteres1.max\": 15\r\n        },\r\n        \"require\": \"mysticstone\"\r\n    },\r\n    {\r\n        \"id\" : \"mental\",\r\n        \"name\": \"Mental\",\r\n        \"desc\": \"The resistence of the mind\",\r\n        \"max\": 30,\r\n        \"require\": \"contemplatearea\"\r\n    },\r\n    {\r\n        \"id\" : \"creativity\",\r\n        \"name\": \"Creativity\",\r\n        \"desc\": \"Elasticity of thought\",\r\n        \"max\": 30,\r\n        \"require\": \"contemplatearea\"\r\n    },\r\n    {\r\n        \"id\" : \"coin\",\r\n        \"name\": \"Peso Coin\",\r\n        \"desc\": \"A coin made up of silver. Cannot be used in the Brazilian Empire.\",\r\n        \"max\": 10,\r\n        \"initial\" : 0,\r\n        \"require\": \"coin\"\r\n    },\r\n    {\r\n        \"id\" : \"darkleaf\",\r\n        \"name\": \"Alocasia Leaf\",\r\n        \"desc\": \"A black leaf from the Alocasia Plumbea tree. They are expensive, but useful in rituals.\",\r\n        \"max\": 10,\r\n        \"initial\" : 0,\r\n        \"require\": \"darkleaf\"\r\n    },\r\n    {\r\n        \"id\" : \"copperstone\",\r\n        \"name\": \"Copper Stone\",\r\n        \"desc\": \"A stone made up of copper. Some Paje use it to channel the spirits\",\r\n        \"max\": 5,\r\n        \"initial\" : 0,\r\n        \"mod\": {\r\n            \"esoterism.max\": 1\r\n        },\r\n        \"require\": \"copperstone\"\r\n    },\r\n    {\r\n        \"id\" : \"bottle\",\r\n        \"name\": \"Bottle\",\r\n        \"desc\": \"Old and foggy\",\r\n        \"max\": 5,\r\n        \"mod\": {\r\n            \"flower.max\": 5\r\n        },\r\n        \"require\": \"buybottle\"\r\n    },\r\n    {\r\n        \"id\" : \"mysticbottle\",\r\n        \"name\": \"Mystic Bottle\",\r\n        \"desc\": \"There is a weird fog bottled up\",\r\n        \"max\": 5,\r\n        \"mod\": {\r\n            \"flower.max\": 2,\r\n            \"mysticflower.max\": 3,\r\n            \"esoterism.max\": 2\r\n        },\r\n        \"require\": \"mysticbottle\"\r\n    },\r\n    \r\n    {\r\n        \"id\" : \"esoterism\",\r\n        \"name\": \"Esoterism\",\r\n        \"desc\": \"Obscure knowledge meant to a small number of people\",\r\n        \"max\": 30,\r\n        \"require\": \"flowersahi\"\r\n    },\r\n    {\r\n        \"id\" : \"riteres1\",\r\n        \"name\": \"Rite hope\",\r\n        \"desc\": \"Hope the ritual will go well\",\r\n        \"max\": 15,\r\n        \"require\": \"spiritology-level\"\r\n    },\r\n    {\r\n        \"id\" : \"riteres2\",\r\n        \"name\": \"Rite trust\",\r\n        \"desc\": \"Trust in the workings of the Gods\",\r\n        \"max\": 10,\r\n        \"require\": \"spiritology-level>1\"\r\n    },\r\n    {\r\n        \"id\" : \"riteres3\",\r\n        \"name\": \"Rite faith\",\r\n        \"desc\": \"Faith in the pagan arts\",\r\n        \"max\": 5,\r\n        \"require\": \"spiritology-level>2\"\r\n    },\r\n    {\r\n        \"id\" : \"riteres4\",\r\n        \"name\": \"Rite belief\",\r\n        \"desc\": \"Belief in bigger strenghts and powers\",\r\n        \"max\": 3,\r\n        \"require\": \"spiritology-level>5\"\r\n    },\r\n    {\r\n        \"id\" : \"lunarres1\",\r\n        \"name\": \"Lunar energy\",\r\n        \"desc\": \"Obscure knowledge meant to a small number of people\",\r\n        \"max\": 20,\r\n        \"require\": \"lunology-level\"\r\n    },\r\n    {\r\n        \"id\" : \"lunarres2\",\r\n        \"name\": \"Lunar power\",\r\n        \"desc\": \"Obscure knowledge meant to a small number of people\",\r\n        \"max\": 10,\r\n        \"require\": \"lunology-level>1\"\r\n    },\r\n    {\r\n        \"id\" : \"lunarres3\",\r\n        \"name\": \"Lunar force\",\r\n        \"desc\": \"Obscure knowledge meant to a small number of people\",\r\n        \"max\": 3,\r\n        \"require\": \"lunology-level>2\"\r\n    },\r\n    {\r\n        \"id\" : \"autosellnormal\",\r\n        \"name\": \"Auto selling normal\",\r\n        \"desc\": \"You are auto selling normal items that drop from enemies. Excludes skill sets.\",\r\n        \"max\": 1,\r\n        \"require\": \"autosellnormal\"\r\n    },\r\n    {\r\n        \"id\" : \"playerlevel\",\r\n        \"name\": \"Level\",\r\n        \"require\": \"playerlevel>1\",\r\n        \"max\": -1,\r\n        \"initial\": 99999\r\n    },\r\n    {\r\n        \"id\" : \"playerlevelLAGRIMA\",\r\n        \"name\": \"Level\",\r\n        \"require\": \"playerlevel>999999\",\r\n        \"max\": -1,\r\n        \"initial\": 99999\r\n    },\r\n    {\r\n        \"id\" : \"playerlevelAMAZONIA\",\r\n        \"name\": \"Level\",\r\n        \"require\": \"playerlevel>999999\",\r\n        \"max\": -1,\r\n        \"initial\": 99999\r\n    },\r\n    {\r\n        \"id\" : \"playerattack\",\r\n        \"name\": \"Attack Bonus\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"require\": \"playerattack\"\r\n    },\r\n    {\r\n        \"id\" : \"playerspeed\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"name\": \"Speed Bonus\",\r\n        \"require\": \"playerspeed\"\r\n    },\r\n    {\r\n        \"id\" : \"playermagicattack\",\r\n        \"name\": \"Magic Attack Bonus\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"require\": \"playermagicattack\"\r\n    },\r\n    {\r\n        \"id\" : \"playermagicdefense\",\r\n        \"name\": \"Magic Defense Bonus\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"require\": \"playermagicdefense\"\r\n    },\r\n    {\r\n        \"id\" : \"playerdefense\",\r\n        \"name\": \"Defense Bonus\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"require\": \"playerdefense\"\r\n    },\r\n    {\r\n        \"id\" : \"playerlife\",\r\n        \"name\": \"Life Bonus\",\r\n        \"desc\": \"Bonus to your stats\",\r\n        \"require\": \"playerlife\"\r\n    }\r\n]";
 autogen_GriTxts.skills = "[\r\n    {\r\n        \"id\": \"spiritology\",\r\n        \"name\": \"Ritualism\",\r\n        \"cost\": {\r\n            \"esoterism\":15\r\n        },\r\n        \"need\": \"playerlevel>25\",\r\n        \"require\": \"comprehendpaje\",\r\n        \"run\": {\r\n            \"stamina\": 1,\r\n            \"mental\": 1\r\n        },\r\n        \"mod\": {\r\n            \"mental.max\":5,\r\n            \"esoterism.max\":5\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"lunology\",\r\n        \"name\": \"Lunology\",\r\n        \"cost\": {\r\n            \"esoterism\":10,\r\n            \"riteres1\":5\r\n        },\r\n        \"need\": \"playerlevel>30\",\r\n        \"require\": \"ritualsahi1\",\r\n        \"run\": {\r\n            \"stamina\": 1,\r\n            \"mental\": 1\r\n        },\r\n        \"mod\": {\r\n            \"mental.max\":2,\r\n            \"lunarres1.max\":5,\r\n            \"lunarres2.max\":3,\r\n            \"lunarres3.max\":1\r\n        }\r\n    },\r\n    {\r\n        \"id\": \"selling\",\r\n        \"name\": \"Commerce\",\r\n        \"Description\": \"The art of trading\",\r\n        \"require\": \"buymarketnotes\",\r\n        \"cost\": {\r\n            \"mental\":20,\r\n            \"stamina\": 5,\r\n            \"creativity\": 20\r\n        },\r\n        \"run\": {\r\n            \"stamina\": 1,\r\n            \"mental\": 1\r\n        },\r\n        \"mod\": {\r\n            \"coin.max\": 5\r\n        }\r\n    }\r\n]";
@@ -58436,6 +58545,7 @@ autogen_GriTxts.allTexts = (function($this) {
 	_g.h["actions"] = autogen_GriTxts.actions;
 	_g.h["actions_lunar"] = autogen_GriTxts.actions_lunar;
 	_g.h["actions_tc"] = autogen_GriTxts.actions_tc;
+	_g.h["local"] = autogen_GriTxts.local;
 	_g.h["proceduralactions"] = autogen_GriTxts.proceduralactions;
 	_g.h["resources"] = autogen_GriTxts.resources;
 	_g.h["skills"] = autogen_GriTxts.skills;
