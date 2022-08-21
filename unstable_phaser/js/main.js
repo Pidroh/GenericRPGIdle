@@ -859,7 +859,7 @@ var BattleManager = function() {
 	_g.h["Speed"] = 20;
 	_g.h["SpeedCount"] = 0;
 	var stats = _g;
-	var w = { worldVersion : 30182, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, veteranLevel : 0, regionProgress : []};
+	var w = { worldVersion : 30190, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, veteranLevel : 0, regionProgress : []};
 	this.wdata = w;
 	this.counterAttackDatas.push(null);
 	var ctd = new CounterAttackData();
@@ -5021,6 +5021,31 @@ arcania_logic_TagPointer.__name__ = "arcania.logic.TagPointer";
 arcania_logic_TagPointer.prototype = {
 	__class__: arcania_logic_TagPointer
 };
+var haxe_IMap = function() { };
+$hxClasses["haxe.IMap"] = haxe_IMap;
+haxe_IMap.__name__ = "haxe.IMap";
+haxe_IMap.__isInterface__ = true;
+haxe_IMap.prototype = {
+	__class__: haxe_IMap
+};
+var haxe_ds_StringMap = function() {
+	this.h = Object.create(null);
+};
+$hxClasses["haxe.ds.StringMap"] = haxe_ds_StringMap;
+haxe_ds_StringMap.__name__ = "haxe.ds.StringMap";
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	get: function(key) {
+		return this.h[key];
+	}
+	,set: function(key,value) {
+		this.h[key] = value;
+	}
+	,keys: function() {
+		return new haxe_ds__$StringMap_StringMapKeyIterator(this.h);
+	}
+	,__class__: haxe_ds_StringMap
+};
 var GRIArcaniaTags = function() { };
 $hxClasses["GRIArcaniaTags"] = GRIArcaniaTags;
 GRIArcaniaTags.__name__ = "GRIArcaniaTags";
@@ -8055,7 +8080,7 @@ GRIView.prototype = {
 		if(this.ui.invisibleTags.indexOf("dialog") != -1 == false) {
 			this.ui.invisibleTags.push("dialog");
 		}
-		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI\\view/GRIView.hx", lineNumber : 596, className : "GRIView", methodName : "endDialog"});
+		haxe_Log.trace("END DIALOG",{ fileName : "Sources\\GRI\\view/GRIView.hx", lineNumber : 593, className : "GRIView", methodName : "endDialog"});
 		if(this.ui.keyboardManager.currentCursorGroup == this.dialogCursorGroup) {
 			this.ui.returnCursorGroup();
 		}
@@ -8931,7 +8956,7 @@ GRIEffects.prototype = {
 		if(animation == null) {
 			throw haxe_Exception.thrown(new spine_support_error_IllegalArgumentException("Animation not found: " + "clear_animation"));
 		}
-		var delay = 0.6;
+		var delay1 = 0.6;
 		if(animation == null) {
 			throw haxe_Exception.thrown(new spine_support_error_IllegalArgumentException("animation cannot be null."));
 		}
@@ -9152,11 +9177,11 @@ GRIEffects.prototype = {
 		} else {
 			last.next = entry1;
 			entry1.previous = last;
-			if(delay <= 0) {
-				delay += last.getTrackComplete() - entry1.mixDuration;
+			if(delay1 <= 0) {
+				delay1 += last.getTrackComplete() - entry1.mixDuration;
 			}
 		}
-		entry1.delay = delay;
+		entry1.delay = delay1;
 		effect.xAutoSpriteOffset = Renderer.width / 2 + 300 | 0;
 		effect.yAutoSpriteOffset = Renderer.height / 2 - 80 | 0;
 	}
@@ -9415,7 +9440,7 @@ GRISettingsControl.prototype = {
 			this.titleControl.control.requestSaveGeneral();
 		}
 		var v = this.titleControl.control.battleManager.generalSaveData.mouseWheelSensibility;
-		this.viewSettings.settingsText.text = Local.getIntString("Mouse wheel sensibility: {0}",v);
+		this.viewSettings.settingsText.text = "Mouse wheel sensibility: " + v;
 		UIElementManager.fitTextHeight(this.viewSettings.settingsText);
 	}
 	,__class__: GRISettingsControl
@@ -9445,7 +9470,7 @@ GRIViewTitle.prototype = {
 		this.view.uiCreation.tags.push(GRIViewTitle.TAG_TITLE_LOGO);
 		var logo = this.view.uiCreation.createImageElement(Sprite.create("logo",420,360),420,360);
 		this.view.uiCreation.addElementInLayoutId(logo,"titlelogo");
-		var e = this.view.addText("","UNSTABLE Version: 0.18Br",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		var e = this.view.addText("","UNSTABLE Version: 0.19r",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		e.text = "DEMO " + e.text;
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-130);
 		var e = this.view.addText("",Local.getString("Developed by Pedro Gabriel\nFonteles Furtado"),GRIView.ARCHETYPE_HEADER_TIMID,null);
@@ -9514,7 +9539,7 @@ GRIViewTitle.prototype = {
 	,__class__: GRIViewTitle
 };
 var GRISettingsView = function(viewTitle) {
-	GRISettingsView.BUTTON_LABELS = [Local.getString("Mouse Wheel Sensibility Up"),Local.getString("Mouse Wheel Sensibility Down"),Local.getString("Return")];
+	GRISettingsView.BUTTON_LABELS = [Local.getString("Mouse Wheel Sensibility Up"),"Mouse Wheel Sensibility Down",Local.getString("Return")];
 	var TAG_SETTINGS = GRIViewTitle.TAG_TITLE_SETTINGS;
 	this.view = viewTitle.view;
 	var settings = viewTitle.addMainButton(GRISettingsView.DATA_SETTINGSGO,Local.getString("Settings"),0,Local.getString("Change settings of the game"));
@@ -10700,7 +10725,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild(("0.18BrUnstable" + platform));
+            gameanalytics.GameAnalytics.configureBuild(("0.19" + platform));
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -11371,7 +11396,6 @@ json2object_reader_BaseParser.prototype = {
 			var json = new hxjsonast_Parser(jsonString,filename).doParse();
 			this.loadJson(json);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			var _g1 = haxe_Exception.caught(_g).unwrap();
 			if(((_g1) instanceof hxjsonast_Error)) {
 				var e = _g1;
@@ -11487,7 +11511,6 @@ json2object_reader_BaseParser.prototype = {
 			try {
 				tmp = loadJsonFn(j,variable);
 			} catch( _g2 ) {
-				haxe_NativeStackTrace.lastError = _g2;
 				var _g3 = haxe_Exception.caught(_g2).unwrap();
 				if(js_Boot.__instanceof(_g3,json2object_InternalError)) {
 					var e = _g3;
@@ -11512,7 +11535,6 @@ json2object_reader_BaseParser.prototype = {
 			this.mapSet(assigned,name,true);
 			return ret;
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			var _g1 = haxe_Exception.caught(_g).unwrap();
 			if(js_Boot.__instanceof(_g1,json2object_InternalError)) {
 				var e = _g1;
@@ -11531,7 +11553,6 @@ json2object_reader_BaseParser.prototype = {
 			this.value[name] = loadJsonFn(field.value,field.name);
 			this.mapSet(assigned,name,true);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			var _g1 = haxe_Exception.caught(_g).unwrap();
 			if(js_Boot.__instanceof(_g1,json2object_InternalError)) {
 				var e = _g1;
@@ -12385,7 +12406,6 @@ JsonParser_$125.prototype = $extend(json2object_reader_BaseParser.prototype,{
 				var _this = this.putils;
 				key = key1.loadJson(new hxjsonast_Json(hxjsonast_JsonValue.JString(field.name),new hxjsonast_Position(pos.file,pos.min - 1,pos.max - 1)),variable);
 			} catch( _g1 ) {
-				haxe_NativeStackTrace.lastError = _g1;
 				var _g2 = haxe_Exception.caught(_g1).unwrap();
 				if(js_Boot.__instanceof(_g2,json2object_InternalError)) {
 					var e = _g2;
@@ -12401,7 +12421,6 @@ JsonParser_$125.prototype = $extend(json2object_reader_BaseParser.prototype,{
 			try {
 				value = new JsonParser_$127(this.errors,this.putils,2).loadJson(field.value,field.name);
 			} catch( _g3 ) {
-				haxe_NativeStackTrace.lastError = _g3;
 				var _g4 = haxe_Exception.caught(_g3).unwrap();
 				if(js_Boot.__instanceof(_g4,json2object_InternalError)) {
 					var e1 = _g4;
@@ -20308,7 +20327,6 @@ Reflect.field = function(o,field) {
 	try {
 		return o[field];
 	} catch( _g ) {
-		haxe_NativeStackTrace.lastError = _g;
 		return null;
 	}
 };
@@ -22532,7 +22550,6 @@ Type.enumEq = function(a,b) {
 			}
 		}
 	} catch( _g ) {
-		haxe_NativeStackTrace.lastError = _g;
 		return false;
 	}
 	return true;
@@ -27254,13 +27271,6 @@ haxe_CallStack.itemToString = function(b,s) {
 		break;
 	}
 };
-var haxe_IMap = function() { };
-$hxClasses["haxe.IMap"] = haxe_IMap;
-haxe_IMap.__name__ = "haxe.IMap";
-haxe_IMap.__isInterface__ = true;
-haxe_IMap.prototype = {
-	__class__: haxe_IMap
-};
 var haxe_Exception = function(message,previous,native) {
 	Error.call(this,message);
 	this.message = message;
@@ -28129,24 +28139,6 @@ haxe_ds_ObjectMap.prototype = {
 		return new haxe_iterators_ArrayIterator(a);
 	}
 	,__class__: haxe_ds_ObjectMap
-};
-var haxe_ds_StringMap = function() {
-	this.h = Object.create(null);
-};
-$hxClasses["haxe.ds.StringMap"] = haxe_ds_StringMap;
-haxe_ds_StringMap.__name__ = "haxe.ds.StringMap";
-haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
-haxe_ds_StringMap.prototype = {
-	get: function(key) {
-		return this.h[key];
-	}
-	,set: function(key,value) {
-		this.h[key] = value;
-	}
-	,keys: function() {
-		return new haxe_ds__$StringMap_StringMapKeyIterator(this.h);
-	}
-	,__class__: haxe_ds_StringMap
 };
 var haxe_ds__$StringMap_StringMapKeyIterator = function(h) {
 	this.h = h;
@@ -29142,7 +29134,6 @@ hscript_Interp.prototype = {
 		try {
 			return this.expr(e);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			var _g1 = haxe_Exception.caught(_g).unwrap();
 			if(js_Boot.__instanceof(_g1,hscript__$Interp_Stop)) {
 				var e = _g1;
@@ -29397,7 +29388,6 @@ hscript_Interp.prototype = {
 					try {
 						r = me.exprReturn(fexpr);
 					} catch( _g ) {
-						haxe_NativeStackTrace.lastError = _g;
 						var e = haxe_Exception.caught(_g).unwrap();
 						me.locals = old;
 						me.depth = depth;
@@ -29540,7 +29530,6 @@ hscript_Interp.prototype = {
 				this.inTry = oldTry;
 				return v;
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				var _g1 = haxe_Exception.caught(_g).unwrap();
 				if(js_Boot.__instanceof(_g1,hscript__$Interp_Stop)) {
 					var err = _g1;
@@ -29629,7 +29618,6 @@ hscript_Interp.prototype = {
 			try {
 				this.expr(e);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				var _g1 = haxe_Exception.caught(_g).unwrap();
 				if(js_Boot.__instanceof(_g1,hscript__$Interp_Stop)) {
 					var err = _g1;
@@ -29656,7 +29644,6 @@ hscript_Interp.prototype = {
 		_hx_loop1: while(this.expr(econd) == true) try {
 			this.expr(e);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			var _g1 = haxe_Exception.caught(_g).unwrap();
 			if(js_Boot.__instanceof(_g1,hscript__$Interp_Stop)) {
 				var err = _g1;
@@ -29678,7 +29665,6 @@ hscript_Interp.prototype = {
 		try {
 			v = $getIterator(v);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 		}
 		if(v.hasNext == null || v.next == null) {
 			var e = hscript_Error.EInvalidIterator(v);
@@ -29697,7 +29683,6 @@ hscript_Interp.prototype = {
 			try {
 				this.expr(e);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				var _g1 = haxe_Exception.caught(_g).unwrap();
 				if(js_Boot.__instanceof(_g1,hscript__$Interp_Stop)) {
 					var err = _g1;
@@ -33028,7 +33013,6 @@ js_Boot.__string_rec = function(o,s) {
 		try {
 			tostr = o.toString;
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			return "???";
 		}
 		if(tostr != null && tostr != Object.toString && typeof(tostr) == "function") {
@@ -33176,7 +33160,6 @@ js_Browser.getLocalStorage = function() {
 		}
 		return s;
 	} catch( _g ) {
-		haxe_NativeStackTrace.lastError = _g;
 		return null;
 	}
 };
@@ -33697,7 +33680,6 @@ spine_CurveTimeline.prototype = $extend(spine_Timeline.prototype,{
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,size);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + size));
 			}
 			this.curves = newCurves;
@@ -35488,7 +35470,6 @@ spine_DeformTimeline.prototype = $extend(spine_CurveTimeline.prototype,{
 					try {
 						spine_support_utils_Array.copy(src,0,dest,0,vertexCount);
 					} catch( _g ) {
-						haxe_NativeStackTrace.lastError = _g;
 						throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + vertexCount));
 					}
 				}
@@ -35799,7 +35780,6 @@ spine_DrawOrderTimeline.prototype = $extend(spine_Timeline.prototype,{
 				try {
 					spine_support_utils_Array.copy(src,0,dest,0,length);
 				} catch( _g ) {
-					haxe_NativeStackTrace.lastError = _g;
 					throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 				}
 			}
@@ -35819,7 +35799,6 @@ spine_DrawOrderTimeline.prototype = $extend(spine_Timeline.prototype,{
 				try {
 					spine_support_utils_Array.copy(src,0,dest,0,length);
 				} catch( _g ) {
-					haxe_NativeStackTrace.lastError = _g;
 					throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 				}
 			}
@@ -35839,7 +35818,6 @@ spine_DrawOrderTimeline.prototype = $extend(spine_Timeline.prototype,{
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -46806,7 +46784,6 @@ spine_Skeleton.prototype = {
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,n);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + n));
 		}
 		var i = 0;
@@ -46946,7 +46923,6 @@ spine_Skeleton.prototype = {
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,n);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + n));
 		}
 		var i = 0;
@@ -50203,7 +50179,6 @@ spine_SkeletonJson.prototype = $extend(spine_SkeletonLoader.prototype,{
 							}
 						}
 					} catch( _g2 ) {
-						haxe_NativeStackTrace.lastError = _g2;
 						var ex = haxe_Exception.caught(_g2).unwrap();
 						throw haxe_Exception.thrown(new spine_support_utils_SerializationException("Error reading attachment: " + entry4.get_name() + ", skin: " + Std.string(skin),ex));
 					}
@@ -50330,7 +50305,6 @@ spine_SkeletonJson.prototype = $extend(spine_SkeletonLoader.prototype,{
 			try {
 				this.readAnimation(animationMap,animationMap.get_name(),skeletonData);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				var ex = haxe_Exception.caught(_g).unwrap();
 				throw haxe_Exception.thrown(new spine_support_utils_SerializationException("Error reading animation: " + animationMap.get_name(),ex));
 			}
@@ -51764,7 +51738,6 @@ spine_SkeletonJson.prototype = $extend(spine_SkeletonLoader.prototype,{
 							try {
 								spine_support_utils_Array.copy(src,0,dest,start,length2);
 							} catch( _g4 ) {
-								haxe_NativeStackTrace.lastError = _g4;
 								throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + start + ", count: " + length2));
 							}
 							if(scale != 1) {
@@ -54056,7 +54029,6 @@ spine_attachments_VertexAttachment.prototype = $extend(spine_attachments_Attachm
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54095,7 +54067,6 @@ spine_attachments_VertexAttachment.prototype = $extend(spine_attachments_Attachm
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54153,7 +54124,6 @@ spine_attachments_BoundingBoxAttachment.prototype = $extend(spine_attachments_Ve
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54192,7 +54162,6 @@ spine_attachments_BoundingBoxAttachment.prototype = $extend(spine_attachments_Ve
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54262,7 +54231,6 @@ spine_attachments_ClippingAttachment.prototype = $extend(spine_attachments_Verte
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54301,7 +54269,6 @@ spine_attachments_ClippingAttachment.prototype = $extend(spine_attachments_Verte
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54583,7 +54550,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54622,7 +54588,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54662,7 +54627,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,length);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 		}
 		var length = this.uvs.length;
@@ -54697,7 +54661,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,length);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 		}
 		var length = this.triangles.length;
@@ -54732,7 +54695,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,length);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 		}
 		copy.hullLength = this.hullLength;
@@ -54769,7 +54731,6 @@ spine_attachments_MeshAttachment.prototype = $extend(spine_attachments_VertexAtt
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		}
@@ -54872,7 +54833,6 @@ spine_attachments_PathAttachment.prototype = $extend(spine_attachments_VertexAtt
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54911,7 +54871,6 @@ spine_attachments_PathAttachment.prototype = $extend(spine_attachments_VertexAtt
 			try {
 				spine_support_utils_Array.copy(src,0,dest,0,length);
 			} catch( _g ) {
-				haxe_NativeStackTrace.lastError = _g;
 				throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 			}
 		} else {
@@ -54951,7 +54910,6 @@ spine_attachments_PathAttachment.prototype = $extend(spine_attachments_VertexAtt
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,length);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + length));
 		}
 		copy.closed = this.closed;
@@ -55277,7 +55235,6 @@ spine_attachments_RegionAttachment.prototype = $extend(spine_attachments_Attachm
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,8);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + 8));
 		}
 		var src = this.offset;
@@ -55291,7 +55248,6 @@ spine_attachments_RegionAttachment.prototype = $extend(spine_attachments_Attachm
 		try {
 			spine_support_utils_Array.copy(src,0,dest,0,8);
 		} catch( _g ) {
-			haxe_NativeStackTrace.lastError = _g;
 			throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + 0 + ", dest: " + dest.length + ", " + 0 + ", count: " + 8));
 		}
 		var _this = copy.color;
@@ -57286,7 +57242,6 @@ spine_utils_SpineUtils.arraycopy = function(src,srcPos,dest,destPos,length) {
 	try {
 		spine_support_utils_Array.copy(src,srcPos,dest,destPos,length);
 	} catch( _g ) {
-		haxe_NativeStackTrace.lastError = _g;
 		throw haxe_Exception.thrown(new spine_support_error_ArrayIndexOutOfBoundsException("Src: " + src.length + ", " + srcPos + ", dest: " + dest.length + ", " + destPos + ", count: " + length));
 	}
 };
@@ -57983,7 +57938,7 @@ GRIButtons.SKILL_BUTTON_6 = 106;
 GRIButtons.SKILL_BUTTON_7 = 107;
 GRIConfigurer.DIMENSION_ID_LAGRIMA = "LAGRIMA";
 GRIConfigurer.DIMENSION_ID_AMAZONIA = "AMAZONIA";
-GRIControl.key = "save data unstable";
+GRIControl.key = "save data master";
 GRIControl.keyBackup = "save backup";
 GRIControl.PRIVACY_ACCEPTANCE_KEY = "privacymemory";
 GRIControl.saveRate = 10000;
@@ -58223,7 +58178,7 @@ JsonMainTypes.jsonparservillageD = new JsonParser_$98();
 JsonMainTypes.jsonwritervillageS = new JsonWriter_$98();
 JsonMainTypes.jsonparservillageS = new JsonParser_$110();
 Local.mapOfValues = new haxe_ds_StringMap();
-Local.language = 1;
+Local.language = 0;
 PhaserRenderer.images = new haxe_ds_StringMap();
 PhaserRenderer.z = 0;
 PrototypeItemMaker.itemType_Weapon = 0;
@@ -58273,13 +58228,11 @@ arcania_logic_ArcaniaModel.REUSABLE_CONDITION_TYPE = "arcania_condition";
 arcania_logic_ArcaniaModel.resourceTypeConfiguration = [new arcania_logic_ResourceTypeConfiguration("Action"),new arcania_logic_ResourceTypeConfiguration("Resource"),new arcania_logic_ResourceTypeConfiguration("Event",false,true)];
 autogen_GriPngs.achiev_a1 = Sprite.create("achiev_a1",64,64);
 autogen_GriPngs.achiev_a2 = Sprite.create("achiev_a2",64,64);
-autogen_GriPngs.achiev_a3 = Sprite.create("achiev_a3",64,64);
 autogen_GriPngs.achiev_e1 = Sprite.create("achiev_e1",64,64);
 autogen_GriPngs.achiev_e2 = Sprite.create("achiev_e2",64,64);
-autogen_GriPngs.achiev_e3 = Sprite.create("achiev_e3",64,64);
+autogen_GriPngs.achiev_a3 = Sprite.create("achiev_a3",64,64);
 autogen_GriPngs.arrowdown = Sprite.create("arrowdown",15,22);
 autogen_GriPngs.arrowleft = Sprite.create("arrowleft",25,13);
-autogen_GriPngs.arrowlefttriple = Sprite.create("arrowlefttriple",30,13);
 autogen_GriPngs.arrowrepeat = Sprite.create("arrowrepeat",20,17);
 autogen_GriPngs.arrowrepeatauto = Sprite.create("arrowrepeatauto",19,17);
 autogen_GriPngs.arrowup = Sprite.create("arrowup",15,22);
@@ -58291,19 +58244,21 @@ autogen_GriPngs.blood_4 = Sprite.create("blood_4",128,128);
 autogen_GriPngs.blood_5 = Sprite.create("blood_5",128,128);
 autogen_GriPngs.blood_6 = Sprite.create("blood_6",128,128);
 autogen_GriPngs.blood_7 = Sprite.create("blood_7",128,128);
-autogen_GriPngs.bluegradient = Sprite.create("bluegradient",32,32);
 autogen_GriPngs.boot = Sprite.create("boot",21,15);
+autogen_GriPngs.bluegradient = Sprite.create("bluegradient",32,32);
 autogen_GriPngs.boss = Sprite.create("boss",512,512);
 autogen_GriPngs.button9a = Sprite.create("button9a",32,32);
 autogen_GriPngs.bossb = Sprite.create("bossb",512,512);
 autogen_GriPngs.buttonback = Sprite.create("buttonback",32,32);
 autogen_GriPngs.buttonback_h = Sprite.create("buttonback_h",32,32);
+autogen_GriPngs.achiev_e3 = Sprite.create("achiev_e3",64,64);
 autogen_GriPngs.buttonback_h_disabled = Sprite.create("buttonback_h_disabled",32,32);
 autogen_GriPngs.buttonkey = Sprite.create("buttonkey",32,32);
 autogen_GriPngs.buttonselec9a = Sprite.create("buttonselec9a",32,32);
 autogen_GriPngs.cid_story = Sprite.create("cid_story",512,512);
 autogen_GriPngs.circle = Sprite.create("circle",11,11);
 autogen_GriPngs.cursor = Sprite.create("cursor",23,23);
+autogen_GriPngs.arrowlefttriple = Sprite.create("arrowlefttriple",30,13);
 autogen_GriPngs.dialog9a = Sprite.create("dialog9a",372,94);
 autogen_GriPngs.discord = Sprite.create("discord",91,31);
 autogen_GriPngs.discordb = Sprite.create("discordb",91,31);
@@ -58337,8 +58292,8 @@ autogen_GriPngs.logo = Sprite.create("logo",420,360);
 autogen_GriPngs.main_story = Sprite.create("main_story",512,512);
 autogen_GriPngs.marino_story = Sprite.create("marino_story",512,512);
 autogen_GriPngs.mom_story = Sprite.create("mom_story",512,512);
-autogen_GriPngs.number_test = Sprite.create("number_test",21,14);
 autogen_GriPngs.pedroiv_story = Sprite.create("pedroiv_story",512,512);
+autogen_GriPngs.number_test = Sprite.create("number_test",21,14);
 autogen_GriPngs.pinkgradient = Sprite.create("pinkgradient",32,32);
 autogen_GriPngs.purpleback = Sprite.create("purpleback",44,39);
 autogen_GriPngs.purplegradient = Sprite.create("purplegradient",32,32);
@@ -58350,20 +58305,18 @@ autogen_GriPngs.tabback = Sprite.create("tabback",32,32);
 autogen_GriPngs.Unnamed_0 = Sprite.create("Unnamed_0",256,256);
 autogen_GriPngs.vitor_story = Sprite.create("vitor_story",512,512);
 autogen_GriPngs.whitecircle = Sprite.create("whitecircle",512,512);
-autogen_GriPngs.whitedot = Sprite.create("whitedot",1,1);
 autogen_GriPngs.whitep = Sprite.create("whitep",1,1);
+autogen_GriPngs.whitedot = Sprite.create("whitedot",1,1);
 autogen_GriPngs.allSprites = (function($this) {
 	var $r;
 	var _g = new haxe_ds_StringMap();
 	_g.h["achiev_a1"] = autogen_GriPngs.achiev_a1;
 	_g.h["achiev_a2"] = autogen_GriPngs.achiev_a2;
-	_g.h["achiev_a3"] = autogen_GriPngs.achiev_a3;
 	_g.h["achiev_e1"] = autogen_GriPngs.achiev_e1;
 	_g.h["achiev_e2"] = autogen_GriPngs.achiev_e2;
-	_g.h["achiev_e3"] = autogen_GriPngs.achiev_e3;
+	_g.h["achiev_a3"] = autogen_GriPngs.achiev_a3;
 	_g.h["arrowdown"] = autogen_GriPngs.arrowdown;
 	_g.h["arrowleft"] = autogen_GriPngs.arrowleft;
-	_g.h["arrowlefttriple"] = autogen_GriPngs.arrowlefttriple;
 	_g.h["arrowrepeat"] = autogen_GriPngs.arrowrepeat;
 	_g.h["arrowrepeatauto"] = autogen_GriPngs.arrowrepeatauto;
 	_g.h["arrowup"] = autogen_GriPngs.arrowup;
@@ -58375,19 +58328,21 @@ autogen_GriPngs.allSprites = (function($this) {
 	_g.h["blood_5"] = autogen_GriPngs.blood_5;
 	_g.h["blood_6"] = autogen_GriPngs.blood_6;
 	_g.h["blood_7"] = autogen_GriPngs.blood_7;
-	_g.h["bluegradient"] = autogen_GriPngs.bluegradient;
 	_g.h["boot"] = autogen_GriPngs.boot;
+	_g.h["bluegradient"] = autogen_GriPngs.bluegradient;
 	_g.h["boss"] = autogen_GriPngs.boss;
 	_g.h["button9a"] = autogen_GriPngs.button9a;
 	_g.h["bossb"] = autogen_GriPngs.bossb;
 	_g.h["buttonback"] = autogen_GriPngs.buttonback;
 	_g.h["buttonback_h"] = autogen_GriPngs.buttonback_h;
+	_g.h["achiev_e3"] = autogen_GriPngs.achiev_e3;
 	_g.h["buttonback_h_disabled"] = autogen_GriPngs.buttonback_h_disabled;
 	_g.h["buttonkey"] = autogen_GriPngs.buttonkey;
 	_g.h["buttonselec9a"] = autogen_GriPngs.buttonselec9a;
 	_g.h["cid_story"] = autogen_GriPngs.cid_story;
 	_g.h["circle"] = autogen_GriPngs.circle;
 	_g.h["cursor"] = autogen_GriPngs.cursor;
+	_g.h["arrowlefttriple"] = autogen_GriPngs.arrowlefttriple;
 	_g.h["dialog9a"] = autogen_GriPngs.dialog9a;
 	_g.h["discord"] = autogen_GriPngs.discord;
 	_g.h["discordb"] = autogen_GriPngs.discordb;
@@ -58421,8 +58376,8 @@ autogen_GriPngs.allSprites = (function($this) {
 	_g.h["main_story"] = autogen_GriPngs.main_story;
 	_g.h["marino_story"] = autogen_GriPngs.marino_story;
 	_g.h["mom_story"] = autogen_GriPngs.mom_story;
-	_g.h["number_test"] = autogen_GriPngs.number_test;
 	_g.h["pedroiv_story"] = autogen_GriPngs.pedroiv_story;
+	_g.h["number_test"] = autogen_GriPngs.number_test;
 	_g.h["pinkgradient"] = autogen_GriPngs.pinkgradient;
 	_g.h["purpleback"] = autogen_GriPngs.purpleback;
 	_g.h["purplegradient"] = autogen_GriPngs.purplegradient;
@@ -58434,8 +58389,8 @@ autogen_GriPngs.allSprites = (function($this) {
 	_g.h["Unnamed_0"] = autogen_GriPngs.Unnamed_0;
 	_g.h["vitor_story"] = autogen_GriPngs.vitor_story;
 	_g.h["whitecircle"] = autogen_GriPngs.whitecircle;
-	_g.h["whitedot"] = autogen_GriPngs.whitedot;
 	_g.h["whitep"] = autogen_GriPngs.whitep;
+	_g.h["whitedot"] = autogen_GriPngs.whitedot;
 	$r = _g;
 	return $r;
 }(this));
@@ -58444,13 +58399,11 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	var _g = new haxe_ds_StringMap();
 	_g.h["achiev_a1"] = "achiev_a1.png";
 	_g.h["achiev_a2"] = "achiev_a2.png";
-	_g.h["achiev_a3"] = "achiev_a3.png";
 	_g.h["achiev_e1"] = "achiev_e1.png";
 	_g.h["achiev_e2"] = "achiev_e2.png";
-	_g.h["achiev_e3"] = "achiev_e3.png";
+	_g.h["achiev_a3"] = "achiev_a3.png";
 	_g.h["arrowdown"] = "arrowdown.png";
 	_g.h["arrowleft"] = "arrowleft.png";
-	_g.h["arrowlefttriple"] = "arrowlefttriple.png";
 	_g.h["arrowrepeat"] = "arrowrepeat.png";
 	_g.h["arrowrepeatauto"] = "arrowrepeatauto.png";
 	_g.h["arrowup"] = "arrowup.png";
@@ -58462,19 +58415,21 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	_g.h["blood_5"] = "blood_5.png";
 	_g.h["blood_6"] = "blood_6.png";
 	_g.h["blood_7"] = "blood_7.png";
-	_g.h["bluegradient"] = "bluegradient.png";
 	_g.h["boot"] = "boot.png";
+	_g.h["bluegradient"] = "bluegradient.png";
 	_g.h["boss"] = "boss.png";
 	_g.h["button9a"] = "button9a.png";
 	_g.h["bossb"] = "bossb.png";
 	_g.h["buttonback"] = "buttonback.png";
 	_g.h["buttonback_h"] = "buttonback_h.png";
+	_g.h["achiev_e3"] = "achiev_e3.png";
 	_g.h["buttonback_h_disabled"] = "buttonback_h_disabled.png";
 	_g.h["buttonkey"] = "buttonkey.png";
 	_g.h["buttonselec9a"] = "buttonselec9a.png";
 	_g.h["cid_story"] = "cid_story.jpg";
 	_g.h["circle"] = "circle.png";
 	_g.h["cursor"] = "cursor.png";
+	_g.h["arrowlefttriple"] = "arrowlefttriple.png";
 	_g.h["dialog9a"] = "dialog9a.png";
 	_g.h["discord"] = "discord.png";
 	_g.h["discordb"] = "discordb.png";
@@ -58508,8 +58463,8 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	_g.h["main_story"] = "main_story.jpg";
 	_g.h["marino_story"] = "marino_story.jpeg";
 	_g.h["mom_story"] = "mom_story.png";
-	_g.h["number_test"] = "number_test.png";
 	_g.h["pedroiv_story"] = "pedroiv_story.jpeg";
+	_g.h["number_test"] = "number_test.png";
 	_g.h["pinkgradient"] = "pinkgradient.png";
 	_g.h["purpleback"] = "purpleback.png";
 	_g.h["purplegradient"] = "purplegradient.png";
@@ -58521,8 +58476,8 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	_g.h["Unnamed_0"] = "Unnamed_0.png";
 	_g.h["vitor_story"] = "vitor_story.jpeg";
 	_g.h["whitecircle"] = "whitecircle.png";
-	_g.h["whitedot"] = "whitedot.png";
 	_g.h["whitep"] = "whitep.png";
+	_g.h["whitedot"] = "whitedot.png";
 	$r = _g;
 	return $r;
 }(this));
