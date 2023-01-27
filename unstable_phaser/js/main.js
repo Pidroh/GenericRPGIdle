@@ -882,7 +882,7 @@ var BattleManager = function() {
 	_g.h["SpeedCount"] = 0;
 	_g.h[BattleConstants.DEATHBLOOD] = 0;
 	var stats = _g;
-	var w = { worldVersion : 30312, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, veteranLevel : 0, regionProgress : []};
+	var w = { worldVersion : 30313, hero : { level : 1, attributesBase : null, equipment : null, xp : null, attributesCalculated : stats, reference : new ActorReference(0,0), viewAux : 0}, enemy : null, maxArea : 1, necessaryToKillInArea : 0, killedInArea : [0,0], prestigeTimes : 0, timeCount : 0, playerTimesKilled : 0, battleArea : 0, battleAreaRegion : 0, battleAreaRegionMax : 1, playerActions : new haxe_ds_StringMap(), recovering : false, sleeping : false, veteranLevel : 0, regionProgress : []};
 	this.wdata = w;
 	this.counterAttackDatas.push(null);
 	var ctd = new CounterAttackData();
@@ -1079,7 +1079,7 @@ BattleManager.prototype = {
 			}
 			if(ef.target == Target.ENEMY) {
 				if(this.wdata.hero == actor) {
-					if(this.wdata.enemy == null || this.wdata.enemy.attributesCalculated.h["LifeMax"] == 0) {
+					if(this.wdata.enemy == null || this.wdata.enemy.attributesCalculated.h["LifeMax"] == 0 || this.wdata.enemy.attributesCalculated.h["Life"] <= 0) {
 						if(this.automaticEnemyCreation) {
 							this.CreateAreaEnemy();
 						} else {
@@ -1296,6 +1296,9 @@ BattleManager.prototype = {
 		}
 		if(defenseRate == null) {
 			defenseRate = 100;
+		}
+		if(defender.attributesCalculated.h["Life"] <= 0) {
+			return;
 		}
 		this.lastActiveActor = attacker;
 		var gEvent = this.AddEvent(EventTypes.ActorAttack);
@@ -1792,7 +1795,7 @@ BattleManager.prototype = {
 				}
 			}
 		}
-		haxe_Log.trace("ERROR!! NOT EXTERNAL CONDITION AREA ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 935, className : "BattleManager", methodName : "clearExternalConditionArea"});
+		haxe_Log.trace("ERROR!! NOT EXTERNAL CONDITION AREA ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 938, className : "BattleManager", methodName : "clearExternalConditionArea"});
 	}
 	,AddEquip: function(e,event,dropperReference) {
 		var addedIndex = -1;
@@ -2296,7 +2299,7 @@ BattleManager.prototype = {
 			var tmp = HxOverrides.dateStr(new Date()) + " ";
 			var tmp1 = this.random.randomInt(1,99999);
 			this.wdata.userId = tmp + tmp1;
-			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1703, className : "BattleManager", methodName : "ReinitGameValues"});
+			haxe_Log.trace("reinit user id",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 1706, className : "BattleManager", methodName : "ReinitGameValues"});
 		}
 		if(this.wdata.timesReviewed >= 0 == false) {
 			this.wdata.timesReviewed = 0;
@@ -3630,7 +3633,7 @@ BattleManager.prototype = {
 		while(i < this.wdata.hero.equipment.length) {
 			++times;
 			if(times > 500) {
-				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3054, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+				haxe_Log.trace("LOOP SCAPE",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3057, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 				break;
 			}
 			var e = this.wdata.hero.equipment[i];
@@ -3647,7 +3650,7 @@ BattleManager.prototype = {
 			while(j < this.wdata.hero.equipment.length) {
 				++times2;
 				if(times2 > 500) {
-					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3071, className : "BattleManager", methodName : "DiscardWorseEquipment"});
+					haxe_Log.trace("LOOP SCAPE 2",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3074, className : "BattleManager", methodName : "DiscardWorseEquipment"});
 					break;
 				}
 				var e2 = this.wdata.hero.equipment[j];
@@ -3849,7 +3852,7 @@ BattleManager.prototype = {
 	,testInitializeRetentionWorldVersion: function(loadedWdata) {
 		if(loadedWdata.retention == null) {
 			loadedWdata.retention = { gameStartVersion : loadedWdata.worldVersion, gameStartDate : HxOverrides.dateStr(new Date()), latestDayRetention : 0, reportedRollingRetention : []};
-			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3264, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace(loadedWdata.retention.gameStartDate,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3267, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 			this.AddEvent(EventTypes.GameStartOnVersion).data = loadedWdata.worldVersion;
 		}
 		try {
@@ -3857,7 +3860,7 @@ BattleManager.prototype = {
 		} catch( _g ) {
 			var tmp = HxOverrides.dateStr(new Date());
 			loadedWdata.retention.gameStartDate = tmp;
-			haxe_Log.trace("SYSTEM: Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3271, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
+			haxe_Log.trace("SYSTEM: Buggy date fix!",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3274, className : "BattleManager", methodName : "testInitializeRetentionWorldVersion"});
 		}
 	}
 	,sendJsonLegacy: function(jsonString) {
@@ -3871,29 +3874,29 @@ BattleManager.prototype = {
 		try {
 			loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 			if(loadedWdata == null) {
-				haxe_Log.trace("SYSTEM: save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3286, className : "BattleManager", methodName : "SendJsonPersistentData"});
-				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3287, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("SYSTEM: save corrupted! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3289, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3290, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				jsonString = StringTools.replace(jsonString,"undefined","null");
 				loadedWdata = JsonMainTypes.jsonparserwdata.fromJson(jsonString);
 				if(loadedWdata == null) {
 					ErrorX.errorMessage = "SAVE CORRUPTED\n" + jsonString;
 					if(JsonMainTypes.jsonparserwdata.errors.length > 0) {
-						haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3294, className : "BattleManager", methodName : "SendJsonPersistentData"});
-						haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3295, className : "BattleManager", methodName : "SendJsonPersistentData"});
+						haxe_Log.trace(json2object_ErrorUtils.convertErrorArray(JsonMainTypes.jsonparserwdata.errors),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3297, className : "BattleManager", methodName : "SendJsonPersistentData"});
+						haxe_Log.trace(jsonString,{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3298, className : "BattleManager", methodName : "SendJsonPersistentData"});
 					}
 					return false;
 				} else {
-					haxe_Log.trace("SYSTEM: save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3299, className : "BattleManager", methodName : "SendJsonPersistentData"});
+					haxe_Log.trace("SYSTEM: save restored! ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3302, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				}
 			}
 			if(loadedWdata.worldVersion <= 3003) {
-				haxe_Log.trace("SYSTEM: legacy save detected",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3304, className : "BattleManager", methodName : "SendJsonPersistentData"});
+				haxe_Log.trace("SYSTEM: legacy save detected",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3307, className : "BattleManager", methodName : "SendJsonPersistentData"});
 				loadedWdata = this.sendJsonLegacy(jsonString);
 			}
 		} catch( _g ) {
 			var e = haxe_Exception.caught(_g);
-			haxe_Log.trace("ERROR: load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3309, className : "BattleManager", methodName : "SendJsonPersistentData"});
-			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3310, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace("ERROR: load save failed ",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3312, className : "BattleManager", methodName : "SendJsonPersistentData"});
+			haxe_Log.trace(e.get_message(),{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3313, className : "BattleManager", methodName : "SendJsonPersistentData"});
 			ErrorX.exception = e;
 			return false;
 		}
@@ -3994,7 +3997,7 @@ BattleManager.prototype = {
 			}
 			return false;
 		}
-		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3416, className : "BattleManager", methodName : "testCondition"});
+		haxe_Log.trace("ERROR: condition check ignored",{ fileName : "Sources\\GRI\\logic/BattleManager.hx", lineNumber : 3419, className : "BattleManager", methodName : "testCondition"});
 		return false;
 	}
 	,isBattleArea: function() {
@@ -5211,7 +5214,8 @@ GRIView.prototype = {
 			var _g1_value = _g_map.get(key);
 			var _g1_key = key;
 			var index = _g1_key;
-			var value = _g1_value;
+			var unit = _g1_value;
+			var value = unit.element;
 			if(this.ui.isVisible(value) && value.enabled) {
 				var _this = value.transform;
 				var x = (_this.size.x < 0 ? _this.position.x : _this.position.x + _this.size.x) - 7;
@@ -5221,7 +5225,12 @@ GRIView.prototype = {
 					var _this2 = value.transform;
 					y = (_this2.size.y < 0 ? _this2.position.y : _this2.position.y + _this2.size.y) + 10;
 				}
-				Renderer.NinePatchS(new NinePatch(12,"buttonkey",32),x - 16,y - 16,32,32,16777215,12,null);
+				if(unit.renderType == 1) {
+					var _this3 = value.transform;
+					y = (_this3.size.y < 0 ? _this3.position.y : _this3.position.y + _this3.size.y) - 4;
+					var _this4 = value.transform;
+					x = (_this4.size.x < 0 ? _this4.position.x : _this4.position.x + _this4.size.x) + 12;
+				}
 				var _g = 0;
 				var _g1 = buttonBindings.bindings;
 				while(_g < _g1.length) {
@@ -5229,18 +5238,28 @@ GRIView.prototype = {
 					++_g;
 					if(binding.button == index) {
 						var key1 = binding.key;
-						if(key1 < 10000) {
-							var fromCode = String.fromCodePoint(key1);
-							XTextRender.drawTextSingleLine(fromCode,"main",x,y - 3,0.5,0.5,GRIView.COLOR_TEXT_NORMAL,null,0,-1,255);
-						}
+						this.drawButtonBinding(x,y,key1);
+						break;
 					}
 				}
 			}
+		}
+		if(this.tabIds.length > 1) {
+			var bby = 20;
+			this.drawButtonBinding(20,bby,113);
+			this.drawButtonBinding(GRIConfiguration.MINIMUM_WIDTH - 30,bby,101);
 		}
 		if(this.notifications.isShowing()) {
 			var height = 70;
 			Renderer.fillRectSimple(GRIView.COLOR_BACKGROUND,0,Renderer.height - height,Renderer.width,height);
 			XTextRender.drawTextMultiLine(this.notifications.currentNotification.text,"main14",Renderer.width / 2,Renderer.height - 10,Renderer.width,0.5,1);
+		}
+	}
+	,drawButtonBinding: function(x,y,key) {
+		Renderer.NinePatchS(new NinePatch(12,"buttonkey",32),x - 16,y - 16,32,32,16777215,12,null);
+		if(key < 10000) {
+			var fromCode = String.fromCodePoint(key);
+			XTextRender.drawTextSingleLine(fromCode,"main",x,y - 3,0.5,0.5,GRIView.COLOR_TEXT_NORMAL,null,0,-1,255);
 		}
 	}
 	,postRender: function() {
@@ -5303,6 +5322,7 @@ GRIView.prototype = {
 	}
 	,setupTitleTabButtons: function() {
 		this.uiCreation.tags.length = 0;
+		this.uiCreation.addEmptyElement(30,10,"tabbutton");
 		var button = this.addButton(GRIView.idTabTitle,"Title",GRIView.ARCHETYPE_BUTTON_TAB,"tabbutton",GRIView.TAG_TAB_BUTTON,this.tabCursorGroup);
 		this.tabTags.push(GRIView.tagTabTitle);
 		this.tabIds.push(GRIView.idTabTitle);
@@ -5371,8 +5391,8 @@ GRIView.prototype = {
 		var advance = this.addButtonImage("advance",Sprite.create("arrowleft",25,13),GRIView.ARCHETYPE_BUTTON_SMALL,null,null,true,this.upperCursorGroup);
 		this.uiCreation.offsetElement(advance,e,1,0,0,0,false,false);
 		this.advanceButton = advance;
-		this.ui.keyboardManager.buttonPressToElementTrigger.h[DefaultButtons.TABRIGHTB] = advance;
-		this.ui.keyboardManager.buttonPressToElementTrigger.h[DefaultButtons.TABLEFTB] = retreat;
+		this.ui.keyboardManager.bind(DefaultButtons.TABLEFTB,retreat,0);
+		this.ui.keyboardManager.bind(DefaultButtons.TABRIGHTB,advance,0);
 		this.advanceButtonImage = this.ui.getElement("advance-image");
 		this.upperCursorGroup.firstElement = advance;
 		var repeat = this.addButtonImage("repeat",Sprite.create("arrowrepeat",20,17),GRIView.ARCHETYPE_BUTTON_SMALL,"subbuttons",null,true,this.upperCursorGroup);
@@ -5722,7 +5742,7 @@ GRIView.prototype = {
 		button.styleHover.sprite = Sprite.create("buttonback_h",32,32);
 		if(archetype == GRIView.ARCHETYPE_BUTTON_TAB) {
 			var self = button.transform.size;
-			self.x = 120;
+			self.x = 116;
 			self.y = 35;
 			button.styleHover.ninePatch = null;
 			button.style.ninePatch = null;
@@ -6427,8 +6447,7 @@ GRIArcaniaControl.prototype = {
 		this.arcaniaModel.update(miliseconds);
 		this.battleintegration.update();
 		this.subsetManager.update();
-		var _this = this.arcaniaModel.runningUnitActive;
-		if(_this.state != _this.previousState && _this.state == false) {
+		if(this.arcaniaModel.runningUnitActive.state == false) {
 			this.notificationControl.addNotification(GRIView.idTabVillage,0);
 		}
 		if(this.control.view.littleBattle != null) {
@@ -7481,6 +7500,8 @@ var GRIControl = function(resolution,configuration) {
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.SKILL_BUTTON_5,53));
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.SKILL_BUTTON_6,54));
 	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.SKILL_BUTTON_7,55));
+	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.LEVEL_BUTTON,108));
+	this.buttonBindings.bindings.push(new ButtonBinding(GRIButtons.NAP_BUTTON,110));
 };
 $hxClasses["GRIControl"] = GRIControl;
 GRIControl.__name__ = "GRIControl";
@@ -7624,6 +7645,7 @@ GRIControl.prototype = {
 		this.view.setupAreaMessage();
 		this.view.setupMiscBattle();
 		var levelButton = this.view.addButton("levelup","Lv+",GRIView.ARCHETYPE_BUTTON_SMALL,gribattle_BattleMainView.LOWERBUTTON_LAYOUT,null,this.view.lowerCursorGroup);
+		this.view.ui.keyboardManager.bind(GRIButtons.LEVEL_BUTTON,levelButton,1);
 		this.view.ui.hover.setHoverGeneric(levelButton,Local.getString("Level Up"),Local.getString("Become stronger."));
 		this.view.mainCursorGroup.avoidFirstElement.push(levelButton);
 		this.view.highlightedButtons.push(levelButton);
@@ -7754,7 +7776,7 @@ GRIControl.prototype = {
 			}
 			if(value.stringData == "fb") {
 				this.showFeedback = true;
-				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 727, className : "GRIControl", methodName : "update"});
+				haxe_Log.trace("SHOW FEEDBACK",{ fileName : "Sources\\GRI/GRIControl.hx", lineNumber : 738, className : "GRIControl", methodName : "update"});
 			}
 			if(value.stringData == "error") {
 				this.showError = !this.showError;
@@ -9283,7 +9305,22 @@ GRIControlTitle.prototype = {
 				CrossTarget.OpenURL("https://discord.gg/AtGrxpM");
 			}
 			if(data.stringData == GRIViewTitle.DATA_STEAM) {
-				CrossTarget.OpenURL("https://store.steampowered.com/app/1858120/Generic_RPG_Idle/");
+				var isBeta = GRIControl.IS_BETA;
+				var source = "gridemo";
+				var campaign = "simple";
+				if(isBeta) {
+					campaign = "beta";
+				}
+				var platform = "gitphaser";
+				var mainURL = "https://store.steampowered.com/app/1858120/Generic_RPG_Idle/";
+				var genURL = mainURL + "?" + ("utm_source=" + source);
+				if(campaign != null) {
+					genURL += "&utm_campaign=" + campaign;
+				}
+				if(platform != null) {
+					genURL += "&utm_medium=" + platform;
+				}
+				CrossTarget.OpenURL(genURL);
 			}
 			if(data.stringData == GRIViewTitle.DATA_RESET) {
 				this.control.view.showDialog(this.resetWarning);
@@ -10521,7 +10558,7 @@ GRIViewTitle.prototype = {
 		this.view.uiCreation.tags.push(GRIViewTitle.TAG_TITLE_LOGO);
 		var logo = this.view.uiCreation.createImageElement(Sprite.create("logo",420,360),420,360);
 		this.view.uiCreation.addElementInLayoutId(logo,"titlelogo");
-		var e = this.view.addText("","Version: 0.32r beta",GRIView.ARCHETYPE_HEADER_TIMID,null);
+		var e = this.view.addText("","Version: 0.33r beta",GRIView.ARCHETYPE_HEADER_TIMID,null);
 		e.text = "DEMO " + e.text;
 		this.view.uiCreation.addWithOffset(e,logo,1,1,-100,-130);
 		var e = this.view.addText("",Local.getString("Developed by Pedro Gabriel\nFonteles Furtado"),GRIView.ARCHETYPE_HEADER_TIMID,null);
@@ -12036,7 +12073,7 @@ GameAnalyticsIntegration.InitializeCheck = function() {
 	
         if(gameanalytics.GameAnalytics != null && gaInited == false){
             gaInited = true;
-            gameanalytics.GameAnalytics.configureBuild(("0.32" + platform));
+            gameanalytics.GameAnalytics.configureBuild(("0.33" + platform));
             gameanalytics.GameAnalytics.initialize(gameKey,secretKey); 
             
         }
@@ -26677,8 +26714,8 @@ var UIElementManager = function(nLayers) {
 	this.scrolls = [];
 	this.offsets = [];
 	this.spriteSheetAnimations = new SpriteSheetAnimationManager();
-	this.keyboardManager = new UIKeyboardManager();
 	this.elementsHolder = [];
+	this.keyboardManager = new UIKeyboardManager(this);
 	var _g = 0;
 	var _g1 = nLayers;
 	while(_g < _g1) {
@@ -27021,7 +27058,7 @@ UIElementManager.prototype = {
 						}
 						e.hovered.state = (mouseHovering && (mouseMoved || e.hovered.state) || this.keyboardManager.cursoredElement == e && this.keyboardManager.selectionOn) && e.visible;
 						if(e.debug) {
-							haxe_Log.trace("DEBUG: element hoverable " + (e.hoverable == null ? "null" : "" + e.hoverable),{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 177, className : "UIElementManager", methodName : "Update"});
+							haxe_Log.trace("DEBUG: element hoverable " + (e.hoverable == null ? "null" : "" + e.hoverable),{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 176, className : "UIElementManager", methodName : "Update"});
 						}
 						var _this2 = e.hovered;
 						if(_this2.state != _this2.previousState && _this2.state == true) {
@@ -27029,7 +27066,7 @@ UIElementManager.prototype = {
 								this.soundsToPlay.push(e.hoverSound);
 							}
 							if(e.debug) {
-								haxe_Log.trace("DEBUG: " + e.id + " element hovered this frame",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 184, className : "UIElementManager", methodName : "Update"});
+								haxe_Log.trace("DEBUG: " + e.id + " element hovered this frame",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 183, className : "UIElementManager", methodName : "Update"});
 							}
 							var hovered = this.hover.hoverElement(e,this);
 							if(mouseHovering && e.styleHover != null && mouseMoved) {
@@ -27119,12 +27156,12 @@ UIElementManager.prototype = {
 		Profiler.end("scroll_loop");
 	}
 	,enterCursorGroup: function(cursorGroup) {
-		this.keyboardManager.enterCursorGroup(cursorGroup,this);
+		this.keyboardManager.enterCursorGroup(cursorGroup);
 	}
 	,returnCursorGroup: function() {
 		if(this.keyboardManager.previousCursorGroup != null) {
-			haxe_Log.trace("RETURN",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 267, className : "UIElementManager", methodName : "returnCursorGroup"});
-			this.keyboardManager.enterCursorGroup(this.keyboardManager.previousCursorGroup,this);
+			haxe_Log.trace("RETURN",{ fileName : "Sources\\UIElements/UIElementManager.hx", lineNumber : 266, className : "UIElementManager", methodName : "returnCursorGroup"});
+			this.keyboardManager.enterCursorGroup(this.keyboardManager.previousCursorGroup);
 		}
 	}
 	,attemptElementTrigger: function(e) {
@@ -27997,14 +28034,18 @@ HoverManager.prototype = {
 	}
 	,__class__: HoverManager
 };
-var UIKeyboardManager = function() {
+var UIKeyboardManager = function(uiElement) {
 	this.buttonPressToElementTrigger = new haxe_ds_IntMap();
 	this.selectionOn = false;
+	this.ui = uiElement;
 };
 $hxClasses["UIKeyboardManager"] = UIKeyboardManager;
 UIKeyboardManager.__name__ = "UIKeyboardManager";
 UIKeyboardManager.prototype = {
 	cursorThisElement: function(e) {
+		if(this.ui.isVisible(e) == false) {
+			return;
+		}
 		if(this.cursoredElement != null) {
 			this.cursoredElement.hovered.state = false;
 			this.cursoredElement.buttonActivator.state = false;
@@ -28020,7 +28061,7 @@ UIKeyboardManager.prototype = {
 	,deselect: function() {
 		this.selectionOn = false;
 	}
-	,enterCursorGroup: function(cg,ui) {
+	,enterCursorGroup: function(cg) {
 		if(cg != this.currentCursorGroup) {
 			this.previousCursorGroup = this.currentCursorGroup;
 		}
@@ -28032,14 +28073,14 @@ UIKeyboardManager.prototype = {
 			}
 		}
 		if(elementCursor != null) {
-			if(ui.isVisible(elementCursor) == false) {
+			if(this.ui.isVisible(elementCursor) == false) {
 				elementCursor = null;
 				var _g = 0;
 				var _g1 = cg.elements;
 				while(_g < _g1.length) {
 					var element = _g1[_g];
 					++_g;
-					if(ui.isVisible(element)) {
+					if(this.ui.isVisible(element)) {
 						elementCursor = element;
 						break;
 					}
@@ -28052,7 +28093,7 @@ UIKeyboardManager.prototype = {
 			while(_g < _g1.length) {
 				var element = _g1[_g];
 				++_g;
-				if(ui.isVisible(element) && cg.avoidFirstElement.indexOf(element) != -1 == false) {
+				if(this.ui.isVisible(element) && cg.avoidFirstElement.indexOf(element) != -1 == false) {
 					elementCursor = element;
 					break;
 				}
@@ -28110,20 +28151,20 @@ UIKeyboardManager.prototype = {
 			var _g1_key = key;
 			var button = _g1_key;
 			var element = _g1_value;
-			var _this = element.buttonActivator;
+			var _this = element.element.buttonActivator;
 			_this.previousState = _this.state;
 			if(Buttons.buttons.buttonsDown.indexOf(button) != -1) {
-				ui.attemptElementTrigger(element);
+				ui.attemptElementTrigger(element.element);
 			}
-			element.buttonActivator.state = Buttons.buttons.buttonsPressed.indexOf(button) != -1;
+			element.element.buttonActivator.state = Buttons.buttons.buttonsPressed.indexOf(button) != -1;
 		}
 		if(this.currentCursorGroup != null) {
 			if(this.currentCursorGroup.cancelGroup != null && Buttons.buttons.buttonsDown.indexOf(DefaultButtons.CANCEL) != -1) {
-				this.enterCursorGroup(this.currentCursorGroup.cancelGroup,ui);
+				this.enterCursorGroup(this.currentCursorGroup.cancelGroup);
 			}
 			if(this.cursoredElement != null) {
 				if(ui.isVisible(this.cursoredElement) == false) {
-					this.enterCursorGroup(this.currentCursorGroup,ui);
+					this.enterCursorGroup(this.currentCursorGroup);
 				}
 				var xWeight = 0;
 				var yWeight = 0;
@@ -28167,7 +28208,7 @@ UIKeyboardManager.prototype = {
 								}
 							}
 							if(hasActive) {
-								this.enterCursorGroup(noElementGroup,ui);
+								this.enterCursorGroup(noElementGroup);
 							}
 						}
 					}
@@ -28188,7 +28229,24 @@ UIKeyboardManager.prototype = {
 			}
 		}
 	}
+	,bind: function(button,ele,render) {
+		if(render == null) {
+			render = 0;
+		}
+		var bbuu = new ButtonBindUIUnit();
+		bbuu.element = ele;
+		bbuu.renderType = render;
+		this.buttonPressToElementTrigger.h[button] = bbuu;
+	}
 	,__class__: UIKeyboardManager
+};
+var ButtonBindUIUnit = function() {
+	this.renderType = 0;
+};
+$hxClasses["ButtonBindUIUnit"] = ButtonBindUIUnit;
+ButtonBindUIUnit.__name__ = "ButtonBindUIUnit";
+ButtonBindUIUnit.prototype = {
+	__class__: ButtonBindUIUnit
 };
 var UIManagerUnit = function(manager) {
 	this._manager = manager;
@@ -31287,7 +31345,7 @@ gribattle_BattleControl.prototype = $extend(GRIControlUnitBase.prototype,{
 			}
 			var element = _gthis.get_view().addButton(actionId,label,buttontype,layoutid,tag,cursorGroup);
 			if(button >= 0) {
-				_gthis.get_view().ui.keyboardManager.buttonPressToElementTrigger.h[button] = element;
+				_gthis.get_view().ui.keyboardManager.bind(button,element);
 			}
 			_gthis._control.eventToAction.h[actionId] = actionId;
 			if(warning != null) {
@@ -31295,7 +31353,10 @@ gribattle_BattleControl.prototype = $extend(GRIControlUnitBase.prototype,{
 			}
 			return element;
 		};
-		this.get_view().sleepButton = createButtonFromAction("sleep","Sleep",GRIView.ARCHETYPE_BUTTON_SMALL,gribattle_BattleMainView.LOWERBUTTON_LAYOUT,null,-1,null,this.get_view().lowerCursorGroup);
+		this.get_view().uiCreation.addEmptyElement(35,3,gribattle_BattleMainView.LOWERBUTTON_LAYOUT);
+		var tmp = GRIButtons.NAP_BUTTON;
+		this.get_view().sleepButton = createButtonFromAction("sleep","Sleep",GRIView.ARCHETYPE_BUTTON_SMALL,gribattle_BattleMainView.LOWERBUTTON_LAYOUT,null,tmp,null,this.get_view().lowerCursorGroup);
+		this.get_view().ui.keyboardManager.buttonPressToElementTrigger.h[GRIButtons.NAP_BUTTON].renderType = 1;
 		this.get_view().mainCursorGroup.avoidFirstElement.push(this.get_view().sleepButton);
 		this.get_view().ui.hover.setHoverGeneric(this.get_view().sleepButton,"Nap / Wake up","Recover your HP. If you are fighting an elite enemy, it can also be used to run away.");
 		this._control.eventToAction.h["repeat"] = "repeat";
@@ -62573,8 +62634,9 @@ triple_$choice_$gri_GRIAreaControl.prototype = {
 	}
 	,changeMode: function(mode) {
 		this.mode = mode;
-		this.view.explorationMode(mode == triple_$choice_$gri_AreaMode.EXPLORATION);
-		if(mode == triple_$choice_$gri_AreaMode.BATTLE) {
+		var battleTab = this.control.view.currentTab == GRIView.TAG_TAB_BUTTON;
+		this.view.explorationMode(mode == triple_$choice_$gri_AreaMode.EXPLORATION,battleTab);
+		if(mode == triple_$choice_$gri_AreaMode.BATTLE && battleTab) {
 			this.control.view.ui.enterCursorGroup(this.control.view.mainCursorGroup);
 		}
 		this.control.battleManager.battleSkillsAccessible = mode == triple_$choice_$gri_AreaMode.BATTLE;
@@ -62659,9 +62721,11 @@ var triple_$choice_$gri_GRIAreaView = function(view) {
 $hxClasses["triple_choice_gri.GRIAreaView"] = triple_$choice_$gri_GRIAreaView;
 triple_$choice_$gri_GRIAreaView.__name__ = "triple_choice_gri.GRIAreaView";
 triple_$choice_$gri_GRIAreaView.prototype = {
-	explorationMode: function(state) {
+	explorationMode: function(state,battleTab) {
 		if(state) {
-			this.view.ui.keyboardManager.enterCursorGroup(this.choiceCursorGroup,this.view.ui);
+			if(battleTab) {
+				this.view.ui.keyboardManager.enterCursorGroup(this.choiceCursorGroup);
+			}
 			var v = this.choiceCursorGroup;
 			this.view.mainCursorGroup.noElementActivateGroup.set(Direction.NORTH,v);
 			var v = this.choiceCursorGroup;
@@ -62987,493 +63051,495 @@ GRIButtons.SKILL_BUTTON_4 = 104;
 GRIButtons.SKILL_BUTTON_5 = 105;
 GRIButtons.SKILL_BUTTON_6 = 106;
 GRIButtons.SKILL_BUTTON_7 = 107;
+GRIButtons.LEVEL_BUTTON = 108;
+GRIButtons.NAP_BUTTON = 109;
 GRIConfiguration.MINIMUM_WIDTH = 900;
 GRIConfiguration.MINIMUM_HEIGHT = 480;
 GRIConfigurer.DIMENSION_ID_LAGRIMA = "LAGRIMA";
 GRIConfigurer.DIMENSION_ID_AMAZONIA = "AMAZONIA";
 autogen_GriPngs.achiev_a1 = Sprite.create("achiev_a1",64,64);
-autogen_GriPngs.achiev_a2 = Sprite.create("achiev_a2",64,64);
 autogen_GriPngs.achiev_a3 = Sprite.create("achiev_a3",64,64);
+autogen_GriPngs.achiev_e1 = Sprite.create("achiev_e1",64,64);
+autogen_GriPngs.achiev_e2 = Sprite.create("achiev_e2",64,64);
 autogen_GriPngs.achiev_e3 = Sprite.create("achiev_e3",64,64);
 autogen_GriPngs.arrowdown = Sprite.create("arrowdown",15,22);
 autogen_GriPngs.arrowleft = Sprite.create("arrowleft",25,13);
-autogen_GriPngs.arrowlefttriple = Sprite.create("arrowlefttriple",30,13);
 autogen_GriPngs.arrowrepeat = Sprite.create("arrowrepeat",20,17);
-autogen_GriPngs.achiev_e1 = Sprite.create("achiev_e1",64,64);
-autogen_GriPngs.arrowup = Sprite.create("arrowup",15,22);
-autogen_GriPngs.achiev_e2 = Sprite.create("achiev_e2",64,64);
 autogen_GriPngs.arrowrepeatauto = Sprite.create("arrowrepeatauto",19,17);
-autogen_GriPngs.back_desert = Sprite.create("back_desert",187,125);
+autogen_GriPngs.arrowup = Sprite.create("arrowup",15,22);
+autogen_GriPngs.achiev_a2 = Sprite.create("achiev_a2",64,64);
 autogen_GriPngs.back_fields = Sprite.create("back_fields",384,216);
-autogen_GriPngs.back_forest = Sprite.create("back_forest",384,216);
 autogen_GriPngs.back_firecavevolcano = Sprite.create("back_firecavevolcano",384,216);
-autogen_GriPngs.back_mountains = Sprite.create("back_mountains",160,120);
+autogen_GriPngs.back_forest = Sprite.create("back_forest",384,216);
 autogen_GriPngs.back_inside = Sprite.create("back_inside",360,268);
-autogen_GriPngs.blood_1 = Sprite.create("blood_1",128,128);
-autogen_GriPngs.back_streets = Sprite.create("back_streets",200,150);
+autogen_GriPngs.back_mountains = Sprite.create("back_mountains",160,120);
 autogen_GriPngs.back_seaside = Sprite.create("back_seaside",384,216);
-autogen_GriPngs.blood_2 = Sprite.create("blood_2",128,128);
+autogen_GriPngs.back_snowmountain = Sprite.create("back_snowmountain",160,120);
+autogen_GriPngs.back_streets = Sprite.create("back_streets",200,150);
+autogen_GriPngs.back_thunder = Sprite.create("back_thunder",500,408);
 autogen_GriPngs.battlebutton = Sprite.create("battlebutton",32,32);
+autogen_GriPngs.blood_1 = Sprite.create("blood_1",128,128);
 autogen_GriPngs.blood_3 = Sprite.create("blood_3",128,128);
-autogen_GriPngs.blood_4 = Sprite.create("blood_4",128,128);
+autogen_GriPngs.blood_2 = Sprite.create("blood_2",128,128);
+autogen_GriPngs.arrowlefttriple = Sprite.create("arrowlefttriple",30,13);
 autogen_GriPngs.blood_5 = Sprite.create("blood_5",128,128);
 autogen_GriPngs.blood_6 = Sprite.create("blood_6",128,128);
-autogen_GriPngs.bluegradient = Sprite.create("bluegradient",32,32);
 autogen_GriPngs.blood_7 = Sprite.create("blood_7",128,128);
+autogen_GriPngs.bluegradient = Sprite.create("bluegradient",32,32);
 autogen_GriPngs.boot = Sprite.create("boot",21,15);
-autogen_GriPngs.back_thunder = Sprite.create("back_thunder",500,408);
-autogen_GriPngs.button9a = Sprite.create("button9a",32,32);
-autogen_GriPngs.back_cave = Sprite.create("back_cave",384,216);
-autogen_GriPngs.buttonback = Sprite.create("buttonback",32,32);
-autogen_GriPngs.buttonback_h = Sprite.create("buttonback_h",32,32);
-autogen_GriPngs.buttonback_h_disabled = Sprite.create("buttonback_h_disabled",32,32);
-autogen_GriPngs.back_snowmountain = Sprite.create("back_snowmountain",160,120);
-autogen_GriPngs.buttonselec9a = Sprite.create("buttonselec9a",32,32);
 autogen_GriPngs.boss = Sprite.create("boss",512,512);
 autogen_GriPngs.bossb = Sprite.create("bossb",512,512);
+autogen_GriPngs.blood_4 = Sprite.create("blood_4",128,128);
+autogen_GriPngs.button9a = Sprite.create("button9a",32,32);
+autogen_GriPngs.buttonback = Sprite.create("buttonback",32,32);
+autogen_GriPngs.buttonback_h_disabled = Sprite.create("buttonback_h_disabled",32,32);
 autogen_GriPngs.buttonkey = Sprite.create("buttonkey",32,32);
+autogen_GriPngs.back_desert = Sprite.create("back_desert",187,125);
+autogen_GriPngs.back_cave = Sprite.create("back_cave",384,216);
+autogen_GriPngs.buttonback_h = Sprite.create("buttonback_h",32,32);
 autogen_GriPngs.cursor = Sprite.create("cursor",23,23);
+autogen_GriPngs.buttonselec9a = Sprite.create("buttonselec9a",32,32);
 autogen_GriPngs.cid_story = Sprite.create("cid_story",512,512);
-autogen_GriPngs.dialog9a = Sprite.create("dialog9a",372,94);
 autogen_GriPngs.dark_background = Sprite.create("dark_background",693,141);
-autogen_GriPngs.circle = Sprite.create("circle",11,11);
-autogen_GriPngs.ef_slash_0 = Sprite.create("ef_slash_0",132,83);
+autogen_GriPngs.dialog9a = Sprite.create("dialog9a",372,94);
 autogen_GriPngs.discord = Sprite.create("discord",91,31);
-autogen_GriPngs.ef_slash_1 = Sprite.create("ef_slash_1",132,83);
-autogen_GriPngs.discordbig = Sprite.create("discordbig",800,272);
-autogen_GriPngs.ef_slash_2 = Sprite.create("ef_slash_2",132,83);
-autogen_GriPngs.ef_slash_4 = Sprite.create("ef_slash_4",132,83);
-autogen_GriPngs.ef_slash_3 = Sprite.create("ef_slash_3",132,83);
-autogen_GriPngs.ef_slash_5 = Sprite.create("ef_slash_5",132,83);
 autogen_GriPngs.discordb = Sprite.create("discordb",91,31);
+autogen_GriPngs.discordbig = Sprite.create("discordbig",800,272);
+autogen_GriPngs.ef_slash_1 = Sprite.create("ef_slash_1",132,83);
+autogen_GriPngs.ef_slash_2 = Sprite.create("ef_slash_2",132,83);
+autogen_GriPngs.ef_slash_3 = Sprite.create("ef_slash_3",132,83);
+autogen_GriPngs.downshadow = Sprite.create("downshadow",32,32);
+autogen_GriPngs.ef_slash_4 = Sprite.create("ef_slash_4",132,83);
+autogen_GriPngs.ef_slash_5 = Sprite.create("ef_slash_5",132,83);
 autogen_GriPngs.ef_slash_6 = Sprite.create("ef_slash_6",132,83);
+autogen_GriPngs.enemyicon = Sprite.create("enemyicon",512,512);
 autogen_GriPngs.enemy_adamanstoise = Sprite.create("enemy_adamanstoise",262,170);
 autogen_GriPngs.enemy_blueflan = Sprite.create("enemy_blueflan",86,54);
-autogen_GriPngs.enemyicon = Sprite.create("enemyicon",512,512);
 autogen_GriPngs.enemy_bluetiger = Sprite.create("enemy_bluetiger",83,68);
 autogen_GriPngs.enemy_buffwitch = Sprite.create("enemy_buffwitch",44,77);
-autogen_GriPngs.enemy_dog = Sprite.create("enemy_dog",69,67);
 autogen_GriPngs.enemy_Cactuar = Sprite.create("enemy_Cactuar",140,89);
+autogen_GriPngs.enemy_dog = Sprite.create("enemy_dog",69,67);
 autogen_GriPngs.enemy_elftoad = Sprite.create("enemy_elftoad",61,37);
 autogen_GriPngs.enemy_giant = Sprite.create("enemy_giant",172,144);
-autogen_GriPngs.downshadow = Sprite.create("downshadow",32,32);
-autogen_GriPngs.enemy_goblin = Sprite.create("enemy_goblin",53,55);
+autogen_GriPngs.enemy_giantrat = Sprite.create("enemy_giantrat",106,36);
+autogen_GriPngs.ef_slash_0 = Sprite.create("ef_slash_0",132,83);
 autogen_GriPngs.enemy_hamedomonk = Sprite.create("enemy_hamedomonk",59,97);
-autogen_GriPngs.enemy_nutkin = Sprite.create("enemy_nutkin",35,29);
 autogen_GriPngs.enemy_mysticelf = Sprite.create("enemy_mysticelf",49,60);
-autogen_GriPngs.enemy_reaper = Sprite.create("enemy_reaper",67,52);
+autogen_GriPngs.enemy_nutkin = Sprite.create("enemy_nutkin",35,29);
 autogen_GriPngs.enemy_pumpkinstar = Sprite.create("enemy_pumpkinstar",194,118);
-autogen_GriPngs.enemy_tonberry = Sprite.create("enemy_tonberry",53,62);
+autogen_GriPngs.enemy_reaper = Sprite.create("enemy_reaper",67,52);
+autogen_GriPngs.enemy_redflan = Sprite.create("enemy_redflan",64,57);
 autogen_GriPngs.enemy_straycat = Sprite.create("enemy_straycat",45,44);
-autogen_GriPngs.enemy_turtle = Sprite.create("enemy_turtle",46,46);
+autogen_GriPngs.enemy_tonberry = Sprite.create("enemy_tonberry",53,62);
 autogen_GriPngs.enemy_troll = Sprite.create("enemy_troll",172,122);
-autogen_GriPngs.enemy_witchkiller = Sprite.create("enemy_witchkiller",69,69);
+autogen_GriPngs.enemy_turtle = Sprite.create("enemy_turtle",46,46);
 autogen_GriPngs.enemy_witchhunter = Sprite.create("enemy_witchhunter",87,86);
-autogen_GriPngs.e_AuroraRing = Sprite.create("e_AuroraRing",128,128);
+autogen_GriPngs.enemy_witchkiller = Sprite.create("enemy_witchkiller",69,69);
 autogen_GriPngs.enemy_wolf = Sprite.create("enemy_wolf",80,60);
-autogen_GriPngs.e_Burst_1 = Sprite.create("e_Burst_1",256,256);
-autogen_GriPngs.e_Fog2001 = Sprite.create("e_Fog2001",128,128);
+autogen_GriPngs.enemy_yellowflan = Sprite.create("enemy_yellowflan",91,60);
+autogen_GriPngs.e_AuroraRing = Sprite.create("e_AuroraRing",128,128);
 autogen_GriPngs.e_check = Sprite.create("e_check",256,193);
+autogen_GriPngs.e_Fog2001 = Sprite.create("e_Fog2001",128,128);
 autogen_GriPngs.e_SaintArrow = Sprite.create("e_SaintArrow",64,128);
 autogen_GriPngs.e_slash = Sprite.create("e_slash",256,255);
 autogen_GriPngs.e_Spark001 = Sprite.create("e_Spark001",128,128);
-autogen_GriPngs.enemy_yellowflan = Sprite.create("enemy_yellowflan",91,60);
-autogen_GriPngs.font10 = Sprite.create("font10",512,512);
 autogen_GriPngs.e_whitecircle_line = Sprite.create("e_whitecircle_line",256,256);
+autogen_GriPngs.font10 = Sprite.create("font10",512,512);
 autogen_GriPngs.font12_0 = Sprite.create("font12_0",256,256);
-autogen_GriPngs.font16_0 = Sprite.create("font16_0",256,256);
 autogen_GriPngs.font14_0 = Sprite.create("font14_0",256,256);
+autogen_GriPngs.font16_0 = Sprite.create("font16_0",256,256);
 autogen_GriPngs.font20 = Sprite.create("font20",512,512);
-autogen_GriPngs.fxFire01 = Sprite.create("fxFire01",96,144);
 autogen_GriPngs.fxBuff = Sprite.create("fxBuff",1547,119);
-autogen_GriPngs.enemy_giantrat = Sprite.create("enemy_giantrat",106,36);
-autogen_GriPngs.enemy_redflan = Sprite.create("enemy_redflan",64,57);
 autogen_GriPngs.fxDebuff = Sprite.create("fxDebuff",2048,128);
+autogen_GriPngs.fxFire01 = Sprite.create("fxFire01",96,144);
 autogen_GriPngs.fxFire02 = Sprite.create("fxFire02",96,144);
+autogen_GriPngs.enemy_goblin = Sprite.create("enemy_goblin",53,55);
+autogen_GriPngs.circle = Sprite.create("circle",11,11);
 autogen_GriPngs.fxFire03 = Sprite.create("fxFire03",96,144);
+autogen_GriPngs.e_Burst_1 = Sprite.create("e_Burst_1",256,256);
+autogen_GriPngs.fxFire04 = Sprite.create("fxFire04",96,144);
 autogen_GriPngs.fxFire05 = Sprite.create("fxFire05",96,144);
 autogen_GriPngs.fxFire06 = Sprite.create("fxFire06",96,144);
-autogen_GriPngs.fxFire04 = Sprite.create("fxFire04",96,144);
+autogen_GriPngs.fxFire08 = Sprite.create("fxFire08",96,144);
+autogen_GriPngs.fxFire07 = Sprite.create("fxFire07",96,144);
 autogen_GriPngs.fxFire10 = Sprite.create("fxFire10",96,144);
 autogen_GriPngs.fxFire11 = Sprite.create("fxFire11",96,144);
-autogen_GriPngs.fxFire08 = Sprite.create("fxFire08",96,144);
 autogen_GriPngs.fxFire12 = Sprite.create("fxFire12",96,144);
-autogen_GriPngs.fxFire09 = Sprite.create("fxFire09",96,144);
-autogen_GriPngs.fxFire07 = Sprite.create("fxFire07",96,144);
-autogen_GriPngs.gearrepeat = Sprite.create("gearrepeat",27,16);
 autogen_GriPngs.fxHeal = Sprite.create("fxHeal",512,512);
-autogen_GriPngs.greengradient = Sprite.create("greengradient",32,32);
 autogen_GriPngs.fxIce = Sprite.create("fxIce",1280,128);
-autogen_GriPngs.fxThunder = Sprite.create("fxThunder",960,624);
+autogen_GriPngs.fxFire09 = Sprite.create("fxFire09",96,144);
+autogen_GriPngs.greengradient = Sprite.create("greengradient",32,32);
+autogen_GriPngs.gearrepeat = Sprite.create("gearrepeat",27,16);
 autogen_GriPngs.heroicon = Sprite.create("heroicon",512,512);
 autogen_GriPngs.hero_attackA = Sprite.create("hero_attackA",96,96);
 autogen_GriPngs.hero_attackB = Sprite.create("hero_attackB",96,96);
-autogen_GriPngs.hero_attackD = Sprite.create("hero_attackD",96,96);
 autogen_GriPngs.hero_attackC = Sprite.create("hero_attackC",96,112);
-autogen_GriPngs.hero_run2 = Sprite.create("hero_run2",62,64);
-autogen_GriPngs.hero_run1 = Sprite.create("hero_run1",62,64);
+autogen_GriPngs.hero_attackD = Sprite.create("hero_attackD",96,96);
+autogen_GriPngs.hero_dying1 = Sprite.create("hero_dying1",64,64);
 autogen_GriPngs.hero_dying2 = Sprite.create("hero_dying2",64,64);
+autogen_GriPngs.hero_run1 = Sprite.create("hero_run1",62,64);
+autogen_GriPngs.hero_run2 = Sprite.create("hero_run2",62,64);
 autogen_GriPngs.hero_run3 = Sprite.create("hero_run3",62,64);
 autogen_GriPngs.hero_run4 = Sprite.create("hero_run4",62,64);
 autogen_GriPngs.hero_sleep = Sprite.create("hero_sleep",94,94);
-autogen_GriPngs.hero_spell2 = Sprite.create("hero_spell2",96,96);
 autogen_GriPngs.hero_sleep2 = Sprite.create("hero_sleep2",94,94);
-autogen_GriPngs.hero_stillB = Sprite.create("hero_stillB",64,64);
-autogen_GriPngs.iconBlood = Sprite.create("iconBlood",18,18);
+autogen_GriPngs.fxThunder = Sprite.create("fxThunder",960,624);
+autogen_GriPngs.hero_spell2 = Sprite.create("hero_spell2",96,96);
 autogen_GriPngs.hero_still = Sprite.create("hero_still",64,64);
-autogen_GriPngs.iconAttack = Sprite.create("iconAttack",18,18);
-autogen_GriPngs.iconBloodthirst = Sprite.create("iconBloodthirst",18,18);
-autogen_GriPngs.hero_stillD = Sprite.create("hero_stillD",64,64);
 autogen_GriPngs.hero_stillC = Sprite.create("hero_stillC",64,64);
-autogen_GriPngs.iconDeathblood = Sprite.create("iconDeathblood",18,18);
+autogen_GriPngs.hero_stillD = Sprite.create("hero_stillD",64,64);
+autogen_GriPngs.hero_stillB = Sprite.create("hero_stillB",64,64);
+autogen_GriPngs.iconAttack = Sprite.create("iconAttack",18,18);
+autogen_GriPngs.iconBlood = Sprite.create("iconBlood",18,18);
 autogen_GriPngs.iconCounter = Sprite.create("iconCounter",18,18);
+autogen_GriPngs.iconBloodthirst = Sprite.create("iconBloodthirst",18,18);
+autogen_GriPngs.iconDeathblood = Sprite.create("iconDeathblood",18,18);
+autogen_GriPngs.iconfiredamage = Sprite.create("iconfiredamage",16,16);
 autogen_GriPngs.iconDefense = Sprite.create("iconDefense",18,18);
 autogen_GriPngs.iconLifeMax = Sprite.create("iconLifeMax",18,18);
-autogen_GriPngs.iconfiredamage = Sprite.create("iconfiredamage",16,16);
-autogen_GriPngs.iconMagicAttack = Sprite.create("iconMagicAttack",18,18);
-autogen_GriPngs.iconModLocke = Sprite.create("iconModLocke",18,18);
-autogen_GriPngs.iconModLulu = Sprite.create("iconModLulu",18,18);
 autogen_GriPngs.iconicedamage = Sprite.create("iconicedamage",16,16);
+autogen_GriPngs.iconMagicAttack = Sprite.create("iconMagicAttack",18,18);
+autogen_GriPngs.iconModAuron = Sprite.create("iconModAuron",18,18);
+autogen_GriPngs.iconMagicDefense = Sprite.create("iconMagicDefense",18,18);
 autogen_GriPngs.iconModThick = Sprite.create("iconModThick",18,18);
 autogen_GriPngs.iconModTranquil = Sprite.create("iconModTranquil",18,18);
-autogen_GriPngs.iconModVivi = Sprite.create("iconModVivi",18,18);
-autogen_GriPngs.iconMagicDefense = Sprite.create("iconMagicDefense",18,18);
-autogen_GriPngs.iconModRage = Sprite.create("iconModRage",18,18);
 autogen_GriPngs.iconModVincent = Sprite.create("iconModVincent",18,18);
-autogen_GriPngs.iconMystic = Sprite.create("iconMystic",18,18);
-autogen_GriPngs.iconSkillSet = Sprite.create("iconSkillSet",32,32);
-autogen_GriPngs.iconPiercing = Sprite.create("iconPiercing",18,18);
-autogen_GriPngs.iconModAuron = Sprite.create("iconModAuron",18,18);
-autogen_GriPngs.iconSpeed = Sprite.create("iconSpeed",18,18);
+autogen_GriPngs.iconModVivi = Sprite.create("iconModVivi",18,18);
+autogen_GriPngs.iconModLocke = Sprite.create("iconModLocke",18,18);
 autogen_GriPngs.iconMPMax = Sprite.create("iconMPMax",18,18);
+autogen_GriPngs.iconMystic = Sprite.create("iconMystic",18,18);
+autogen_GriPngs.iconPiercing = Sprite.create("iconPiercing",18,18);
 autogen_GriPngs.iconSafeguard = Sprite.create("iconSafeguard",18,18);
+autogen_GriPngs.iconSkillSet = Sprite.create("iconSkillSet",32,32);
+autogen_GriPngs.iconSpeed = Sprite.create("iconSpeed",18,18);
+autogen_GriPngs.iconthunderdamage = Sprite.create("iconthunderdamage",16,16);
 autogen_GriPngs.iconVeteran = Sprite.create("iconVeteran",18,18);
-autogen_GriPngs.iconWFirerod = Sprite.create("iconWFirerod",32,32);
 autogen_GriPngs.iconWBastardSword = Sprite.create("iconWBastardSword",38,38);
 autogen_GriPngs.iconWBroadSword = Sprite.create("iconWBroadSword",38,38);
-autogen_GriPngs.iconthunderdamage = Sprite.create("iconthunderdamage",16,16);
-autogen_GriPngs.iconWIcerod = Sprite.create("iconWIcerod",32,32);
-autogen_GriPngs.iconWIcewall = Sprite.create("iconWIcewall",32,32);
 autogen_GriPngs.iconWDagger = Sprite.create("iconWDagger",38,38);
-autogen_GriPngs.iconWPlate = Sprite.create("iconWPlate",32,32);
+autogen_GriPngs.iconWFirerod = Sprite.create("iconWFirerod",32,32);
 autogen_GriPngs.iconWFlamedge = Sprite.create("iconWFlamedge",38,38);
+autogen_GriPngs.iconModLulu = Sprite.create("iconModLulu",18,18);
 autogen_GriPngs.iconWHeavySword = Sprite.create("iconWHeavySword",38,38);
+autogen_GriPngs.iconModRage = Sprite.create("iconModRage",18,18);
+autogen_GriPngs.iconWIcewall = Sprite.create("iconWIcewall",32,32);
+autogen_GriPngs.iconWIcerod = Sprite.create("iconWIcerod",32,32);
 autogen_GriPngs.iconWRobe = Sprite.create("iconWRobe",32,32);
 autogen_GriPngs.iconWShirt = Sprite.create("iconWShirt",32,32);
-autogen_GriPngs.iconWThunderod = Sprite.create("iconWThunderod",32,32);
+autogen_GriPngs.iconWPlate = Sprite.create("iconWPlate",32,32);
 autogen_GriPngs.iconWTreetrunk = Sprite.create("iconWTreetrunk",32,32);
+autogen_GriPngs.iconWThunderod = Sprite.create("iconWThunderod",32,32);
 autogen_GriPngs.iconWTunic = Sprite.create("iconWTunic",32,32);
-autogen_GriPngs.iconWVest = Sprite.create("iconWVest",32,32);
-autogen_GriPngs.icon_gold = Sprite.create("icon_gold",16,16);
-autogen_GriPngs.iconWWoodSword = Sprite.create("iconWWoodSword",38,38);
-autogen_GriPngs.iracema_story = Sprite.create("iracema_story",512,512);
 autogen_GriPngs.iconWThunderbolt = Sprite.create("iconWThunderbolt",32,32);
+autogen_GriPngs.icon_gold = Sprite.create("icon_gold",16,16);
+autogen_GriPngs.iconWVest = Sprite.create("iconWVest",32,32);
+autogen_GriPngs.iconWWoodSword = Sprite.create("iconWWoodSword",38,38);
 autogen_GriPngs.isabelicon = Sprite.create("isabelicon",512,512);
-autogen_GriPngs.lato13 = Sprite.create("lato13",512,512);
+autogen_GriPngs.iracema_story = Sprite.create("iracema_story",512,512);
+autogen_GriPngs.lato15 = Sprite.create("lato15",512,512);
+autogen_GriPngs.isabel_story = Sprite.create("isabel_story",512,512);
+autogen_GriPngs.lato17 = Sprite.create("lato17",512,512);
 autogen_GriPngs.lato16 = Sprite.create("lato16",512,512);
 autogen_GriPngs.leaf = Sprite.create("leaf",21,21);
 autogen_GriPngs.lock = Sprite.create("lock",30,30);
-autogen_GriPngs.lock_shake = Sprite.create("lock_shake",1792,256);
 autogen_GriPngs.lock_explosion = Sprite.create("lock_explosion",3072,256);
-autogen_GriPngs.isabel_story = Sprite.create("isabel_story",512,512);
-autogen_GriPngs.lato15 = Sprite.create("lato15",512,512);
+autogen_GriPngs.lock_shake = Sprite.create("lock_shake",1792,256);
 autogen_GriPngs.logo = Sprite.create("logo",420,360);
 autogen_GriPngs.loot_bag = Sprite.create("loot_bag",32,32);
-autogen_GriPngs.notification_message = Sprite.create("notification_message",324,55);
-autogen_GriPngs.lato17 = Sprite.create("lato17",512,512);
 autogen_GriPngs.main_story = Sprite.create("main_story",512,512);
+autogen_GriPngs.marino_story = Sprite.create("marino_story",512,512);
+autogen_GriPngs.mom_story = Sprite.create("mom_story",512,512);
+autogen_GriPngs.notification_message = Sprite.create("notification_message",324,55);
+autogen_GriPngs.number_test = Sprite.create("number_test",21,14);
+autogen_GriPngs.pedroiv_story = Sprite.create("pedroiv_story",512,512);
 autogen_GriPngs.pinkgradient = Sprite.create("pinkgradient",32,32);
 autogen_GriPngs.purpleback = Sprite.create("purpleback",44,39);
-autogen_GriPngs.number_test = Sprite.create("number_test",21,14);
-autogen_GriPngs.hero_dying1 = Sprite.create("hero_dying1",64,64);
-autogen_GriPngs.marino_story = Sprite.create("marino_story",512,512);
+autogen_GriPngs.lato13 = Sprite.create("lato13",512,512);
 autogen_GriPngs.purplegradient = Sprite.create("purplegradient",32,32);
-autogen_GriPngs.mom_story = Sprite.create("mom_story",512,512);
 autogen_GriPngs.shield = Sprite.create("shield",15,15);
-autogen_GriPngs.pedroiv_story = Sprite.create("pedroiv_story",512,512);
-autogen_GriPngs.skillSbloodlust = Sprite.create("skillSbloodlust",100,100);
 autogen_GriPngs.skillSarmorbreak = Sprite.create("skillSarmorbreak",60,60);
 autogen_GriPngs.skillSattackbreak = Sprite.create("skillSattackbreak",110,110);
-autogen_GriPngs.skillSfogan = Sprite.create("skillSfogan",78,78);
+autogen_GriPngs.skillSbloodlust = Sprite.create("skillSbloodlust",100,100);
 autogen_GriPngs.skillSbloodycut = Sprite.create("skillSbloodycut",78,78);
 autogen_GriPngs.skillScure = Sprite.create("skillScure",100,100);
-autogen_GriPngs.skillSdespell = Sprite.create("skillSdespell",80,80);
-autogen_GriPngs.skillSfogo = Sprite.create("skillSfogo",80,80);
+autogen_GriPngs.skillSfogan = Sprite.create("skillSfogan",78,78);
 autogen_GriPngs.skillSfoganzan = Sprite.create("skillSfoganzan",80,80);
+autogen_GriPngs.skillSfogo = Sprite.create("skillSfogo",80,80);
 autogen_GriPngs.skillSgelan = Sprite.create("skillSgelan",78,78);
-autogen_GriPngs.skillSgelo = Sprite.create("skillSgelo",78,78);
 autogen_GriPngs.skillSgelanzan = Sprite.create("skillSgelanzan",80,80);
+autogen_GriPngs.skillSgelo = Sprite.create("skillSgelo",78,78);
 autogen_GriPngs.skillShaste = Sprite.create("skillShaste",90,90);
-autogen_GriPngs.skillSlightslash = Sprite.create("skillSlightslash",78,78);
 autogen_GriPngs.skillSheavyslash = Sprite.create("skillSheavyslash",78,78);
+autogen_GriPngs.skillSlightslash = Sprite.create("skillSlightslash",78,78);
 autogen_GriPngs.skillSmagick = Sprite.create("skillSmagick",78,78);
+autogen_GriPngs.skillSdespell = Sprite.create("skillSdespell",80,80);
 autogen_GriPngs.skillSnoblesse = Sprite.create("skillSnoblesse",78,78);
+autogen_GriPngs.skillSprotect = Sprite.create("skillSprotect",90,90);
 autogen_GriPngs.skillSraian = Sprite.create("skillSraian",80,80);
 autogen_GriPngs.skillSraianzan = Sprite.create("skillSraianzan",80,80);
 autogen_GriPngs.skillSraio = Sprite.create("skillSraio",80,80);
-autogen_GriPngs.skillSprotect = Sprite.create("skillSprotect",90,90);
 autogen_GriPngs.skillSregen = Sprite.create("skillSregen",100,100);
-autogen_GriPngs.skillSshell = Sprite.create("skillSshell",90,90);
-autogen_GriPngs.skull = Sprite.create("skull",18,20);
 autogen_GriPngs.skillSsharpen = Sprite.create("skillSsharpen",84,84);
-autogen_GriPngs.slotempty1 = Sprite.create("slotempty1",32,32);
-autogen_GriPngs.slotempty2 = Sprite.create("slotempty2",38,38);
+autogen_GriPngs.skillSshell = Sprite.create("skillSshell",90,90);
 autogen_GriPngs.skillSslash = Sprite.create("skillSslash",78,78);
 autogen_GriPngs.skillStrevas = Sprite.create("skillStrevas",100,100);
+autogen_GriPngs.skull = Sprite.create("skull",18,20);
+autogen_GriPngs.slotempty1 = Sprite.create("slotempty1",32,32);
+autogen_GriPngs.slotempty2 = Sprite.create("slotempty2",38,38);
+autogen_GriPngs.steam = Sprite.create("steam",81,24);
+autogen_GriPngs.Steamlogo = Sprite.create("Steamlogo",275,83);
 autogen_GriPngs.swordwithshadow = Sprite.create("swordwithshadow",38,38);
 autogen_GriPngs.tabback = Sprite.create("tabback",32,32);
-autogen_GriPngs.steam = Sprite.create("steam",81,24);
 autogen_GriPngs.Unnamed_0 = Sprite.create("Unnamed_0",256,256);
-autogen_GriPngs.Steamlogo = Sprite.create("Steamlogo",275,83);
+autogen_GriPngs.vitor_story = Sprite.create("vitor_story",512,512);
+autogen_GriPngs.voawon12 = Sprite.create("voawon12",512,512);
+autogen_GriPngs.whitecircle = Sprite.create("whitecircle",512,512);
 autogen_GriPngs.whitediamond = Sprite.create("whitediamond",15,15);
 autogen_GriPngs.whitedot = Sprite.create("whitedot",1,1);
 autogen_GriPngs.whitep = Sprite.create("whitep",1,1);
-autogen_GriPngs.whitecircle = Sprite.create("whitecircle",512,512);
-autogen_GriPngs.vitor_story = Sprite.create("vitor_story",512,512);
-autogen_GriPngs.voawon12 = Sprite.create("voawon12",512,512);
 autogen_GriPngs.allSprites = (function($this) {
 	var $r;
 	var _g = new haxe_ds_StringMap();
 	_g.h["achiev_a1"] = autogen_GriPngs.achiev_a1;
-	_g.h["achiev_a2"] = autogen_GriPngs.achiev_a2;
 	_g.h["achiev_a3"] = autogen_GriPngs.achiev_a3;
+	_g.h["achiev_e1"] = autogen_GriPngs.achiev_e1;
+	_g.h["achiev_e2"] = autogen_GriPngs.achiev_e2;
 	_g.h["achiev_e3"] = autogen_GriPngs.achiev_e3;
 	_g.h["arrowdown"] = autogen_GriPngs.arrowdown;
 	_g.h["arrowleft"] = autogen_GriPngs.arrowleft;
-	_g.h["arrowlefttriple"] = autogen_GriPngs.arrowlefttriple;
 	_g.h["arrowrepeat"] = autogen_GriPngs.arrowrepeat;
-	_g.h["achiev_e1"] = autogen_GriPngs.achiev_e1;
-	_g.h["arrowup"] = autogen_GriPngs.arrowup;
-	_g.h["achiev_e2"] = autogen_GriPngs.achiev_e2;
 	_g.h["arrowrepeatauto"] = autogen_GriPngs.arrowrepeatauto;
-	_g.h["back_desert"] = autogen_GriPngs.back_desert;
+	_g.h["arrowup"] = autogen_GriPngs.arrowup;
+	_g.h["achiev_a2"] = autogen_GriPngs.achiev_a2;
 	_g.h["back_fields"] = autogen_GriPngs.back_fields;
-	_g.h["back_forest"] = autogen_GriPngs.back_forest;
 	_g.h["back_firecavevolcano"] = autogen_GriPngs.back_firecavevolcano;
-	_g.h["back_mountains"] = autogen_GriPngs.back_mountains;
+	_g.h["back_forest"] = autogen_GriPngs.back_forest;
 	_g.h["back_inside"] = autogen_GriPngs.back_inside;
-	_g.h["blood_1"] = autogen_GriPngs.blood_1;
-	_g.h["back_streets"] = autogen_GriPngs.back_streets;
+	_g.h["back_mountains"] = autogen_GriPngs.back_mountains;
 	_g.h["back_seaside"] = autogen_GriPngs.back_seaside;
-	_g.h["blood_2"] = autogen_GriPngs.blood_2;
+	_g.h["back_snowmountain"] = autogen_GriPngs.back_snowmountain;
+	_g.h["back_streets"] = autogen_GriPngs.back_streets;
+	_g.h["back_thunder"] = autogen_GriPngs.back_thunder;
 	_g.h["battlebutton"] = autogen_GriPngs.battlebutton;
+	_g.h["blood_1"] = autogen_GriPngs.blood_1;
 	_g.h["blood_3"] = autogen_GriPngs.blood_3;
-	_g.h["blood_4"] = autogen_GriPngs.blood_4;
+	_g.h["blood_2"] = autogen_GriPngs.blood_2;
+	_g.h["arrowlefttriple"] = autogen_GriPngs.arrowlefttriple;
 	_g.h["blood_5"] = autogen_GriPngs.blood_5;
 	_g.h["blood_6"] = autogen_GriPngs.blood_6;
-	_g.h["bluegradient"] = autogen_GriPngs.bluegradient;
 	_g.h["blood_7"] = autogen_GriPngs.blood_7;
+	_g.h["bluegradient"] = autogen_GriPngs.bluegradient;
 	_g.h["boot"] = autogen_GriPngs.boot;
-	_g.h["back_thunder"] = autogen_GriPngs.back_thunder;
-	_g.h["button9a"] = autogen_GriPngs.button9a;
-	_g.h["back_cave"] = autogen_GriPngs.back_cave;
-	_g.h["buttonback"] = autogen_GriPngs.buttonback;
-	_g.h["buttonback_h"] = autogen_GriPngs.buttonback_h;
-	_g.h["buttonback_h_disabled"] = autogen_GriPngs.buttonback_h_disabled;
-	_g.h["back_snowmountain"] = autogen_GriPngs.back_snowmountain;
-	_g.h["buttonselec9a"] = autogen_GriPngs.buttonselec9a;
 	_g.h["boss"] = autogen_GriPngs.boss;
 	_g.h["bossb"] = autogen_GriPngs.bossb;
+	_g.h["blood_4"] = autogen_GriPngs.blood_4;
+	_g.h["button9a"] = autogen_GriPngs.button9a;
+	_g.h["buttonback"] = autogen_GriPngs.buttonback;
+	_g.h["buttonback_h_disabled"] = autogen_GriPngs.buttonback_h_disabled;
 	_g.h["buttonkey"] = autogen_GriPngs.buttonkey;
+	_g.h["back_desert"] = autogen_GriPngs.back_desert;
+	_g.h["back_cave"] = autogen_GriPngs.back_cave;
+	_g.h["buttonback_h"] = autogen_GriPngs.buttonback_h;
 	_g.h["cursor"] = autogen_GriPngs.cursor;
+	_g.h["buttonselec9a"] = autogen_GriPngs.buttonselec9a;
 	_g.h["cid_story"] = autogen_GriPngs.cid_story;
-	_g.h["dialog9a"] = autogen_GriPngs.dialog9a;
 	_g.h["dark_background"] = autogen_GriPngs.dark_background;
-	_g.h["circle"] = autogen_GriPngs.circle;
-	_g.h["ef_slash_0"] = autogen_GriPngs.ef_slash_0;
+	_g.h["dialog9a"] = autogen_GriPngs.dialog9a;
 	_g.h["discord"] = autogen_GriPngs.discord;
-	_g.h["ef_slash_1"] = autogen_GriPngs.ef_slash_1;
-	_g.h["discordbig"] = autogen_GriPngs.discordbig;
-	_g.h["ef_slash_2"] = autogen_GriPngs.ef_slash_2;
-	_g.h["ef_slash_4"] = autogen_GriPngs.ef_slash_4;
-	_g.h["ef_slash_3"] = autogen_GriPngs.ef_slash_3;
-	_g.h["ef_slash_5"] = autogen_GriPngs.ef_slash_5;
 	_g.h["discordb"] = autogen_GriPngs.discordb;
+	_g.h["discordbig"] = autogen_GriPngs.discordbig;
+	_g.h["ef_slash_1"] = autogen_GriPngs.ef_slash_1;
+	_g.h["ef_slash_2"] = autogen_GriPngs.ef_slash_2;
+	_g.h["ef_slash_3"] = autogen_GriPngs.ef_slash_3;
+	_g.h["downshadow"] = autogen_GriPngs.downshadow;
+	_g.h["ef_slash_4"] = autogen_GriPngs.ef_slash_4;
+	_g.h["ef_slash_5"] = autogen_GriPngs.ef_slash_5;
 	_g.h["ef_slash_6"] = autogen_GriPngs.ef_slash_6;
+	_g.h["enemyicon"] = autogen_GriPngs.enemyicon;
 	_g.h["enemy_adamanstoise"] = autogen_GriPngs.enemy_adamanstoise;
 	_g.h["enemy_blueflan"] = autogen_GriPngs.enemy_blueflan;
-	_g.h["enemyicon"] = autogen_GriPngs.enemyicon;
 	_g.h["enemy_bluetiger"] = autogen_GriPngs.enemy_bluetiger;
 	_g.h["enemy_buffwitch"] = autogen_GriPngs.enemy_buffwitch;
-	_g.h["enemy_dog"] = autogen_GriPngs.enemy_dog;
 	_g.h["enemy_Cactuar"] = autogen_GriPngs.enemy_Cactuar;
+	_g.h["enemy_dog"] = autogen_GriPngs.enemy_dog;
 	_g.h["enemy_elftoad"] = autogen_GriPngs.enemy_elftoad;
 	_g.h["enemy_giant"] = autogen_GriPngs.enemy_giant;
-	_g.h["downshadow"] = autogen_GriPngs.downshadow;
-	_g.h["enemy_goblin"] = autogen_GriPngs.enemy_goblin;
+	_g.h["enemy_giantrat"] = autogen_GriPngs.enemy_giantrat;
+	_g.h["ef_slash_0"] = autogen_GriPngs.ef_slash_0;
 	_g.h["enemy_hamedomonk"] = autogen_GriPngs.enemy_hamedomonk;
-	_g.h["enemy_nutkin"] = autogen_GriPngs.enemy_nutkin;
 	_g.h["enemy_mysticelf"] = autogen_GriPngs.enemy_mysticelf;
-	_g.h["enemy_reaper"] = autogen_GriPngs.enemy_reaper;
+	_g.h["enemy_nutkin"] = autogen_GriPngs.enemy_nutkin;
 	_g.h["enemy_pumpkinstar"] = autogen_GriPngs.enemy_pumpkinstar;
-	_g.h["enemy_tonberry"] = autogen_GriPngs.enemy_tonberry;
+	_g.h["enemy_reaper"] = autogen_GriPngs.enemy_reaper;
+	_g.h["enemy_redflan"] = autogen_GriPngs.enemy_redflan;
 	_g.h["enemy_straycat"] = autogen_GriPngs.enemy_straycat;
-	_g.h["enemy_turtle"] = autogen_GriPngs.enemy_turtle;
+	_g.h["enemy_tonberry"] = autogen_GriPngs.enemy_tonberry;
 	_g.h["enemy_troll"] = autogen_GriPngs.enemy_troll;
-	_g.h["enemy_witchkiller"] = autogen_GriPngs.enemy_witchkiller;
+	_g.h["enemy_turtle"] = autogen_GriPngs.enemy_turtle;
 	_g.h["enemy_witchhunter"] = autogen_GriPngs.enemy_witchhunter;
-	_g.h["e_AuroraRing"] = autogen_GriPngs.e_AuroraRing;
+	_g.h["enemy_witchkiller"] = autogen_GriPngs.enemy_witchkiller;
 	_g.h["enemy_wolf"] = autogen_GriPngs.enemy_wolf;
-	_g.h["e_Burst_1"] = autogen_GriPngs.e_Burst_1;
-	_g.h["e_Fog2001"] = autogen_GriPngs.e_Fog2001;
+	_g.h["enemy_yellowflan"] = autogen_GriPngs.enemy_yellowflan;
+	_g.h["e_AuroraRing"] = autogen_GriPngs.e_AuroraRing;
 	_g.h["e_check"] = autogen_GriPngs.e_check;
+	_g.h["e_Fog2001"] = autogen_GriPngs.e_Fog2001;
 	_g.h["e_SaintArrow"] = autogen_GriPngs.e_SaintArrow;
 	_g.h["e_slash"] = autogen_GriPngs.e_slash;
 	_g.h["e_Spark001"] = autogen_GriPngs.e_Spark001;
-	_g.h["enemy_yellowflan"] = autogen_GriPngs.enemy_yellowflan;
-	_g.h["font10"] = autogen_GriPngs.font10;
 	_g.h["e_whitecircle_line"] = autogen_GriPngs.e_whitecircle_line;
+	_g.h["font10"] = autogen_GriPngs.font10;
 	_g.h["font12_0"] = autogen_GriPngs.font12_0;
-	_g.h["font16_0"] = autogen_GriPngs.font16_0;
 	_g.h["font14_0"] = autogen_GriPngs.font14_0;
+	_g.h["font16_0"] = autogen_GriPngs.font16_0;
 	_g.h["font20"] = autogen_GriPngs.font20;
-	_g.h["fxFire01"] = autogen_GriPngs.fxFire01;
 	_g.h["fxBuff"] = autogen_GriPngs.fxBuff;
-	_g.h["enemy_giantrat"] = autogen_GriPngs.enemy_giantrat;
-	_g.h["enemy_redflan"] = autogen_GriPngs.enemy_redflan;
 	_g.h["fxDebuff"] = autogen_GriPngs.fxDebuff;
+	_g.h["fxFire01"] = autogen_GriPngs.fxFire01;
 	_g.h["fxFire02"] = autogen_GriPngs.fxFire02;
+	_g.h["enemy_goblin"] = autogen_GriPngs.enemy_goblin;
+	_g.h["circle"] = autogen_GriPngs.circle;
 	_g.h["fxFire03"] = autogen_GriPngs.fxFire03;
+	_g.h["e_Burst_1"] = autogen_GriPngs.e_Burst_1;
+	_g.h["fxFire04"] = autogen_GriPngs.fxFire04;
 	_g.h["fxFire05"] = autogen_GriPngs.fxFire05;
 	_g.h["fxFire06"] = autogen_GriPngs.fxFire06;
-	_g.h["fxFire04"] = autogen_GriPngs.fxFire04;
+	_g.h["fxFire08"] = autogen_GriPngs.fxFire08;
+	_g.h["fxFire07"] = autogen_GriPngs.fxFire07;
 	_g.h["fxFire10"] = autogen_GriPngs.fxFire10;
 	_g.h["fxFire11"] = autogen_GriPngs.fxFire11;
-	_g.h["fxFire08"] = autogen_GriPngs.fxFire08;
 	_g.h["fxFire12"] = autogen_GriPngs.fxFire12;
-	_g.h["fxFire09"] = autogen_GriPngs.fxFire09;
-	_g.h["fxFire07"] = autogen_GriPngs.fxFire07;
-	_g.h["gearrepeat"] = autogen_GriPngs.gearrepeat;
 	_g.h["fxHeal"] = autogen_GriPngs.fxHeal;
-	_g.h["greengradient"] = autogen_GriPngs.greengradient;
 	_g.h["fxIce"] = autogen_GriPngs.fxIce;
-	_g.h["fxThunder"] = autogen_GriPngs.fxThunder;
+	_g.h["fxFire09"] = autogen_GriPngs.fxFire09;
+	_g.h["greengradient"] = autogen_GriPngs.greengradient;
+	_g.h["gearrepeat"] = autogen_GriPngs.gearrepeat;
 	_g.h["heroicon"] = autogen_GriPngs.heroicon;
 	_g.h["hero_attackA"] = autogen_GriPngs.hero_attackA;
 	_g.h["hero_attackB"] = autogen_GriPngs.hero_attackB;
-	_g.h["hero_attackD"] = autogen_GriPngs.hero_attackD;
 	_g.h["hero_attackC"] = autogen_GriPngs.hero_attackC;
-	_g.h["hero_run2"] = autogen_GriPngs.hero_run2;
-	_g.h["hero_run1"] = autogen_GriPngs.hero_run1;
+	_g.h["hero_attackD"] = autogen_GriPngs.hero_attackD;
+	_g.h["hero_dying1"] = autogen_GriPngs.hero_dying1;
 	_g.h["hero_dying2"] = autogen_GriPngs.hero_dying2;
+	_g.h["hero_run1"] = autogen_GriPngs.hero_run1;
+	_g.h["hero_run2"] = autogen_GriPngs.hero_run2;
 	_g.h["hero_run3"] = autogen_GriPngs.hero_run3;
 	_g.h["hero_run4"] = autogen_GriPngs.hero_run4;
 	_g.h["hero_sleep"] = autogen_GriPngs.hero_sleep;
-	_g.h["hero_spell2"] = autogen_GriPngs.hero_spell2;
 	_g.h["hero_sleep2"] = autogen_GriPngs.hero_sleep2;
-	_g.h["hero_stillB"] = autogen_GriPngs.hero_stillB;
-	_g.h["iconBlood"] = autogen_GriPngs.iconBlood;
+	_g.h["fxThunder"] = autogen_GriPngs.fxThunder;
+	_g.h["hero_spell2"] = autogen_GriPngs.hero_spell2;
 	_g.h["hero_still"] = autogen_GriPngs.hero_still;
-	_g.h["iconAttack"] = autogen_GriPngs.iconAttack;
-	_g.h["iconBloodthirst"] = autogen_GriPngs.iconBloodthirst;
-	_g.h["hero_stillD"] = autogen_GriPngs.hero_stillD;
 	_g.h["hero_stillC"] = autogen_GriPngs.hero_stillC;
-	_g.h["iconDeathblood"] = autogen_GriPngs.iconDeathblood;
+	_g.h["hero_stillD"] = autogen_GriPngs.hero_stillD;
+	_g.h["hero_stillB"] = autogen_GriPngs.hero_stillB;
+	_g.h["iconAttack"] = autogen_GriPngs.iconAttack;
+	_g.h["iconBlood"] = autogen_GriPngs.iconBlood;
 	_g.h["iconCounter"] = autogen_GriPngs.iconCounter;
+	_g.h["iconBloodthirst"] = autogen_GriPngs.iconBloodthirst;
+	_g.h["iconDeathblood"] = autogen_GriPngs.iconDeathblood;
+	_g.h["iconfiredamage"] = autogen_GriPngs.iconfiredamage;
 	_g.h["iconDefense"] = autogen_GriPngs.iconDefense;
 	_g.h["iconLifeMax"] = autogen_GriPngs.iconLifeMax;
-	_g.h["iconfiredamage"] = autogen_GriPngs.iconfiredamage;
-	_g.h["iconMagicAttack"] = autogen_GriPngs.iconMagicAttack;
-	_g.h["iconModLocke"] = autogen_GriPngs.iconModLocke;
-	_g.h["iconModLulu"] = autogen_GriPngs.iconModLulu;
 	_g.h["iconicedamage"] = autogen_GriPngs.iconicedamage;
+	_g.h["iconMagicAttack"] = autogen_GriPngs.iconMagicAttack;
+	_g.h["iconModAuron"] = autogen_GriPngs.iconModAuron;
+	_g.h["iconMagicDefense"] = autogen_GriPngs.iconMagicDefense;
 	_g.h["iconModThick"] = autogen_GriPngs.iconModThick;
 	_g.h["iconModTranquil"] = autogen_GriPngs.iconModTranquil;
-	_g.h["iconModVivi"] = autogen_GriPngs.iconModVivi;
-	_g.h["iconMagicDefense"] = autogen_GriPngs.iconMagicDefense;
-	_g.h["iconModRage"] = autogen_GriPngs.iconModRage;
 	_g.h["iconModVincent"] = autogen_GriPngs.iconModVincent;
-	_g.h["iconMystic"] = autogen_GriPngs.iconMystic;
-	_g.h["iconSkillSet"] = autogen_GriPngs.iconSkillSet;
-	_g.h["iconPiercing"] = autogen_GriPngs.iconPiercing;
-	_g.h["iconModAuron"] = autogen_GriPngs.iconModAuron;
-	_g.h["iconSpeed"] = autogen_GriPngs.iconSpeed;
+	_g.h["iconModVivi"] = autogen_GriPngs.iconModVivi;
+	_g.h["iconModLocke"] = autogen_GriPngs.iconModLocke;
 	_g.h["iconMPMax"] = autogen_GriPngs.iconMPMax;
+	_g.h["iconMystic"] = autogen_GriPngs.iconMystic;
+	_g.h["iconPiercing"] = autogen_GriPngs.iconPiercing;
 	_g.h["iconSafeguard"] = autogen_GriPngs.iconSafeguard;
+	_g.h["iconSkillSet"] = autogen_GriPngs.iconSkillSet;
+	_g.h["iconSpeed"] = autogen_GriPngs.iconSpeed;
+	_g.h["iconthunderdamage"] = autogen_GriPngs.iconthunderdamage;
 	_g.h["iconVeteran"] = autogen_GriPngs.iconVeteran;
-	_g.h["iconWFirerod"] = autogen_GriPngs.iconWFirerod;
 	_g.h["iconWBastardSword"] = autogen_GriPngs.iconWBastardSword;
 	_g.h["iconWBroadSword"] = autogen_GriPngs.iconWBroadSword;
-	_g.h["iconthunderdamage"] = autogen_GriPngs.iconthunderdamage;
-	_g.h["iconWIcerod"] = autogen_GriPngs.iconWIcerod;
-	_g.h["iconWIcewall"] = autogen_GriPngs.iconWIcewall;
 	_g.h["iconWDagger"] = autogen_GriPngs.iconWDagger;
-	_g.h["iconWPlate"] = autogen_GriPngs.iconWPlate;
+	_g.h["iconWFirerod"] = autogen_GriPngs.iconWFirerod;
 	_g.h["iconWFlamedge"] = autogen_GriPngs.iconWFlamedge;
+	_g.h["iconModLulu"] = autogen_GriPngs.iconModLulu;
 	_g.h["iconWHeavySword"] = autogen_GriPngs.iconWHeavySword;
+	_g.h["iconModRage"] = autogen_GriPngs.iconModRage;
+	_g.h["iconWIcewall"] = autogen_GriPngs.iconWIcewall;
+	_g.h["iconWIcerod"] = autogen_GriPngs.iconWIcerod;
 	_g.h["iconWRobe"] = autogen_GriPngs.iconWRobe;
 	_g.h["iconWShirt"] = autogen_GriPngs.iconWShirt;
-	_g.h["iconWThunderod"] = autogen_GriPngs.iconWThunderod;
+	_g.h["iconWPlate"] = autogen_GriPngs.iconWPlate;
 	_g.h["iconWTreetrunk"] = autogen_GriPngs.iconWTreetrunk;
+	_g.h["iconWThunderod"] = autogen_GriPngs.iconWThunderod;
 	_g.h["iconWTunic"] = autogen_GriPngs.iconWTunic;
-	_g.h["iconWVest"] = autogen_GriPngs.iconWVest;
-	_g.h["icon_gold"] = autogen_GriPngs.icon_gold;
-	_g.h["iconWWoodSword"] = autogen_GriPngs.iconWWoodSword;
-	_g.h["iracema_story"] = autogen_GriPngs.iracema_story;
 	_g.h["iconWThunderbolt"] = autogen_GriPngs.iconWThunderbolt;
+	_g.h["icon_gold"] = autogen_GriPngs.icon_gold;
+	_g.h["iconWVest"] = autogen_GriPngs.iconWVest;
+	_g.h["iconWWoodSword"] = autogen_GriPngs.iconWWoodSword;
 	_g.h["isabelicon"] = autogen_GriPngs.isabelicon;
-	_g.h["lato13"] = autogen_GriPngs.lato13;
+	_g.h["iracema_story"] = autogen_GriPngs.iracema_story;
+	_g.h["lato15"] = autogen_GriPngs.lato15;
+	_g.h["isabel_story"] = autogen_GriPngs.isabel_story;
+	_g.h["lato17"] = autogen_GriPngs.lato17;
 	_g.h["lato16"] = autogen_GriPngs.lato16;
 	_g.h["leaf"] = autogen_GriPngs.leaf;
 	_g.h["lock"] = autogen_GriPngs.lock;
-	_g.h["lock_shake"] = autogen_GriPngs.lock_shake;
 	_g.h["lock_explosion"] = autogen_GriPngs.lock_explosion;
-	_g.h["isabel_story"] = autogen_GriPngs.isabel_story;
-	_g.h["lato15"] = autogen_GriPngs.lato15;
+	_g.h["lock_shake"] = autogen_GriPngs.lock_shake;
 	_g.h["logo"] = autogen_GriPngs.logo;
 	_g.h["loot_bag"] = autogen_GriPngs.loot_bag;
-	_g.h["notification_message"] = autogen_GriPngs.notification_message;
-	_g.h["lato17"] = autogen_GriPngs.lato17;
 	_g.h["main_story"] = autogen_GriPngs.main_story;
+	_g.h["marino_story"] = autogen_GriPngs.marino_story;
+	_g.h["mom_story"] = autogen_GriPngs.mom_story;
+	_g.h["notification_message"] = autogen_GriPngs.notification_message;
+	_g.h["number_test"] = autogen_GriPngs.number_test;
+	_g.h["pedroiv_story"] = autogen_GriPngs.pedroiv_story;
 	_g.h["pinkgradient"] = autogen_GriPngs.pinkgradient;
 	_g.h["purpleback"] = autogen_GriPngs.purpleback;
-	_g.h["number_test"] = autogen_GriPngs.number_test;
-	_g.h["hero_dying1"] = autogen_GriPngs.hero_dying1;
-	_g.h["marino_story"] = autogen_GriPngs.marino_story;
+	_g.h["lato13"] = autogen_GriPngs.lato13;
 	_g.h["purplegradient"] = autogen_GriPngs.purplegradient;
-	_g.h["mom_story"] = autogen_GriPngs.mom_story;
 	_g.h["shield"] = autogen_GriPngs.shield;
-	_g.h["pedroiv_story"] = autogen_GriPngs.pedroiv_story;
-	_g.h["skillSbloodlust"] = autogen_GriPngs.skillSbloodlust;
 	_g.h["skillSarmorbreak"] = autogen_GriPngs.skillSarmorbreak;
 	_g.h["skillSattackbreak"] = autogen_GriPngs.skillSattackbreak;
-	_g.h["skillSfogan"] = autogen_GriPngs.skillSfogan;
+	_g.h["skillSbloodlust"] = autogen_GriPngs.skillSbloodlust;
 	_g.h["skillSbloodycut"] = autogen_GriPngs.skillSbloodycut;
 	_g.h["skillScure"] = autogen_GriPngs.skillScure;
-	_g.h["skillSdespell"] = autogen_GriPngs.skillSdespell;
-	_g.h["skillSfogo"] = autogen_GriPngs.skillSfogo;
+	_g.h["skillSfogan"] = autogen_GriPngs.skillSfogan;
 	_g.h["skillSfoganzan"] = autogen_GriPngs.skillSfoganzan;
+	_g.h["skillSfogo"] = autogen_GriPngs.skillSfogo;
 	_g.h["skillSgelan"] = autogen_GriPngs.skillSgelan;
-	_g.h["skillSgelo"] = autogen_GriPngs.skillSgelo;
 	_g.h["skillSgelanzan"] = autogen_GriPngs.skillSgelanzan;
+	_g.h["skillSgelo"] = autogen_GriPngs.skillSgelo;
 	_g.h["skillShaste"] = autogen_GriPngs.skillShaste;
-	_g.h["skillSlightslash"] = autogen_GriPngs.skillSlightslash;
 	_g.h["skillSheavyslash"] = autogen_GriPngs.skillSheavyslash;
+	_g.h["skillSlightslash"] = autogen_GriPngs.skillSlightslash;
 	_g.h["skillSmagick"] = autogen_GriPngs.skillSmagick;
+	_g.h["skillSdespell"] = autogen_GriPngs.skillSdespell;
 	_g.h["skillSnoblesse"] = autogen_GriPngs.skillSnoblesse;
+	_g.h["skillSprotect"] = autogen_GriPngs.skillSprotect;
 	_g.h["skillSraian"] = autogen_GriPngs.skillSraian;
 	_g.h["skillSraianzan"] = autogen_GriPngs.skillSraianzan;
 	_g.h["skillSraio"] = autogen_GriPngs.skillSraio;
-	_g.h["skillSprotect"] = autogen_GriPngs.skillSprotect;
 	_g.h["skillSregen"] = autogen_GriPngs.skillSregen;
-	_g.h["skillSshell"] = autogen_GriPngs.skillSshell;
-	_g.h["skull"] = autogen_GriPngs.skull;
 	_g.h["skillSsharpen"] = autogen_GriPngs.skillSsharpen;
-	_g.h["slotempty1"] = autogen_GriPngs.slotempty1;
-	_g.h["slotempty2"] = autogen_GriPngs.slotempty2;
+	_g.h["skillSshell"] = autogen_GriPngs.skillSshell;
 	_g.h["skillSslash"] = autogen_GriPngs.skillSslash;
 	_g.h["skillStrevas"] = autogen_GriPngs.skillStrevas;
+	_g.h["skull"] = autogen_GriPngs.skull;
+	_g.h["slotempty1"] = autogen_GriPngs.slotempty1;
+	_g.h["slotempty2"] = autogen_GriPngs.slotempty2;
+	_g.h["steam"] = autogen_GriPngs.steam;
+	_g.h["Steamlogo"] = autogen_GriPngs.Steamlogo;
 	_g.h["swordwithshadow"] = autogen_GriPngs.swordwithshadow;
 	_g.h["tabback"] = autogen_GriPngs.tabback;
-	_g.h["steam"] = autogen_GriPngs.steam;
 	_g.h["Unnamed_0"] = autogen_GriPngs.Unnamed_0;
-	_g.h["Steamlogo"] = autogen_GriPngs.Steamlogo;
+	_g.h["vitor_story"] = autogen_GriPngs.vitor_story;
+	_g.h["voawon12"] = autogen_GriPngs.voawon12;
+	_g.h["whitecircle"] = autogen_GriPngs.whitecircle;
 	_g.h["whitediamond"] = autogen_GriPngs.whitediamond;
 	_g.h["whitedot"] = autogen_GriPngs.whitedot;
 	_g.h["whitep"] = autogen_GriPngs.whitep;
-	_g.h["whitecircle"] = autogen_GriPngs.whitecircle;
-	_g.h["vitor_story"] = autogen_GriPngs.vitor_story;
-	_g.h["voawon12"] = autogen_GriPngs.voawon12;
 	$r = _g;
 	return $r;
 }(this));
@@ -63481,249 +63547,250 @@ autogen_GriPngs.allSpriteFiles = (function($this) {
 	var $r;
 	var _g = new haxe_ds_StringMap();
 	_g.h["achiev_a1"] = "achiev_a1.png";
-	_g.h["achiev_a2"] = "achiev_a2.png";
 	_g.h["achiev_a3"] = "achiev_a3.png";
+	_g.h["achiev_e1"] = "achiev_e1.png";
+	_g.h["achiev_e2"] = "achiev_e2.png";
 	_g.h["achiev_e3"] = "achiev_e3.png";
 	_g.h["arrowdown"] = "arrowdown.png";
 	_g.h["arrowleft"] = "arrowleft.png";
-	_g.h["arrowlefttriple"] = "arrowlefttriple.png";
 	_g.h["arrowrepeat"] = "arrowrepeat.png";
-	_g.h["achiev_e1"] = "achiev_e1.png";
-	_g.h["arrowup"] = "arrowup.png";
-	_g.h["achiev_e2"] = "achiev_e2.png";
 	_g.h["arrowrepeatauto"] = "arrowrepeatauto.png";
-	_g.h["back_desert"] = "back_desert.PNG";
+	_g.h["arrowup"] = "arrowup.png";
+	_g.h["achiev_a2"] = "achiev_a2.png";
 	_g.h["back_fields"] = "back_fields.PNG";
-	_g.h["back_forest"] = "back_forest.PNG";
 	_g.h["back_firecavevolcano"] = "back_firecavevolcano.PNG";
-	_g.h["back_mountains"] = "back_mountains.PNG";
+	_g.h["back_forest"] = "back_forest.PNG";
 	_g.h["back_inside"] = "back_inside.PNG";
-	_g.h["blood_1"] = "blood_1.png";
-	_g.h["back_streets"] = "back_streets.PNG";
+	_g.h["back_mountains"] = "back_mountains.PNG";
 	_g.h["back_seaside"] = "back_seaside.PNG";
-	_g.h["blood_2"] = "blood_2.png";
+	_g.h["back_snowmountain"] = "back_snowmountain.PNG";
+	_g.h["back_streets"] = "back_streets.PNG";
+	_g.h["back_thunder"] = "back_thunder.PNG";
 	_g.h["battlebutton"] = "battlebutton.png";
+	_g.h["blood_1"] = "blood_1.png";
 	_g.h["blood_3"] = "blood_3.png";
-	_g.h["blood_4"] = "blood_4.png";
+	_g.h["blood_2"] = "blood_2.png";
+	_g.h["arrowlefttriple"] = "arrowlefttriple.png";
 	_g.h["blood_5"] = "blood_5.png";
 	_g.h["blood_6"] = "blood_6.png";
-	_g.h["bluegradient"] = "bluegradient.png";
 	_g.h["blood_7"] = "blood_7.png";
+	_g.h["bluegradient"] = "bluegradient.png";
 	_g.h["boot"] = "boot.png";
-	_g.h["back_thunder"] = "back_thunder.PNG";
-	_g.h["button9a"] = "button9a.png";
-	_g.h["back_cave"] = "back_cave.PNG";
-	_g.h["buttonback"] = "buttonback.png";
-	_g.h["buttonback_h"] = "buttonback_h.png";
-	_g.h["buttonback_h_disabled"] = "buttonback_h_disabled.png";
-	_g.h["back_snowmountain"] = "back_snowmountain.PNG";
-	_g.h["buttonselec9a"] = "buttonselec9a.png";
 	_g.h["boss"] = "boss.png";
 	_g.h["bossb"] = "bossb.png";
+	_g.h["blood_4"] = "blood_4.png";
+	_g.h["button9a"] = "button9a.png";
+	_g.h["buttonback"] = "buttonback.png";
+	_g.h["buttonback_h_disabled"] = "buttonback_h_disabled.png";
 	_g.h["buttonkey"] = "buttonkey.png";
+	_g.h["back_desert"] = "back_desert.PNG";
+	_g.h["back_cave"] = "back_cave.PNG";
+	_g.h["buttonback_h"] = "buttonback_h.png";
 	_g.h["cursor"] = "cursor.png";
+	_g.h["buttonselec9a"] = "buttonselec9a.png";
 	_g.h["cid_story"] = "cid_story.jpg";
-	_g.h["dialog9a"] = "dialog9a.png";
 	_g.h["dark_background"] = "dark_background.png";
-	_g.h["circle"] = "circle.png";
-	_g.h["ef_slash_0"] = "ef_slash_0.png";
+	_g.h["dialog9a"] = "dialog9a.png";
 	_g.h["discord"] = "discord.png";
-	_g.h["ef_slash_1"] = "ef_slash_1.png";
-	_g.h["discordbig"] = "discordbig.png";
-	_g.h["ef_slash_2"] = "ef_slash_2.png";
-	_g.h["ef_slash_4"] = "ef_slash_4.png";
-	_g.h["ef_slash_3"] = "ef_slash_3.png";
-	_g.h["ef_slash_5"] = "ef_slash_5.png";
 	_g.h["discordb"] = "discordb.png";
+	_g.h["discordbig"] = "discordbig.png";
+	_g.h["ef_slash_1"] = "ef_slash_1.png";
+	_g.h["ef_slash_2"] = "ef_slash_2.png";
+	_g.h["ef_slash_3"] = "ef_slash_3.png";
+	_g.h["downshadow"] = "downshadow.png";
+	_g.h["ef_slash_4"] = "ef_slash_4.png";
+	_g.h["ef_slash_5"] = "ef_slash_5.png";
 	_g.h["ef_slash_6"] = "ef_slash_6.png";
+	_g.h["enemyicon"] = "enemyicon.png";
 	_g.h["enemy_adamanstoise"] = "enemy_adamanstoise.png";
 	_g.h["enemy_blueflan"] = "enemy_blueflan.png";
-	_g.h["enemyicon"] = "enemyicon.png";
 	_g.h["enemy_bluetiger"] = "enemy_bluetiger.png";
 	_g.h["enemy_buffwitch"] = "enemy_buffwitch.png";
-	_g.h["enemy_dog"] = "enemy_dog.png";
 	_g.h["enemy_Cactuar"] = "enemy_Cactuar.png";
+	_g.h["enemy_dog"] = "enemy_dog.png";
 	_g.h["enemy_elftoad"] = "enemy_elftoad.png";
 	_g.h["enemy_giant"] = "enemy_giant.png";
-	_g.h["downshadow"] = "downshadow.png";
-	_g.h["enemy_goblin"] = "enemy_goblin.png";
+	_g.h["enemy_giantrat"] = "enemy_giantrat.png";
+	_g.h["ef_slash_0"] = "ef_slash_0.png";
 	_g.h["enemy_hamedomonk"] = "enemy_hamedomonk.png";
-	_g.h["enemy_nutkin"] = "enemy_nutkin.png";
 	_g.h["enemy_mysticelf"] = "enemy_mysticelf.png";
-	_g.h["enemy_reaper"] = "enemy_reaper.png";
+	_g.h["enemy_nutkin"] = "enemy_nutkin.png";
 	_g.h["enemy_pumpkinstar"] = "enemy_pumpkinstar.png";
-	_g.h["enemy_tonberry"] = "enemy_tonberry.png";
+	_g.h["enemy_reaper"] = "enemy_reaper.png";
+	_g.h["enemy_redflan"] = "enemy_redflan.png";
 	_g.h["enemy_straycat"] = "enemy_straycat.png";
-	_g.h["enemy_turtle"] = "enemy_turtle.png";
+	_g.h["enemy_tonberry"] = "enemy_tonberry.png";
 	_g.h["enemy_troll"] = "enemy_troll.png";
-	_g.h["enemy_witchkiller"] = "enemy_witchkiller.png";
+	_g.h["enemy_turtle"] = "enemy_turtle.png";
 	_g.h["enemy_witchhunter"] = "enemy_witchhunter.png";
-	_g.h["e_AuroraRing"] = "e_AuroraRing.png";
+	_g.h["enemy_witchkiller"] = "enemy_witchkiller.png";
 	_g.h["enemy_wolf"] = "enemy_wolf.png";
-	_g.h["e_Burst_1"] = "e_Burst_1.png";
-	_g.h["e_Fog2001"] = "e_Fog2001.png";
+	_g.h["enemy_yellowflan"] = "enemy_yellowflan.png";
+	_g.h["e_AuroraRing"] = "e_AuroraRing.png";
 	_g.h["e_check"] = "e_check.png";
+	_g.h["e_Fog2001"] = "e_Fog2001.png";
 	_g.h["e_SaintArrow"] = "e_SaintArrow.png";
 	_g.h["e_slash"] = "e_slash.png";
 	_g.h["e_Spark001"] = "e_Spark001.png";
-	_g.h["enemy_yellowflan"] = "enemy_yellowflan.png";
-	_g.h["font10"] = "font10.png";
 	_g.h["e_whitecircle_line"] = "e_whitecircle_line.png";
+	_g.h["font10"] = "font10.png";
 	_g.h["font12_0"] = "font12_0.png";
-	_g.h["font16_0"] = "font16_0.png";
 	_g.h["font14_0"] = "font14_0.png";
+	_g.h["font16_0"] = "font16_0.png";
 	_g.h["font20"] = "font20.png";
-	_g.h["fxFire01"] = "fxFire01.PNG";
 	_g.h["fxBuff"] = "fxBuff.PNG";
-	_g.h["enemy_giantrat"] = "enemy_giantrat.png";
-	_g.h["enemy_redflan"] = "enemy_redflan.png";
 	_g.h["fxDebuff"] = "fxDebuff.PNG";
+	_g.h["fxFire01"] = "fxFire01.PNG";
 	_g.h["fxFire02"] = "fxFire02.PNG";
+	_g.h["enemy_goblin"] = "enemy_goblin.png";
+	_g.h["circle"] = "circle.png";
 	_g.h["fxFire03"] = "fxFire03.PNG";
+	_g.h["e_Burst_1"] = "e_Burst_1.png";
+	_g.h["fxFire04"] = "fxFire04.PNG";
 	_g.h["fxFire05"] = "fxFire05.PNG";
 	_g.h["fxFire06"] = "fxFire06.PNG";
-	_g.h["fxFire04"] = "fxFire04.PNG";
+	_g.h["fxFire08"] = "fxFire08.PNG";
+	_g.h["fxFire07"] = "fxFire07.PNG";
 	_g.h["fxFire10"] = "fxFire10.PNG";
 	_g.h["fxFire11"] = "fxFire11.PNG";
-	_g.h["fxFire08"] = "fxFire08.PNG";
 	_g.h["fxFire12"] = "fxFire12.PNG";
-	_g.h["fxFire09"] = "fxFire09.PNG";
-	_g.h["fxFire07"] = "fxFire07.PNG";
-	_g.h["gearrepeat"] = "gearrepeat.png";
 	_g.h["fxHeal"] = "fxHeal.PNG";
-	_g.h["greengradient"] = "greengradient.png";
 	_g.h["fxIce"] = "fxIce.PNG";
-	_g.h["fxThunder"] = "fxThunder.PNG";
+	_g.h["fxFire09"] = "fxFire09.PNG";
+	_g.h["greengradient"] = "greengradient.png";
+	_g.h["gearrepeat"] = "gearrepeat.png";
 	_g.h["heroicon"] = "heroicon.png";
 	_g.h["hero_attackA"] = "hero_attackA.png";
 	_g.h["hero_attackB"] = "hero_attackB.png";
-	_g.h["hero_attackD"] = "hero_attackD.png";
 	_g.h["hero_attackC"] = "hero_attackC.png";
-	_g.h["hero_run2"] = "hero_run2.png";
-	_g.h["hero_run1"] = "hero_run1.png";
+	_g.h["hero_attackD"] = "hero_attackD.png";
+	_g.h["hero_dying1"] = "hero_dying1.png";
 	_g.h["hero_dying2"] = "hero_dying2.png";
+	_g.h["hero_run1"] = "hero_run1.png";
+	_g.h["hero_run2"] = "hero_run2.png";
 	_g.h["hero_run3"] = "hero_run3.png";
 	_g.h["hero_run4"] = "hero_run4.png";
 	_g.h["hero_sleep"] = "hero_sleep.png";
-	_g.h["hero_spell2"] = "hero_spell2.png";
 	_g.h["hero_sleep2"] = "hero_sleep2.png";
-	_g.h["hero_stillB"] = "hero_stillB.png";
-	_g.h["iconBlood"] = "iconBlood.png";
+	_g.h["fxThunder"] = "fxThunder.PNG";
+	_g.h["hero_spell2"] = "hero_spell2.png";
 	_g.h["hero_still"] = "hero_still.png";
-	_g.h["iconAttack"] = "iconAttack.png";
-	_g.h["iconBloodthirst"] = "iconBloodthirst.png";
-	_g.h["hero_stillD"] = "hero_stillD.png";
 	_g.h["hero_stillC"] = "hero_stillC.png";
-	_g.h["iconDeathblood"] = "iconDeathblood.png";
+	_g.h["hero_stillD"] = "hero_stillD.png";
+	_g.h["hero_stillB"] = "hero_stillB.png";
+	_g.h["iconAttack"] = "iconAttack.png";
+	_g.h["iconBlood"] = "iconBlood.png";
 	_g.h["iconCounter"] = "iconCounter.png";
+	_g.h["iconBloodthirst"] = "iconBloodthirst.png";
+	_g.h["iconDeathblood"] = "iconDeathblood.png";
+	_g.h["iconfiredamage"] = "iconfiredamage.png";
 	_g.h["iconDefense"] = "iconDefense.png";
 	_g.h["iconLifeMax"] = "iconLifeMax.png";
-	_g.h["iconfiredamage"] = "iconfiredamage.png";
-	_g.h["iconMagicAttack"] = "iconMagicAttack.png";
-	_g.h["iconModLocke"] = "iconModLocke.png";
-	_g.h["iconModLulu"] = "iconModLulu.png";
 	_g.h["iconicedamage"] = "iconicedamage.png";
+	_g.h["iconMagicAttack"] = "iconMagicAttack.png";
+	_g.h["iconModAuron"] = "iconModAuron.png";
+	_g.h["iconMagicDefense"] = "iconMagicDefense.png";
 	_g.h["iconModThick"] = "iconModThick.png";
 	_g.h["iconModTranquil"] = "iconModTranquil.png";
-	_g.h["iconModVivi"] = "iconModVivi.png";
-	_g.h["iconMagicDefense"] = "iconMagicDefense.png";
-	_g.h["iconModRage"] = "iconModRage.png";
 	_g.h["iconModVincent"] = "iconModVincent.png";
-	_g.h["iconMystic"] = "iconMystic.png";
-	_g.h["iconSkillSet"] = "iconSkillSet.png";
-	_g.h["iconPiercing"] = "iconPiercing.png";
-	_g.h["iconModAuron"] = "iconModAuron.png";
-	_g.h["iconSpeed"] = "iconSpeed.png";
+	_g.h["iconModVivi"] = "iconModVivi.png";
+	_g.h["iconModLocke"] = "iconModLocke.png";
 	_g.h["iconMPMax"] = "iconMPMax.png";
+	_g.h["iconMystic"] = "iconMystic.png";
+	_g.h["iconPiercing"] = "iconPiercing.png";
 	_g.h["iconSafeguard"] = "iconSafeguard.png";
+	_g.h["iconSkillSet"] = "iconSkillSet.png";
+	_g.h["iconSpeed"] = "iconSpeed.png";
+	_g.h["iconthunderdamage"] = "iconthunderdamage.png";
 	_g.h["iconVeteran"] = "iconVeteran.png";
-	_g.h["iconWFirerod"] = "iconWFirerod.png";
 	_g.h["iconWBastardSword"] = "iconWBastardSword.png";
 	_g.h["iconWBroadSword"] = "iconWBroadSword.png";
-	_g.h["iconthunderdamage"] = "iconthunderdamage.png";
-	_g.h["iconWIcerod"] = "iconWIcerod.png";
-	_g.h["iconWIcewall"] = "iconWIcewall.png";
 	_g.h["iconWDagger"] = "iconWDagger.png";
-	_g.h["iconWPlate"] = "iconWPlate.png";
+	_g.h["iconWFirerod"] = "iconWFirerod.png";
 	_g.h["iconWFlamedge"] = "iconWFlamedge.png";
+	_g.h["iconModLulu"] = "iconModLulu.png";
 	_g.h["iconWHeavySword"] = "iconWHeavySword.png";
+	_g.h["iconModRage"] = "iconModRage.png";
+	_g.h["iconWIcewall"] = "iconWIcewall.png";
+	_g.h["iconWIcerod"] = "iconWIcerod.png";
 	_g.h["iconWRobe"] = "iconWRobe.png";
 	_g.h["iconWShirt"] = "iconWShirt.png";
-	_g.h["iconWThunderod"] = "iconWThunderod.png";
+	_g.h["iconWPlate"] = "iconWPlate.png";
 	_g.h["iconWTreetrunk"] = "iconWTreetrunk.png";
+	_g.h["iconWThunderod"] = "iconWThunderod.png";
 	_g.h["iconWTunic"] = "iconWTunic.png";
-	_g.h["iconWVest"] = "iconWVest.png";
-	_g.h["icon_gold"] = "icon_gold.png";
-	_g.h["iconWWoodSword"] = "iconWWoodSword.png";
-	_g.h["iracema_story"] = "iracema_story.jpeg";
 	_g.h["iconWThunderbolt"] = "iconWThunderbolt.png";
+	_g.h["icon_gold"] = "icon_gold.png";
+	_g.h["iconWVest"] = "iconWVest.png";
+	_g.h["iconWWoodSword"] = "iconWWoodSword.png";
 	_g.h["isabelicon"] = "isabelicon.png";
-	_g.h["lato13"] = "lato13.png";
+	_g.h["iracema_story"] = "iracema_story.jpeg";
+	_g.h["lato15"] = "lato15.png";
+	_g.h["isabel_story"] = "isabel_story.jpeg";
+	_g.h["lato17"] = "lato17.png";
 	_g.h["lato16"] = "lato16.png";
 	_g.h["leaf"] = "leaf.png";
 	_g.h["lock"] = "lock.png";
-	_g.h["lock_shake"] = "lock_shake.png";
 	_g.h["lock_explosion"] = "lock_explosion.png";
-	_g.h["isabel_story"] = "isabel_story.jpeg";
-	_g.h["lato15"] = "lato15.png";
+	_g.h["lock_shake"] = "lock_shake.png";
 	_g.h["logo"] = "logo.png";
 	_g.h["loot_bag"] = "loot_bag.png";
-	_g.h["notification_message"] = "notification_message.png";
-	_g.h["lato17"] = "lato17.png";
 	_g.h["main_story"] = "main_story.jpg";
+	_g.h["marino_story"] = "marino_story.jpeg";
+	_g.h["mom_story"] = "mom_story.png";
+	_g.h["notification_message"] = "notification_message.png";
+	_g.h["number_test"] = "number_test.png";
+	_g.h["pedroiv_story"] = "pedroiv_story.jpeg";
 	_g.h["pinkgradient"] = "pinkgradient.png";
 	_g.h["purpleback"] = "purpleback.png";
-	_g.h["number_test"] = "number_test.png";
-	_g.h["hero_dying1"] = "hero_dying1.png";
-	_g.h["marino_story"] = "marino_story.jpeg";
+	_g.h["lato13"] = "lato13.png";
 	_g.h["purplegradient"] = "purplegradient.png";
-	_g.h["mom_story"] = "mom_story.png";
 	_g.h["shield"] = "shield.png";
-	_g.h["pedroiv_story"] = "pedroiv_story.jpeg";
-	_g.h["skillSbloodlust"] = "skillSbloodlust.png";
 	_g.h["skillSarmorbreak"] = "skillSarmorbreak.png";
 	_g.h["skillSattackbreak"] = "skillSattackbreak.png";
-	_g.h["skillSfogan"] = "skillSfogan.png";
+	_g.h["skillSbloodlust"] = "skillSbloodlust.png";
 	_g.h["skillSbloodycut"] = "skillSbloodycut.png";
 	_g.h["skillScure"] = "skillScure.png";
-	_g.h["skillSdespell"] = "skillSdespell.png";
-	_g.h["skillSfogo"] = "skillSfogo.png";
+	_g.h["skillSfogan"] = "skillSfogan.png";
 	_g.h["skillSfoganzan"] = "skillSfoganzan.png";
+	_g.h["skillSfogo"] = "skillSfogo.png";
 	_g.h["skillSgelan"] = "skillSgelan.png";
-	_g.h["skillSgelo"] = "skillSgelo.png";
 	_g.h["skillSgelanzan"] = "skillSgelanzan.png";
+	_g.h["skillSgelo"] = "skillSgelo.png";
 	_g.h["skillShaste"] = "skillShaste.png";
-	_g.h["skillSlightslash"] = "skillSlightslash.png";
 	_g.h["skillSheavyslash"] = "skillSheavyslash.png";
+	_g.h["skillSlightslash"] = "skillSlightslash.png";
 	_g.h["skillSmagick"] = "skillSmagick.png";
+	_g.h["skillSdespell"] = "skillSdespell.png";
 	_g.h["skillSnoblesse"] = "skillSnoblesse.png";
+	_g.h["skillSprotect"] = "skillSprotect.png";
 	_g.h["skillSraian"] = "skillSraian.png";
 	_g.h["skillSraianzan"] = "skillSraianzan.png";
 	_g.h["skillSraio"] = "skillSraio.png";
-	_g.h["skillSprotect"] = "skillSprotect.png";
 	_g.h["skillSregen"] = "skillSregen.png";
-	_g.h["skillSshell"] = "skillSshell.png";
-	_g.h["skull"] = "skull.png";
 	_g.h["skillSsharpen"] = "skillSsharpen.png";
-	_g.h["slotempty1"] = "slotempty1.png";
-	_g.h["slotempty2"] = "slotempty2.png";
+	_g.h["skillSshell"] = "skillSshell.png";
 	_g.h["skillSslash"] = "skillSslash.png";
 	_g.h["skillStrevas"] = "skillStrevas.png";
+	_g.h["skull"] = "skull.png";
+	_g.h["slotempty1"] = "slotempty1.png";
+	_g.h["slotempty2"] = "slotempty2.png";
+	_g.h["steam"] = "steam.png";
+	_g.h["Steamlogo"] = "Steamlogo.png";
 	_g.h["swordwithshadow"] = "swordwithshadow.png";
 	_g.h["tabback"] = "tabback.png";
-	_g.h["steam"] = "steam.png";
 	_g.h["Unnamed_0"] = "Unnamed_0.png";
-	_g.h["Steamlogo"] = "Steamlogo.png";
+	_g.h["vitor_story"] = "vitor_story.jpeg";
+	_g.h["voawon12"] = "voawon12.png";
+	_g.h["whitecircle"] = "whitecircle.png";
 	_g.h["whitediamond"] = "whitediamond.png";
 	_g.h["whitedot"] = "whitedot.png";
 	_g.h["whitep"] = "whitep.png";
-	_g.h["whitecircle"] = "whitecircle.png";
-	_g.h["vitor_story"] = "vitor_story.jpeg";
-	_g.h["voawon12"] = "voawon12.png";
 	$r = _g;
 	return $r;
 }(this));
 GRIControl.key = "save data unstable";
+GRIControl.IS_BETA = true;
 GRIControl.keyBackup = "save backup";
 GRIControl.PRIVACY_ACCEPTANCE_KEY = "privacymemory";
 GRIControl.saveRate = 10000;
