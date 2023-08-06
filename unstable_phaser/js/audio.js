@@ -39,16 +39,20 @@ function playAudio(audioId, array, volume = 100, loop = false) {
     audio.currentTime = 0;
     audio.volume = volume * CONVERSION_NUMBER;
     audio.loop = loop;
-
-    var promise = audio.play();
-    if (promise !== undefined) {
-        promise.then(_ => {
-            // Autoplay started!
-        }).catch(error => {
-            // Autoplay was prevented.
-            // Show a "Play" button so that user can start playback.
-        });
+    try {
+        var promise = audio.play();
+        if (promise !== undefined) {
+            promise.then(_ => {
+                // Autoplay started!
+            }).catch(error => {
+                // Autoplay was prevented.
+                // Show a "Play" button so that user can start playback.
+            });
+        }
+    } catch (error) {
+        
     }
+
     return audio;
 }
 
